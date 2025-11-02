@@ -6,3 +6,4 @@ this project.
 ### `PREP`: data preparation
 
 - `PREP_prepare_AncientMetagenomeDir_samplelist.Snakefile`: download the list of available dental calculus samples from the AncientMetagenomeDir database
+- `PREP_prepare_ancient_dental_calculus_samplelist.Snakefile`: generate the sample list of all (un)published dental calculus samples used in this study
