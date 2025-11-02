@@ -1,0 +1,6 @@
+name: ffq
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - bioconda::ffq=0.3.1

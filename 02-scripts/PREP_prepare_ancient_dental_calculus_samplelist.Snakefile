@@ -8,7 +8,7 @@
 # Dependent on:
 #   - PREP_prepare_AncientMetagenomeDir_samplelist.Snakefile
 #
-# Alex Huebner
+# Alex Hübner
 ################################################################################
 
 import os
