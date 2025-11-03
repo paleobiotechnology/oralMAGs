@@ -21,23 +21,39 @@ if not os.path.isdir("snakemake_tmp"):
     os.makedirs("snakemake_tmp")
 
 #### Load sample data ##########################################################
-ancdentalcalc = pd.read_csv("01-resources/ancient_dental_calculus_samples.tsv", sep="\t")
-samples = pd.concat([ancdentalcalc])
-ERRS = samples.index.tolist()
+ancdentalcalc = (pd.read_csv("01-resources/ancient_dental_calculus_samples.tsv", sep="\t",
+                             usecols=['archive_data_accession', 'library_layout'])
+                 .rename({'archive_data_accession': 'run_accession'}, axis=1)
+                 .set_index(['run_accession'])
+)
+saliva = (pd.read_csv("01-resources/modern_saliva_samples.tsv", sep="\t",
+                      usecols=['run_accession', 'library_layout'])
+          .set_index(['run_accession'])
+)
+samples = ancdentalcalc.index.tolist() + saliva.index.tolist()
 ################################################################################
 
 #### Auxilliary functions ######################################################
+EXPECTED_SUFFICES = {1: ['0'],
+                     2: ['1', '2'],
+                     3: ['0', '1', '2']}
 
 def return_url(wildcards):
     with open(checkpoints.fetch_ena_info.get(**wildcards).output[0], "rt") as jsonfile:
         ena_rep = json.load(jsonfile)
     return ena_rep[int(wildcards.i) - 1]['url']
 
+
+def return_expected_suffices(wildcards):
+    with open(checkpoints.fetch_ena_info.get(**wildcards).output[0], "rt") as jsonfile:
+        ena_rep = json.load(jsonfile)
+    return EXPECTED_SUFFICES[len(ena_rep)]
+
 ################################################################################
 
 rule all:
     input:
-        expand("03-data/raw_data/{err}.validated", err=ERRS)
+        expand("03-data/raw_data/{err}.validated", err=['ERR10167375']) # samples)
 
 checkpoint fetch_ena_info:
     output:
@@ -79,7 +95,7 @@ rule calculate_md5sum:
 
 rule validate_md5sum:
     input:
-        lambda wildcards: [f"03-data/raw_data/{wildcards.err}_{i}.md5" for i in [1, 2]]
+        lambda wildcards: [f"03-data/raw_data/{wildcards.err}_{i}.md5" for i in return_expected_suffices(wildcards)]
     output:
         "03-data/raw_data/{err}.validated"
     message: "Validate md5sum: {wildcards.err}"
