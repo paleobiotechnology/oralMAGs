@@ -1,0 +1,6 @@
+name: amdrit
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - bioconda::amdirt=1.6.5
