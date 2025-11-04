@@ -26,11 +26,15 @@ ancdentalcalc = (pd.read_csv("01-resources/ancient_dental_calculus_samples.tsv",
                  .rename({'archive_data_accession': 'run_accession'}, axis=1)
                  .set_index(['run_accession'])
 )
+moddentalcalc = (pd.read_csv("01-resources/modern_dental_calculus_samples.tsv", sep="\t",
+                             usecols=['run_accession', 'library_layout'])
+                 .set_index(['run_accession'])
+)
 saliva = (pd.read_csv("01-resources/modern_saliva_samples.tsv", sep="\t",
                       usecols=['run_accession', 'library_layout'])
           .set_index(['run_accession'])
 )
-samples = ancdentalcalc.index.tolist() + saliva.index.tolist()
+samples = ancdentalcalc.index.tolist() + moddentalcalc.index.tolist() + saliva.index.tolist()
 ################################################################################
 
 #### Auxilliary functions ######################################################
@@ -53,7 +57,7 @@ def return_expected_suffices(wildcards):
 
 rule all:
     input:
-        expand("03-data/raw_data/{err}.validated", err=['ERR10167375']) # samples)
+        expand("03-data/raw_data/{err}.validated", err=samples)
 
 checkpoint fetch_ena_info:
     output:
