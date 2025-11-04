@@ -39,7 +39,8 @@ rule amdir:
         # Prepare sample table by taking care of multiple accession codes per sample
         samples = pd.read_csv(AMDIR_SAMPLES_TSV, sep="\t")
         samples['archive_accession'] = samples['archive_accession'].str.split(",")
-        samples = (samples.drop(['archive_accession'], axis=1) \
+        samples = samples.drop(['archive_project'], axis=1)
+        samples = (samples.drop(['archive_accession'], axis=1)
             .merge(samples[['project_name', 'sample_name', 'archive_accession']]
                    .set_index(['project_name', 'sample_name'])
                    .explode('archive_accession')
@@ -59,8 +60,9 @@ rule amdir:
                                          'download_md5s'])
     
         # Filter for dental calculus samples with 
-        (samples.merge(libraries, how="left", on=["archive_sample_accession", "archive_project"]) \
-            .query("material == 'dental calculus'") \
-            .query("read_count >= 5000000 and library_strategy == 'WGS' and archive_project.str.startswith('PRJ')")
+        tbl = (samples.merge(libraries, how="outer", on=["archive_sample_accession"])
+            .query("material == 'dental calculus'")
+            .query("library_strategy == 'WGS' and archive_project.str.startswith('PRJ')")
+            .sort_values(['publication_year', 'project_name', 'archive_sample_accession'])
             .to_csv(output[0], sep="\t", index=False, float_format="%.3f")
         )
