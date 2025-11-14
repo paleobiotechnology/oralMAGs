@@ -16,8 +16,11 @@ ena_results = e.query(snakemake.params.accession,
 seqdata = (pd.DataFrame(ena_results)
     .query('sample_alias.str.startswith(@snakemake.wildcards.study)')
 )
-seqdata['project_name'] = "FellowsYates2021"
-seqdata['publication_year'] = 2021
+seqdata['project_name'] = ["FellowsYates2021" if s.startswith("VLC") else "Velsko2019"
+                           for s in seqdata['sample_alias'].values]
+seqdata['publication_year'] = [2021 if s.startswith("VLC") else 2019
+                               for s in seqdata['sample_alias'].values]
+seqdata['sample_alias'] = seqdata['sample_alias'].str.replace("0101_humfilt", "")
 
 (seqdata
     .iloc[:, [10, 11] + list(range(0, 10))]
