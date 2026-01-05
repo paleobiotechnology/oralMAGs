@@ -1,0 +1,575 @@
+---
+title: "Ca. Methanomethylophilus fidelis (pr_cl_3192) Tree and Metadata"
+author: "Keri Burge"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output:
+    github_document:
+        fig_width: 8
+        fig_height: 6
+        toc: true
+---
+
+```{r}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("ggtree")
+
+
+install.packages("aplot")
+```
+
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(janitor)
+library(ape)
+library(tidyverse)
+library(ggtree)
+library(aplot)
+library(viridis)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+Set the working directory of the notebook to the parent directory of the 
+notebook itself.  
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath(".."))
+```
+
+# Colors
+```{r}
+# Species clusters (5)
+cluster_colors <- c("3192" = "#4292C6",
+                    "3193" = "#A1D99B",
+                    "3194" = "#FCB076",
+                    "3195" = "#E794C1",
+                    "Reference" = "lightgrey")
+
+
+continent_colors <- c("Africa" = "#CC79A7",
+                      "Asia" = "#97CE2F",
+                      "Caribbean" = "#F09163",
+                      "Europe" = "#9E9AC8",
+                      "North America" = "#1ec1a7",
+                      "Oceania" = "#098BD9",
+                      "Reference" = "lightgrey")
+
+mag_source_colors <- c("Ancient Human" = "#FFD5AF",
+                       "Neanderthal" = "#FEEDA0",
+                       "Modern non-industrial" = "#BCE1FF",
+                       "Modern industrial" = "#EFB6D6",
+                       "Non-human primate" = "#b2815e",
+                       "Reference" = "lightgrey")
+
+crispr_colors <- c("I-C" = "#ff4d6b",
+                       "I-E" = "#93dcb5",
+                       "II-A" = "#f1ab38",
+                       "V-A" = "#58846d",
+                       "None" = "#f0f0f0")
+
+cazyme_colors <- c("Carbohydrate catabolism" = "#A3E4D7",
+                   "Peptidoglycan/cell wall processing" = "#BCBDDC")
+
+prophage_colors <- c("Present" = "#f6865e",
+              "Absent" = "#FBD9D2")
+```
+
+
+# Metadata
+```{r}
+metadata <- fread("./05-results/methanomethylophilus_metadata.tsv") %>%
+  rename(Label = Bin) %>%
+  rename(Bin = prepublication_bin) %>%
+  relocate(Bin, .before = Label) %>%
+  filter(primary_cluster == "3192")
+
+```
+
+
+# Complete tree
+## Root-finding with MAD 
+Genome Biol Evol. 2012 May 16;4(8):821–831. doi: 10.1093/gbe/evs047
+```{r}
+source("02-scripts/mad.R")
+
+```
+
+```{r}
+tre_methanomethylophilus_c3192 <- ape::read.tree("./05-results/methanomethylophilus_c3192_scc.raxml.support")
+
+methanomethylophilus_c3192_mad_root <- mad(tre_methanomethylophilus_c3192, 'newick')
+
+methanomethylophilus_c3192_mad_root %>%
+  as.list() %>%
+  fwrite(., "./05-results/methanomethylophilus_c3192_mad_root.nwk", quote = F)
+```
+
+```{r}
+# Find the root
+methanomethylophilus_c3192_mad_root <- mad(tre_methanomethylophilus_c3192, 'full')
+
+#CMC010.B.bin.r.61 is the root
+```
+
+
+```{r}
+methanomethylophilus_c3192_mad_root <- ape::read.tree("./05-results/methanomethylophilus_c3192_mad_root.nwk")
+
+methanomethylophilus_c3192_mad_root <- root(methanomethylophilus_c3192_mad_root, outgroup = "CMC010.B.bin.r.61")
+
+methanomethylophilus_c3192_mad_root$tip.label <- methanomethylophilus_c3192_mad_root$tip.label %>%
+  as.data.frame() %>%
+  dplyr::rename(Bin = 1) %>%
+  mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
+                        str_replace_all(Bin, "-metaspades_00", ".bin.r.") %>%
+                        str_replace_all("-metaspades_0", ".bin.r.") %>%
+                        str_replace_all("-metaspades", ".bin.r.") %>%
+                        str_replace_all("-megahit_00", ".bin.r.") %>%
+                        str_replace_all("-megahit_0", ".bin.r.") %>%
+                        str_replace_all("-megahit_", ".bin.r.") %>%
+                        str_replace_all("_", ""))) %>%
+  pull(Bin)
+
+
+# create tree
+methanomethylophilus_tree_c3192 <- ggtree(methanomethylophilus_c3192_mad_root, ladderize = T)
+
+host_shapes <- c("Homo sapiens" = 16, "Pan troglodytes schweinfurthii" = 17, "Reference" = 12, "Pan troglodytes verus" = 25, "Homo sapiens neanderthalensis" = 15)
+
+methanomethylophilus_tree_age <- methanomethylophilus_tree_c3192 %<+% metadata + 
+  geom_tippoint(aes(color = log_age, shape = sample_host), size = 6) +
+  scale_size_continuous(limits = c(0,3)) +
+  theme(legend.position="right") + 
+  scale_color_viridis_c(option = "mako", name = "Age (BP) (log10)", direction = -1) +
+  scale_shape_manual(values = host_shapes, name = "Sample Host") +
+  geom_treescale(x = 0, y = 5, width = 0.01, fontsize = 4) +
+  geom_nodelab(aes(label = ifelse(as.numeric(label) > 50, label, "")), size = 2, hjust = -0.1) +
+  guides(shape = guide_legend(override.aes = list(size = 3))) +
+  geom_tiplab(aes(label = Label), size = 2.5, hjust = -0.1)
+
+methanomethylophilus_tree_age
+
+```
+
+
+
+## Species cluster, MAG source, Continent
+```{r}
+#fastBAPS cluster
+fastBAPs_colors <- c("1" = "#9ECAE1",
+                     "2" = "#A1D99B",
+                     "3" = "#FFFD78",
+                     "4" = "#E2BED0") 
+
+fastBAPS_c3192 <- fread("05-results/fastBAPS_methanomethylophilus_cluster3192_snp_counts_and_clusters.tsv") %>%
+  mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
+                        str_replace_all(Bin, "-metaspades_00", ".bin.r.") %>%
+                        str_replace_all("-metaspades_0", ".bin.r.") %>%
+                        str_replace_all("-metaspades", ".bin.r.") %>%
+                        str_replace_all("-megahit_00", ".bin.r.") %>%
+                        str_replace_all("-megahit_0", ".bin.r.") %>%
+                        str_replace_all("-megahit_", ".bin.r.") %>%
+                        str_replace_all("_", ""))) %>%
+  mutate(Cluster = as.character(Cluster))
+
+species_clusters_heatmap <- ggplot(fastBAPS_c3192, aes(x = "Cluster", y = Bin, fill = Cluster)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual(values = fastBAPs_colors, name = "fastBAPS cluster")
+
+#Continent
+continent_heatmap <- ggplot(metadata, aes(x = "Continent", y = Bin, fill = Continent)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual(values = continent_colors, name = "Continent")
+
+#MAG Source
+mag_source_heatmap <- metadata %>%
+  mutate(Industrialization = if_else(Industrialization == "", "Reference", Industrialization)) %>%
+  mutate(Industrialization = ifelse(str_detect(sample_host, "Homo sapiens neanderthalensis"), "Neanderthal", Industrialization)) %>%
+  mutate(Industrialization = str_replace_all(Industrialization, "Non_industrial", "Modern non-industrial"),
+         Industrialization = str_replace_all(Industrialization, "Industrial", "Modern industrial"),
+         Industrialization = str_replace_all(Industrialization, "Ancient", "Ancient Human")) %>%
+  ggplot(., aes(x = "Industrialization", y = Bin, fill = Industrialization)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual(values = mag_source_colors, name = "MAG Source")
+
+```
+
+## Additional metada
+### Age
+```{r}
+heatmap_age <- ggplot(metadata, aes(x = "log_age", y = Bin, fill = log_age)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_viridis_c(option = "mako", name = "Age (BP) (log10)", direction = -1)
+
+heatmap_age
+```
+
+
+### Latitude
+```{r}
+latitude <- ggplot(metadata, aes(x = "latitude", y = Bin, fill = latitude)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_gradient2(low =  "#331068", mid = "#FCFDBF", high = "#E95562", midpoint = 0, name = "Latitude")
+
+latitude 
+```
+
+
+### Longitude
+```{r}
+longitude <- ggplot(metadata, aes(x = "longitude", y = Bin, fill = longitude)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_gradient2(low =  "#331068", mid = "#FCFDBF", high = "#E95562", midpoint = 0, name = "Longitude")
+
+longitude 
+```
+
+
+### Contig Count
+```{r}
+contigs <- ggplot(metadata, aes(x = "quast_n_contigs", y = Bin, fill = quast_n_contigs)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_viridis_c(option = "A", direction = -1, name = "Contig count", limits = c(11, 430))
+
+contigs
+```
+
+
+### N50
+```{r}
+n50 <- metadata %>%
+  select(Bin, quast_N50) %>%
+  mutate(n50 = ifelse(quast_N50 <= 5000, "5000",
+                      ifelse(quast_N50 > 5000 & quast_N50 <= 10000, "10000",
+                             ifelse(quast_N50 > 10000 & quast_N50 <= 50000, "50000",
+                                    ifelse(quast_N50 > 50000 & quast_N50 <= 100000, "100000","150000"))))) %>%
+  dplyr::select(-quast_N50) %>%
+  mutate(n50 = fct_relevel(n50, "5000","10000","50000","100000", "150000")) %>%
+  ggplot(., aes(x = "n50", y = Bin, fill = n50)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_viridis_d(option = "G", direction = -1, name = "N50")
+  
+n50
+  
+```
+
+
+### Completeness
+```{r}
+completeness <- ggplot(metadata, aes(x = "checkM.completeness", y = Bin, fill = checkM.completeness)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_gradient(low = "white", high = "black", na.value="gray", name = "Completeness")
+
+completeness
+```
+
+### Total SNPs
+```{r}
+total_SNPs <- ggplot(fastBAPS_c3192, aes(x = "total_snps", y = Bin, fill = total_snps)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_viridis_c(option = "A", name = "Total SNPs")
+
+total_SNPs
+```
+
+### Gene Count
+```{r}
+scc_gene_list <- fread("./05-results/methanomethylophilus_c3192_non_recomb_scc_gene_list.tsv") %>%
+  pull()
+
+panaroo <- fread("./05-results/methanomethylophilus_c3192_panaroo_gene_presence_absence.Rtab") %>%
+  filter(Gene %in% scc_gene_list) %>%
+  pivot_longer(-Gene, values_to = "counts", names_to = "Bin") %>%
+  pivot_wider(names_from = "Gene", values_from = "counts") %>%
+  rowwise() %>%
+  mutate(total_counts = sum(c_across(-Bin), na.rm = TRUE)) %>%
+  ungroup()  %>%
+  dplyr::select(Bin, total_counts) %>%
+  mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
+                        str_replace_all(Bin, "-metaspades_00", ".bin.r.") %>%
+                        str_replace_all("-metaspades_0", ".bin.r.") %>%
+                        str_replace_all("-metaspades", ".bin.r.") %>%
+                        str_replace_all("-megahit_00", ".bin.r.") %>%
+                        str_replace_all("-megahit_0", ".bin.r.") %>%
+                        str_replace_all("-megahit_", ".bin.r.") %>%
+                        str_replace_all("_", "")))
+
+gene_count <- ggplot(panaroo, aes(x = "total_counts", y = Bin, fill = total_counts)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_viridis_c(option = "A", name = "Gene count")
+
+gene_count
+```
+
+
+
+## CRISPR
+```{r}
+crispr_priority <- c("II-A" = 1, "I-C" = 2, "I-E" = 3, "V-A" = 4)
+
+
+methanomethylophilus_cas <- fread("./05-results/methanomethylophilus_cctyper_cas_table.tsv") %>%
+  inner_join(metadata %>%
+               select(Bin) %>%
+               rename(sampleID = Bin)) %>%
+  dplyr::select(-Bin) %>%
+  dplyr::rename(source = MAG_source) %>%
+  dplyr::rename(Bin = sampleID) %>%
+  filter(str_detect(out_type, "known")) %>% # just want the known operons, not orphan or putative
+  dplyr::select(Bin, Best_type) %>%
+  distinct() 
+
+
+methanomethylophilus_cas_input <- methanomethylophilus_cas %>%
+  dplyr::select(Bin, Best_type) %>%
+  full_join(., metadata %>%
+              select(Bin)) %>%
+  pivot_longer(!Bin, names_to = "category", values_to = "crispr_metadata") 
+
+
+crispr_colors <- c("I-C" = "#ff4d6b",
+                       "I-E" = "#93dcb5",
+                       "II-A" = "#f1ab38",
+                       "V-A" = "#58846d",
+                       "None" = "#f0f0f0")
+
+
+heatmap_crispr <- ggplot(methanomethylophilus_cas_input, aes(x = category, y = Bin, fill = crispr_metadata)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+   scale_fill_manual(
+    values = c(crispr_colors, "#f0f0f0"), 
+    na.value = "#f0f0f0" 
+  )
+
+heatmap_crispr
+```
+
+
+
+## CAZyme
+```{r}
+cazymes_methanomethylophilus <-fread("05-results/methanomethylophilus_dbcan3_cazyme_table.tsv")
+
+cazymes_methanomethylophilus <- cazymes_methanomethylophilus %>%
+  inner_join(., metadata, by = "Bin")
+
+cazymes_methanomethylophilus_table <- cazymes_methanomethylophilus %>%
+mutate(HMMER = str_replace_all(HMMER, "\\([0-9]+-[0-9]+\\)",""),
+         HMMER = str_replace_all(HMMER, "_[0-9]+","")) %>%
+  mutate(dbCAN_sub = str_replace_all(dbCAN_sub, "_e[0-9]+","")) %>%
+  separate_longer_delim(HMMER, delim = "+") %>%  
+  filter(`#ofTools` == 3) %>%
+  dplyr::select(Bin, HMMER) %>%
+  unique() 
+
+cazyme_categories <- fread("./05-results/cazyme_functional_categories.tsv")
+
+
+cazymes_methanomethylophilus_table2 <- cazymes_methanomethylophilus_table %>%
+  unique() %>%
+  inner_join(., cazyme_categories) %>%
+  dplyr::select(Bin, HMMER, functional_category)
+
+cazyme_colors <- c("Cell wall processing" = "#BCBDDC")
+
+
+heatmap_cazyme <- cazymes_methanomethylophilus_table2 %>%
+  mutate(functional_category = str_replace_all(functional_category, "Peptidoglycan/cell wall processing", "Cell wall processing")) %>%
+  filter(!HMMER == "CE4") %>%
+  filter(!HMMER == "GH13") %>%
+  full_join(., metadata) %>%
+  mutate(
+    functional_category = as.character(trimws(functional_category))) %>%
+  mutate(present = 1) %>%  
+  complete(HMMER, Bin, fill = list(functional_category = NA)) %>%
+  filter(!is.na(HMMER)) %>% 
+  ggplot(aes(x = HMMER, y = Bin, fill = functional_category)) +
+  geom_tile(color = "white") +
+  scale_fill_manual(values = c(cazyme_colors, "#f0f0f0"),
+                    na.value = "#f0f0f0") +
+  theme_void() +
+  theme(
+    axis.text.y = element_blank(),    
+    axis.ticks.y = element_blank(),
+    axis.title.y = element_blank(),
+    axis.title.x = element_blank(),     
+    panel.grid = element_blank()
+  ) +
+  guides(fill = guide_legend(title = NULL)) 
+
+heatmap_cazyme
+
+#GT2, GT4, GT66
+```
+
+## Methanogenesis
+```{r}
+methanomethylophilus_panaroo_out <- fread("05-results/methanomethylophilus_methanogenesis_genes_presence_absence.tsv") %>%
+  mutate(across(everything(), ~ replace_na(., 0))) %>%
+  pivot_longer(cols = -Gene, names_to = "Bin", values_to = "presence") 
+
+gene_counts_bar_plot <- methanomethylophilus_panaroo_out %>%
+  dplyr::select(-Gene) %>%
+  mutate(presence = as.integer(presence)) %>%
+  group_by(Bin) %>%
+  summarise(total_counts = sum(presence)) %>%
+  inner_join(., metadata %>%
+              select(Bin)) %>%
+  mutate(total_counts = ifelse(is.na(total_counts), 0, total_counts)) %>%
+  unique() %>%
+ ggplot(., aes(x = total_counts, y = reorder(Bin, total_counts))) +
+    geom_col(fill = "#C7E9C0") +
+    theme_classic() +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_blank(),
+      axis.text.y = element_blank(),     
+      axis.ticks.y = element_blank(),    
+      axis.line.y = element_blank(),
+      #axis.ticks.x = element_blank(),
+      #axis.line.x = element_blank(),
+      #axis.text.x = element_blank(),
+      axis.text.x = element_text(size = 5),
+      plot.background = element_rect(fill = "white", color = NA)
+    )
+  
+
+gene_counts_bar_plot
+
+```
+
+## Panaroo heatmap
+```{r}
+#all clusters
+#roary
+heatmap_roary_data <- fread("./05-results/methanomethylophilus_c3192_panaroo_gene_presence_absence.Rtab") %>%
+  pivot_longer(!Gene, names_to = "Bin", values_to = "Gene presence/absence") %>%
+  pivot_wider(names_from = "Gene", values_from = "Gene presence/absence") %>%
+  mutate(Bin = if_else(str_detect(Bin, "GCA"), Bin, 
+                         str_replace_all(Bin, "-metaspades_00", ".bin.r.") %>%
+                         str_replace_all("-metaspades_0", ".bin.r.") %>%
+                         str_replace_all("-metaspades", ".bin.r.") %>%
+                         str_replace_all("-megahit_00", ".bin.r.") %>%
+                         str_replace_all("-megahit_0", ".bin.r.") %>%
+                         str_replace_all("-megahit_", ".bin.r.") %>%
+                         str_replace_all("_", ""))) %>%
+  pivot_longer(!Bin, names_to = "gene", values_to = "Gene presence/absence")
+
+#rank the genes by abundance for clustering on the heatmap
+gene_abundance <- fread("./05-results/methanomethylophilus_c3192_panaroo_gene_presence_absence.Rtab") %>%
+  adorn_totals(where = "col") %>%
+  dplyr::select(Gene, Total) %>%
+  arrange(desc(Total)) %>%
+  dplyr::select(Gene) %>%
+  pull()
+
+heatmap_roary <- ggplot(heatmap_roary_data, aes(x = factor(gene, levels=gene_abundance), y = Bin, fill = `Gene presence/absence`)) +
+  geom_tile() +
+  theme_minimal() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_gradient(low = "#F0F8FF", high = "#132157", na.value="white")
+
+heatmap_roary
+
+```
+
+## Combine 
+```{r}
+methanomethylophilus_scc_c3192_full_tree <- species_clusters_heatmap %>% insert_left(methanomethylophilus_tree_age, width = 8) %>% insert_right(mag_source_heatmap) %>% insert_right(heatmap_age, width = 1) %>% insert_right(continent_heatmap) %>% insert_right(latitude, width = 1) %>% insert_right(longitude, width = 1) %>% insert_right(completeness, width = 1) %>% insert_right(contigs, width = 1) %>% insert_right(n50, width = 1) %>% insert_right(total_SNPs, width = 1) %>% insert_right(gene_count, width = 1) %>% insert_right(heatmap_crispr, width = 1) %>% insert_right(heatmap_cazyme, width = 1) %>% insert_right(gene_counts_bar_plot, width = 1) %>% insert_right(heatmap_roary, width = 10)
+
+methanomethylophilus_scc_c3192_full_tree
+
+```
+

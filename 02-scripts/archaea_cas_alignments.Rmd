@@ -1,0 +1,177 @@
+---
+title: "Archaea CRISPR-Cas Alignments"
+author: "Keri Burge"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output:
+    github_document:
+        fig_width: 8
+        fig_height: 6
+        toc: true
+---
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(janitor)
+library(ape)
+library(ggtree)
+library(aplot)
+library(viridis)
+library(tidyverse)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath(".."))
+```
+
+# Methanobrevibacter Cas III-A
+
+## Nucleotide - MAFFT
+```{r}
+reference <- "Methanobrevibacter_ruminantium - crispr_IIIA - cas_IIIA"
+
+IIIA_mafft_matrix <- fread("./05-results/methanobrevibacter_casIIIA_MAFFT_matrix.csv") %>%
+  rename(sample = 1) %>%
+  pivot_longer(-sample, names_to = "sample2", values_to = "value") %>%
+  mutate(
+    sample  = factor(sample,  levels = c(reference, setdiff(unique(sample),  reference))),
+    sample2 = factor(sample2, levels = c(reference, setdiff(unique(sample2), reference)))
+  ) %>%
+  ggplot(., aes(x = sample, y = sample2, fill = value)) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "mako", name = "Identity", na.value = "gray95") + 
+  coord_equal() +
+  theme_minimal() +
+  theme(axis.text.y=element_blank(),
+        axis.text.x=element_blank(),
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank())
+
+IIIA_mafft_matrix
+
+```
+
+### Nodes and structures
+```{r}
+metadata <- fread("05-results/methanobrevibacter_metadata.tsv") %>%
+  rename(Label = Bin) %>%
+  rename(Bin = prepublication_bin) %>%
+  relocate(Bin, .before = Label)
+
+methanobrevibacter_cas <- fread("./05-results/methanobrevibacter_cctyper_cas_table.tsv") %>%
+  dplyr::rename(source = MAG_source, Bin = sampleID) %>%
+  select(-primary_cluster) %>%
+  left_join(., metadata %>%
+               dplyr::select(Bin, primary_cluster)) %>%
+  filter(str_detect(out_type, "known")) %>%
+  filter(Best_type == "III-A")
+
+IIIA_structures <- fread("05-results/methanobrevibacter_cas_IIIA_nodes_structures.csv") %>%
+  rename(Node = 'Node_') %>%
+  separate("Node", into = "Node", sep = "\\ -", extra = "drop") %>%
+  mutate(Structure = as.character(Structure)) %>%
+  rename(Contig = Node) %>%
+  full_join(., methanobrevibacter_cas, by = "Contig")
+
+
+
+```
+
+
+## Protein - MUSCLE
+```{r}
+IIIA_muscle_matrix <- fread("05-results/methanobrevibacter_casIIIA_MUSCLE_matrix.csv") %>%
+  rename(sample = 1) %>%
+  pivot_longer(-sample, names_to = "sample2", values_to = "value") %>%
+  mutate(
+    sample  = factor(sample,  levels = c(reference, setdiff(unique(sample),  reference))),
+    sample2 = factor(sample2, levels = c(reference, setdiff(unique(sample2), reference)))
+  ) %>%
+  ggplot(., aes(x = sample, y = sample2, fill = value)) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "mako", name = "Identity", na.value = "gray95") + 
+  coord_equal() +
+  theme_minimal() +
+  theme(axis.text.y=element_blank(),
+        axis.text.x=element_blank(),
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank())
+
+IIIA_muscle_matrix
+
+```
+
+
+# Methanomethylophilus Cas II-A
+## Nucleotide - MAFFT
+```{r}
+reference <- "S. thermophilus - cas_IIA - cas_IIA"
+
+IIA_mafft_matrix <- fread("05-results/methanomethylophilus_casIIA_MAFFT_matrix.csv") %>%
+  rename(sample = 1) %>%
+  pivot_longer(-sample, names_to = "sample2", values_to = "value") %>%
+  mutate(
+    sample  = factor(sample,  levels = c(reference, setdiff(unique(sample),  reference))),
+    sample2 = factor(sample2, levels = c(reference, setdiff(unique(sample2), reference)))
+  ) %>%
+  ggplot(., aes(x = sample, y = sample2, fill = value)) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "mako", name = "Identity", na.value = "gray95") + 
+  coord_equal() +
+  theme_minimal() +
+  theme(axis.text.y=element_blank(),
+        axis.text.x=element_blank(),
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank())
+
+IIA_mafft_matrix
+
+
+```
+
+```{r}
+metadata <- fread("05-results/methanomethylophilus_metadata.tsv") %>%
+  rename(Label = Bin) %>%
+  rename(Bin = prepublication_bin) %>%
+  relocate(Bin, .before = Label)
+
+
+IIA_structures <- fread("05-results/methanomethylophilus_cas_IIA_nodes_structures.csv") %>%
+  mutate(Bin = str_replace_all(Bin, "-metaspades_00", ".bin.r."),
+         Bin = str_replace_all(Bin, "-metaspades_0", ".bin.r."),
+         Bin = str_replace_all(Bin, "-metaspades_0", ".bin.r."),
+         Bin = str_replace_all(Bin, "-metaspades", ".bin.r."),
+         Bin = str_replace_all(Bin, "-megahit_00", ".bin.r."),
+         Bin = str_replace_all(Bin, "-megahit_0", ".bin.r."),
+         Bin = str_replace_all(Bin, "-megahit_", ".bin.r."),
+         Bin = str_replace_all(Bin, "_", ""))%>%
+  mutate(Structure = as.character(Structure)) %>%
+  inner_join(., metadata, by = "Bin")
+
+```
+
+
+## Protein - MUSCLE
+```{r}
+IIA_muscle_matrix <- fread("05-results/methanomethylophilus_casIIA_MUSCLE_matrix.csv") %>%
+  rename(sample = 1) %>%
+  pivot_longer(-sample, names_to = "sample2", values_to = "value") %>%
+  mutate(
+    sample  = factor(sample,  levels = c(reference, setdiff(unique(sample),  reference))),
+    sample2 = factor(sample2, levels = c(reference, setdiff(unique(sample2), reference)))
+  ) %>%
+  ggplot(., aes(x = sample, y = sample2, fill = value)) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "mako", name = "Identity", na.value = "gray95") + 
+  coord_equal() +
+  theme_minimal() +
+  theme(axis.text.y=element_blank(),
+        axis.text.x=element_blank(),
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank())
+
+IIA_muscle_matrix
+
+```
+
