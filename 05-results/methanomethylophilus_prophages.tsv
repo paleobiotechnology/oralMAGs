@@ -1,0 +1,2 @@
+sampleID	contig_id	contig_length	provirus	proviral_length	gene_count	viral_genes	host_genes	checkv_quality	miuvig_quality	completeness	completeness_method	contamination	kmer_freq	warnings	Bin	vOTU	Rank	Kingdom	Phylum	Class	Order	Family	Genus	Species
+ERS3774421	NODE_66_length_27792_cov_84.1	27792	Yes	15622	45	10	8	Medium-quality	Genome-fragment	51.95	AAI-based (medium-confidence)	43.79	1		ERS3774421.bin.r.2	vOTU_03880072	r__Duplodnaviria	k__Heunggongvirae	p__Uroviricota	c__Caudoviricetes	o__	f__	g__	s__

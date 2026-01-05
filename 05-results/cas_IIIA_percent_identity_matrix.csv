@@ -1,0 +1,11 @@
+,Aciduliprofundum_boonei - crispr_IIIA,Methanosarcina_acetivorans - crispr_IIIA,Methanobrevibacter_ruminantium - crispr_IIIA,Methanothermobacter_thermautotrophicus - crispr_IIIA,Methanococcus_aeolicus - crispr_IIIA,NC_015636 - crispr_IIIA,Picrophilus_oshimae - crispr_IIIA,Thermococcus_onnurineus - crispr_IIIA,Vulcanisaeta_distributa - crispr_IIIA,Methanopyrus_kandleri - crispr_IIIA
+Aciduliprofundum_boonei - crispr_IIIA,,31.874,31.048,31.160,30.311,30.905,26.871,25.024,17.727,21.796
+Methanosarcina_acetivorans - crispr_IIIA,31.874,,30.300,28.811,30.498,29.689,24.303,24.779,16.580,20.952
+Methanobrevibacter_ruminantium - crispr_IIIA,31.048,30.300,,36.926,37.012,36.377,31.895,24.721,16.123,20.146
+Methanothermobacter_thermautotrophicus - crispr_IIIA,31.160,28.811,36.926,,30.646,30.579,26.074,24.307,17.393,23.660
+Methanococcus_aeolicus - crispr_IIIA,30.311,30.498,37.012,30.646,,71.863,35.466,24.944,15.676,18.609
+NC_015636 - crispr_IIIA,30.905,29.689,36.377,30.579,71.863,,36.654,25.950,16.036,18.273
+Picrophilus_oshimae - crispr_IIIA,26.871,24.303,31.895,26.074,35.466,36.654,,27.410,14.321,17.675
+Thermococcus_onnurineus - crispr_IIIA,25.024,24.779,24.721,24.307,24.944,25.950,27.410,,15.997,20.586
+Vulcanisaeta_distributa - crispr_IIIA,17.727,16.580,16.123,17.393,15.676,16.036,14.321,15.997,,18.451
+Methanopyrus_kandleri - crispr_IIIA,21.796,20.952,20.146,23.660,18.609,18.273,17.675,20.586,18.451,
