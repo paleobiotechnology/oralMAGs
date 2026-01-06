@@ -53,7 +53,7 @@ Ca. *Methanobrevibacter*_A *cohabitans* (pr_cl_1190):
 - `methanobrevibacter_c1190_non_recomb_scc_gene_list.tsv`: List of Ca. *M. cohabitans* (pr_cl_1190) non-recombinant single copy core genes 
 - `methanobrevibacter_c1190_panaroo_gene_presence_absence.Rtab`: Ca. *M. cohabitans* (pr_cl_1190) Panaroo gene presence/absence table
 
-*Methanobacteriaceae*
+*Methanobacteriaceae*:
 - `Methanobacteriaceae_reference_genome_list.tsv`: List of NCBI genomes and *Methanobrevibacter*_A MAGs used in *Methanobacteriaceae* tree 
 - `Methanobacteriaceae_reference_genome_accessions.tsv`: NCBI *Methanobacteriaceae* reference genomes with NCBI and GTDB designations 
 - `methanobacteriaceae_phylophlan_aln_tree_of_life.raxml.support`: *Methanobacteriaceae* PhyloPhlAn tree with bootstraps
