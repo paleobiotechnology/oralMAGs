@@ -1,0 +1,752 @@
+---
+title: "Methanobrevibacter full tree and metadata"
+author: "Keri Burge"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output:
+    github_document:
+        fig_width: 8
+        fig_height: 6
+        toc: true
+---
+
+
+```{r}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("ggtree")
+
+
+install.packages("aplot")
+```
+
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(janitor)
+library(ape)
+library(ggtree)
+library(aplot)
+library(viridis)
+library(ComplexHeatmap)
+library(tidyverse)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+
+Set the working directory of the notebook to the parent directory of the 
+notebook itself.  
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath(".."))
+```
+
+# Colors
+```{r}
+# Species clusters (5)
+cluster_colors <- c("1188" = "#4292C6",
+                      "1189" = "#A1D99B",
+                      "1187" = "#FCB076",
+                      "1190" = "#E794C1",
+                      "Reference" = "lightgrey")
+
+
+continent_colors <- c("Africa" = "#CC79A7",
+                      "Asia" = "#97CE2F",
+                      "Caribbean" = "#F09163",
+                      "Europe" = "#9E9AC8",
+                      "North America" = "#1ec1a7",
+                      "Oceania" = "#098BD9",
+                      "Reference" = "lightgrey")
+
+mag_source_colors <- c("Ancient Human" = "#FFD5AF",
+                       "Neanderthal" = "#FEEDA0",
+                       "Modern non-industrial" = "#BCE1FF",
+                       "Modern industrial" = "#EFB6D6",
+                       "Non-human primate" = "#b2815e",
+                       "Reference" = "lightgrey")
+
+#crispr_colors <- c("I-B" = "#7DCCFF",
+#                   "III-A" = "#6A51A3",
+#                  "IV -B" = "#148F77",
+#                   "II-D" = "#704236")
+
+crispr_colors <- c("III-A" = "#4590fe",
+             "I-B" = "#E794C1",
+             "IV-B" = "#8D5D4B",
+             "II-D" = "black",
+             "None" = "#f0f0f0")
+
+cazyme_colors <- c("Cell wall processing" = "#BCBDDC")
+
+prophage_colors <- c("Present" = "#f6865e",
+                     "Absent" = "#FBD9D2")
+
+methanogenesis_colors <- c("Methanogenesis" = "#A3E4D7",
+                           "F420 biosynthesis" = "#FEC44F")
+
+
+fastBAPS_clusters_colors <- c("1" = "#9ECAE1",
+                              "2" = "#A1D99B",
+                              "3" = "#BCBCD4",
+                              "4" = "#E2BED0",
+                              "5" = "#FAC3B6",
+                              "6" = "#D5C1B6",
+                              "7" = "yellow",
+                              "8" = "#8B8B8B",
+                              "9" = "#4292C6")
+
+```
+
+# Metadata
+
+```{r}
+metadata <- fread("05-results/methanobrevibacter_metadata.tsv") %>%
+  rename(Label = Bin) %>%
+  rename(Bin = prepublication_bin) %>%
+  relocate(Bin, .before = Label)
+
+```
+
+
+# Complete tree
+## Tree structure 
+```{r}
+# read in the tree
+tre_methanobrevibacter <- ape::read.tree("./05-results/phylophlan_aln_methanobrevibacter_full_tree.raxml.support")
+
+# adjust tip labels
+tre_methanobrevibacter$tip.label <- tre_methanobrevibacter$tip.label %>%
+  as.data.frame() %>%
+  dplyr::rename(Bin = 1) %>%
+  #separate(Bin, into = "Bin", sep = "-", extra = "drop") %>%
+  mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
+                        str_replace_all(Bin, "-metaspades_00", ".bin.r.") %>%
+                        str_replace_all("-metaspades_0", ".bin.r.") %>%
+                        str_replace_all("-metaspades", ".bin.r.") %>%
+                        str_replace_all("-megahit_00", ".bin.r.") %>%
+                        str_replace_all("-megahit_0", ".bin.r.") %>%
+                        str_replace_all("-megahit_", ".bin.r.") %>%
+                        str_replace_all("_", ""))) %>%
+  #mutate(Bin = str_replace_all(Bin, "GCF_001639275.1_ASM163927v1_genomic", "GCF_001639275.1")) %>%
+  #mutate(Bin = str_replace_all(Bin, "GCA_000437055.1_MGS186_genomic", "GCA_000437055.1")) %>%
+  #mutate(Bin = str_replace_all(Bin, "GCA_016294135.1_ASM1629413v1_genomic", "GCA_016294135.1")) %>%
+  pull(Bin)
+
+# root the tree in M. ruminantium
+tre_methanobrevibacter <- root(tre_methanobrevibacter, outgroup = "GCA_016294135.1_ASM1629413v1_genomic")
+
+# create tree
+methanobrevibacter_tree <- ggtree(tre_methanobrevibacter, ladderize = T)
+
+host_shapes <- c("Homo sapiens" = 16, "Homo sapiens neanderthalensis"  = 15, "Pan troglodytes schweinfurthii" = 17, "Reference" = 12, "Papio hamadryas" = 18)
+
+methanobrevibacter_tree_age <- methanobrevibacter_tree %<+% metadata + 
+  geom_tippoint(aes(color = log_age, shape = sample_host), size = 3) +
+  scale_size_continuous(limits = c(0,3)) +
+  theme(legend.position="right") + 
+  #scale_color_viridis_c(option = "inferno", name = "Age (BP) (log10)", begin = 0.2, end = 1) +
+  scale_color_viridis_c(option = "mako", name = "Age (BP) (log10)", direction = -1) +
+  scale_shape_manual(values = host_shapes, name = "Sample Host") +
+  geom_treescale(x = 0, y = 4, width = 0.5, fontsize = 4) +
+  geom_nodelab(aes(label = ifelse(as.numeric(label) > 50, label, "")), size = 2, hjust = -0.1) +
+  guides(shape = guide_legend(override.aes = list(size = 3))) 
++
+  geom_tiplab(aes(label = Label ), size = 1.5, hjust = -0.1)
+
+methanobrevibacter_tree_age
+```
+
+
+## Species cluster, MAG source, Continent
+```{r}
+methanobrevibacter_metadata2 <- metadata %>%
+  mutate(Industrialization = if_else(Industrialization == "", "Reference", Industrialization)) %>%
+  mutate(Industrialization = ifelse(str_detect(sample_host, "Homo sapiens neanderthalensis"), "Neanderthal", Industrialization)) %>%
+  dplyr::select(Bin, Industrialization, primary_cluster, Continent) %>%
+  mutate(primary_cluster = as.character(primary_cluster)) %>%
+  mutate(Industrialization = str_replace_all(Industrialization, "Non_industrial", "Modern non-industrial"),
+         Industrialization = str_replace_all(Industrialization, "Industrial", "Modern industrial"),
+         Industrialization = str_replace_all(Industrialization, "Ancient", "Ancient Human")) %>%
+  dplyr::select(Bin, primary_cluster, Industrialization, Continent) %>%
+  pivot_longer(!Bin, names_to = "category", values_to = "Geo_Cluster") %>%
+  mutate(category = factor(category, levels = c("primary_cluster", "Industrialization", "Continent")))
+
+
+geo_host_colors <- c("1188" = "#4292C6",
+                      "1189" = "#A1D99B",
+                      "1187" = "#FCB076",
+                      "1190" = "#E794C1",
+                      "Reference" = "lightgrey",
+                      "Africa" = "#CC79A7",
+                      "Asia" = "#97CE2F",
+                      "Caribbean" = "#F09163",
+                      "Europe" = "#9E9AC8",
+                      "North America" = "#1ec1a7",
+                      "Oceania" = "#098BD9",
+                      "Ancient Human" = "#FFD5AF",
+                       "Neanderthal" = "#FEEDA0",
+                       "Modern non-industrial" = "#BCE1FF",
+                       "Modern industrial" = "#EFB6D6",
+                       "Non-human primate" = "#b2815e")
+
+
+heatmap_metadata <- ggplot(methanobrevibacter_metadata2, aes(x = category, y = Bin, fill = Geo_Cluster)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual(values = geo_host_colors) 
+
+heatmap_metadata
+
+
+#Species cluster
+species_clusters_heatmap <- ggplot(metadata, aes(x = "primary_cluster", y = Bin, fill = primary_cluster)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual(values = cluster_colors, name = "Species")
+
+#Continent
+continent_heatmap <- ggplot(metadata, aes(x = "Continent", y = Bin, fill = Continent)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual(values = continent_colors, name = "Continent")
+
+#MAG Source
+mag_source_heatmap <- metadata %>%
+  mutate(Industrialization = if_else(Industrialization == "", "Reference", Industrialization)) %>%
+  mutate(Industrialization = ifelse(str_detect(sample_host, "Homo sapiens neanderthalensis"), "Neanderthal", Industrialization)) %>%
+  mutate(Industrialization = str_replace_all(Industrialization, "Non_industrial", "Modern non-industrial"),
+         Industrialization = str_replace_all(Industrialization, "Industrial", "Modern industrial"),
+         Industrialization = str_replace_all(Industrialization, "Ancient", "Ancient Human")) %>%
+  ggplot(., aes(x = "Industrialization", y = Bin, fill = Industrialization)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual(values = mag_source_colors, name = "MAG Source")
+  
+```
+
+
+
+## Additional metada
+### Age
+```{r}
+heatmap_age <- ggplot(metadata, aes(x = "log_age", y = Bin, fill = log_age)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_viridis_c(option = "mako", name = "Age (BP) (log10)", direction = -1)
+
+heatmap_age
+```
+
+
+### Latitude
+```{r}
+latitude <- ggplot(metadata, aes(x = "latitude", y = Bin, fill = latitude)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_gradient2(low =  "#331068", mid = "#FCFDBF", high = "#E95562", midpoint = 0, name = "Latitude")
+
+latitude 
+```
+
+
+### Longitude
+```{r}
+longitude <- ggplot(metadata, aes(x = "longitude", y = Bin, fill = longitude)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_gradient2(low =  "#331068", mid = "#FCFDBF", high = "#E95562", midpoint = 0, name = "Longitude")
+
+longitude 
+```
+
+
+### Contig Count
+```{r}
+contigs <- ggplot(metadata, aes(x = "quast_n_contigs", y = Bin, fill = quast_n_contigs)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_viridis_c(option = "A", direction = -1, name = "Contig count")
+
+contigs
+```
+
+
+### N50
+```{r}
+n50 <- metadata %>%
+  select(Bin, quast_N50) %>%
+  mutate(n50 = ifelse(quast_N50 <= 5000, "5000",
+                      ifelse(quast_N50 > 5000 & quast_N50 <= 10000, "10000",
+                             ifelse(quast_N50 > 10000 & quast_N50 <= 50000, "50000",
+                                    ifelse(quast_N50 > 50000 & quast_N50 <= 100000, "100000","150000"))))) %>%
+  dplyr::select(-quast_N50) %>%
+  mutate(n50 = fct_relevel(n50, "5000","10000","50000","100000")) %>%
+  ggplot(., aes(x = "n50", y = Bin, fill = n50)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_viridis_d(option = "G", direction = -1, name = "N50")
+  
+n50
+  
+```
+
+
+### Completeness
+```{r}
+completeness <- ggplot(metadata, aes(x = "checkM.completeness", y = Bin, fill = checkM.completeness)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_gradient(low = "white", high = "black", na.value="gray", name = "Completeness")
+
+completeness
+```
+
+
+
+
+## CRISPR
+```{r}
+crispr_priority <- c("III-A" = 1, "I-B" = 2, "IV -B" = 3, "II-D" = 4)
+
+#crispr_colors <- c("I-B" = "#7DCCFF",
+#                   "III-A" = "#6A51A3",
+#                   "IV-B" = "#148F77",
+#                   "II-D" = "#704236")
+
+#new_crispr_colors <- c("I-B" = "#72bcad",
+#                       "II-D" = "#bee6ff",
+#                       "III-A" = "#6A51A3",
+#                       "IV-B" = "#8f5575")
+
+new_crispr_colors <- c("III-A" = "#4590fe",
+             "I-B" = "#E794C1",
+             "IV-B" = "#8D5D4B",
+             "II-D" = "black",
+             "None" = "#f0f0f0")
+
+oralis <- fread("05-results/methanobrevibacter_oralis_cctyper_cas_table.tsv") 
+
+methanobrevibacter_cas <- fread("05-results/methanobrevibacter_cctyper_cas_table.tsv") %>%
+  full_join(., oralis) %>%
+  dplyr::rename(source = MAG_source, Bin = sampleID) %>%
+  select(-primary_cluster) %>%
+  left_join(., metadata %>%
+               dplyr::select(Bin, primary_cluster)) %>%
+  filter(str_detect(out_type, "known")) %>%
+  dplyr::select(Bin, Best_type) %>%
+  distinct()
+
+
+methanobrevibacter_cas_ranked <- methanobrevibacter_cas %>%
+  mutate(priority = crispr_priority[Best_type]) %>%
+  arrange(Bin, priority)
+
+crispr_pairs <- methanobrevibacter_cas_ranked %>%
+  group_by(Bin) %>%
+  summarise(
+    types = list(Best_type),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    n = map_int(types, length),
+    crispr1 = map2_chr(types, n, ~ .x[1]),
+    crispr2 = map2_chr(types, n, ~ ifelse(.y > 1, .x[2], "None"))  # only copy if only one element
+  ) %>%
+  dplyr::select(Bin, crispr1, crispr2) %>%
+  #mutate(cctyper = "cctyper") %>%
+  full_join(., metadata %>%
+              select(Bin)) %>%
+  mutate(crispr1 = ifelse(is.na(crispr1), "None", crispr1)) %>%
+  mutate(crispr2 = ifelse(is.na(crispr2), "None", crispr2))
+
+
+methanobrevibacter_cas_input <- crispr_pairs %>%
+  #select(-cctyper) %>%
+  pivot_longer(cols = c(crispr1, crispr2), names_to = "category", values_to = "crispr_metadata") 
+
+heatmap_crispr <- ggplot(methanobrevibacter_cas_input, aes(x = category, y = Bin, fill = crispr_metadata)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  scale_fill_manual(values = c(new_crispr_colors, "#f0f0f0"), na.value = "#f0f0f0")
+
+heatmap_crispr
+
+```
+
+Test III-A Heat map (Supplemental Information Figure 42E)
+```{r}
+#convert to matrix
+IIIA_matrix <- fread("05-results/cas_IIIA_percent_identity_matrix.csv") %>%
+  column_to_rownames("V1") %>%
+  as.matrix() 
+
+#create color scale
+library(circlize)
+viridis_map = circlize::colorRamp2(seq(0, 100, length.out = 20), mako(20))
+
+ComplexHeatmap::Heatmap(IIIA_matrix, 
+                        name = "Percent Identity", 
+                        col = viridis_map,
+                        column_names_gp = gpar(fontsize = 8), 
+                        row_names_gp = gpar(fontsize = 8))
+
+#To save, in colsole run:
+pdf(file = "/mnt/archgen/microbiome_calculus/ancient_archaea/05-results/crispr_cas_IIIA_heatmap.pdf",
+    width = 15,
+    height = 10)
+
+ComplexHeatmap::Heatmap(IIIA_matrix, 
+                        name = "Percent Identity", 
+                        col = viridis_map,
+                        column_names_gp = gpar(fontsize = 8), 
+                        row_names_gp = gpar(fontsize = 8))
+
+dev.off()
+```
+
+
+## CAZyme
+```{r}
+cazymes_methanobrevibacter <-fread("05-results/methanobrevibacter_dbcan3_cazyme_table.tsv")
+cazymes_oralis <-fread("05-results/dbcan3_cazyme_table_methanobrevibacter_oralis.tsv")
+
+methanobrevibacter_metadata <- fread("05-results/methanobrevibacter_metadata.tsv") %>%
+  dplyr::select(-Oral_site)
+
+cazymes_methanobrevibacter <- cazymes_methanobrevibacter %>%
+  full_join(., cazymes_oralis) %>%
+  inner_join(., metadata, by = "Bin")
+
+cazymes_methanobrevibacter_table <- cazymes_methanobrevibacter %>%
+mutate(HMMER = str_replace_all(HMMER, "\\([0-9]+-[0-9]+\\)",""),
+         HMMER = str_replace_all(HMMER, "_[0-9]+","")) %>%
+  mutate(dbCAN_sub = str_replace_all(dbCAN_sub, "_e[0-9]+","")) %>%
+  separate_longer_delim(HMMER, delim = "+") %>%  
+  filter(`#ofTools` == 3) %>%
+  dplyr::select(Bin, HMMER) %>%
+  unique() 
+
+cazyme_categories <- fread("./05-results/cazyme_functional_categories.tsv")
+
+cazymes_methanobrevibacter_table2 <- cazymes_methanobrevibacter_table %>%
+  unique() %>%
+  full_join(., cazyme_categories) %>%
+  dplyr::select(Bin, HMMER, functional_category) 
+
+
+heatmap_cazyme <- cazymes_methanobrevibacter_table2 %>%
+  mutate(functional_category = str_replace_all(functional_category, "Peptidoglycan/cell wall processing", "Cell wall processing")) %>%
+  filter(!HMMER == "CE4") %>%
+  filter(!HMMER == "GH13") %>%
+  full_join(., metadata %>%
+              select(Bin)) %>%
+  mutate(functional_category = as.character(trimws(functional_category))) %>%
+  complete(HMMER, Bin, fill = list(functional_category = NA)) %>%
+  filter(!is.na(HMMER)) %>% 
+  mutate(HMMER = factor(HMMER, levels = c("GT2", "GT4", "GT66", "GT81", "GT116", "GH154"))) %>%
+  ggplot(aes(x = HMMER, y = Bin, fill = functional_category)) +
+  geom_tile(color = "white") +
+  scale_fill_manual(values = c(cazyme_colors, "#f0f0f0"),
+                    na.value = "#f0f0f0") +
+  theme_void() +
+  theme(
+    axis.text.y = element_blank(),    
+    axis.ticks.y = element_blank(),
+    axis.title.y = element_blank(),
+    axis.title.x = element_blank(),     
+    panel.grid = element_blank()
+  ) +
+  guides(fill = guide_legend(title = NULL)) 
+
+heatmap_cazyme
+
+#GT2, GT4, GT66, GT81, GT116, GH154 
+```
+
+
+
+
+## nimI (presence/absence)
+```{r}
+nimI <- fread("05-results/methanobrevibacter_card_table.tsv") %>%
+  dplyr::select(Bin, Best_Hit_ARO) %>%
+  filter(str_detect(Best_Hit_ARO, "nimI")) %>%
+  unique() %>%
+  mutate(nimI = "Present") %>%
+  full_join(., metadata) %>%
+  mutate(nimI = if_else(is.na(nimI), "Absent", nimI))
+
+heatmap_nimI <- ggplot(nimI, aes(x = "nimI", y = Bin, fill = nimI)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual(
+    values = c("Absent" = "#fbf1f6", "Present" = "#97587bff"),
+    na.value = "white")
+
+heatmap_nimI
+
+```
+
+## Prophage
+```{r}
+methanobrevibacter_prophages <- fread("05-results/methanobrevibacter_prophages.tsv") %>%
+  filter(!str_detect(checkv_quality, "Low-quality")) %>%
+  dplyr::select(Bin) %>%
+  unique() %>%
+  mutate(Prophage = "Present") %>%
+  full_join(., metadata) %>%
+  mutate(Prophage = replace_na(Prophage, "Absent"))
+
+prophage_colors <- c("Present" = "#f6865e",
+              "Absent" = "#FBD9D2")
+
+prophage_heatmap <- ggplot(methanobrevibacter_prophages, aes(x = "Prophage", y = Bin, fill = Prophage)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual(
+    values = c("Absent" = "#FBD9D2", "Present" = "#f6865e"),
+    na.value = "white")
+
+prophage_heatmap
+```
+
+## Methanogenesis
+
+```{r}
+
+methanogenesis_pres_abs <- fread("05-results/methanobrevibacter_methanogenesis_genes_presence_absence.tsv")
+
+gene_counts <- methanogenesis_pres_abs %>%
+  dplyr::select(-Gene) %>%
+  summarise(across(everything(), \(x) sum(x, na.rm = TRUE))) %>%
+  pivot_longer(cols = everything(), names_to = "Bin", values_to = "total") %>%
+  mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
+                        str_replace_all(Bin, "-metaspades_00", ".bin.r.") %>%
+                        str_replace_all("-metaspades_0", ".bin.r.") %>%
+                        str_replace_all("-metaspades", ".bin.r.") %>%
+                        str_replace_all("-megahit_00", ".bin.r.") %>%
+                        str_replace_all("-megahit_0", ".bin.r.") %>%
+                        str_replace_all("-megahit_", ".bin.r.") %>%
+                        str_replace_all("_", ""))) 
+
+gene_counts_bar_plot <- gene_counts %>%
+  ggplot(., aes(x = total, y = reorder(Bin, total))) +
+    geom_col(fill = "#C7E9C0") +
+    theme_classic() +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_blank(),
+      axis.text.y = element_blank(),     
+      axis.ticks.y = element_blank(),    
+      axis.line.y = element_blank(),
+      #axis.ticks.x = element_blank(),
+      #axis.line.x = element_blank(),
+      #axis.text.x = element_blank(),
+      axis.text.x = element_text(size = 5),
+      plot.background = element_rect(fill = "white", color = NA)
+    )
+  
+  
+
+gene_counts_bar_plot
+
+```
+
+
+
+## Panaroo
+```{r}
+heatmap_panaroo_data <- fread("05-results/methanobrevibacter_full_tree_panaroo_gene_presence_absence.Rtab") %>%
+  pivot_longer(!Gene, names_to = "Bin", values_to = "Gene presence/absence") %>%
+  pivot_wider(names_from = "Gene", values_from = "Gene presence/absence") %>%
+  mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
+                         str_replace_all(Bin, "-metaspades_00", ".bin.r.") %>%
+                         str_replace_all("-metaspades_0", ".bin.r.") %>%
+                         str_replace_all("-metaspades", ".bin.r.") %>%
+                         str_replace_all("-megahit_00", ".bin.r.") %>%
+                         str_replace_all("-megahit_0", ".bin.r.") %>%
+                         str_replace_all("-megahit_", ".bin.r.") %>%
+                         str_replace_all("_", ""))) %>%
+  pivot_longer(!Bin, names_to = "gene", values_to = "Gene presence/absence")
+
+#rank the genes by abundance for clustering on the heatmap
+gene_abundance <- fread("05-results/methanobrevibacter_full_tree_panaroo_gene_presence_absence.Rtab") %>%
+  adorn_totals(where = "col") %>%
+  dplyr::select(Gene, Total) %>%
+  arrange(desc(Total)) %>%
+  dplyr::select(Gene) %>%
+  pull()
+
+heatmap_panaroo <- ggplot(heatmap_panaroo_data, aes(x = factor(gene, levels=gene_abundance), y = Bin, fill = `Gene presence/absence`)) +
+  geom_tile() +
+  theme_minimal() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_gradient(low = "#F0F8FF", high = "#132157", na.value="white")
+
+heatmap_panaroo
+```
+
+
+## Combine 
+```{r}
+methanobrevibacter_full_tree <- species_clusters_heatmap %>% insert_left(methanobrevibacter_tree_age, width = 7) %>% insert_right(mag_source_heatmap) %>% insert_right(heatmap_age, width = 1) %>% insert_right(continent_heatmap) %>% insert_right(latitude, width = 1) %>% insert_right(longitude, width = 1) %>% insert_right(completeness, width = 1) %>% insert_right(contigs, width = 1) %>% insert_right(n50, width = 1) %>% insert_right(heatmap_crispr, width = 1) %>% insert_right(heatmap_cazyme, width = 1) %>% insert_right(heatmap_nimI, width = 1) %>% insert_right(prophage_heatmap, width = 1) %>% insert_right(gene_counts_bar_plot, width = 1) 
+
+methanobrevibacter_full_tree
+
+#ggsave("./05-results/methanobrevibacter_phylophlan_full_metadata_tmp.pdf", plot = methanobrevibacter_full_tree, device = "pdf", scale = 1, width = 32, height = 16, units = c("in"), dpi = 300) 
+```
+
+
+
+# Species sharing 
+```{r}
+individual_id_species <- metadata %>%
+  filter(!str_detect(Bin, "GC")) %>%
+  select(Secondary_sample_accession, primary_cluster) %>%
+  mutate(value = 1) %>%
+  unique() %>%
+  pivot_wider(names_from = Secondary_sample_accession, values_from = value, values_fill = 0) %>%
+  column_to_rownames("primary_cluster")
+
+individual_id_species <- individual_id_species[c("1", "2", "3", "4"), , drop = FALSE]
+
+species_matrix <- individual_id_species %>%
+  as.matrix() 
+
+species_matrix_filtered <- species_matrix[, colSums(species_matrix) > 1, drop = FALSE]   
+
+species_matrix_transposed <- t(species_matrix)
+
+comb_mat <- make_comb_mat(species_matrix_transposed, mode = "distinct")
+
+comb_names <- comb_name(comb_mat)
+
+```
+
+
+```{r}
+#function to correlate combinations (ex: 1010, 1100) to more accessible language
+comb_order_from_labels <- function(comb_mat, set_order, desired_labels, append_rest = TRUE) {
+  cn <- comb_name(comb_mat) 
+  labels <- vapply(cn, function(x) {
+    inc <- set_order[strsplit(x, "", fixed = TRUE)[[1]] == "1"]
+    if (length(inc) == 0) "∅" else paste(inc, collapse = "&")
+  }, character(1))
+
+  idx <- match(desired_labels, labels)
+  idx <- idx[!is.na(idx)]
+  if (append_rest) idx <- c(idx, setdiff(seq_along(cn), idx))
+  idx
+}
+
+set_order <- c("3","1","2","4")
+#interaction_order <- c("1", "1&3", "1&4", "2", "2&3", "2&4", "3", "3&4", "4")
+interaction_order <- c("3", "1&3", "2&3", "3&4", "1", "1&4", "2", "2&4", "4")
+
+ord <- comb_order_from_labels(comb_mat, set_order, interaction_order, append_rest = TRUE)
+
+UpSet(comb_mat, set_order  = set_order, comb_order = ord, top_annotation = top_anno)
+
+#bar heights 
+bar_heights <- comb_size(comb_mat)
+
+#run in the console to save pdf
+pdf(file = "/mnt/archgen/microbiome_calculus/ancient_archaea/05-results/methanobrevibacter_species_sharing_upset_plot.pdf",
+    width = 6,
+    height = 3)
+
+UpSet(comb_mat, set_order  = set_order, comb_order = ord)
+
+dev.off()
+
+```
+
+
+
+
+

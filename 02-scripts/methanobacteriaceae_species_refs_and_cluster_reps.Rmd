@@ -1,0 +1,78 @@
+---
+title: "Methanobacteriaceae species references and cluster reps trees (SI Figure 41)"
+author: "Keri Burge"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output:
+    github_document:
+        fig_width: 8
+        fig_height: 6
+        toc: true
+---
+
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(ape)
+library(ggtree)
+library(tidyverse)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath(".."))
+```
+
+
+```{r}
+#genomes included
+samples <- fread("./05-results/Methanobacteriaceae_reference_genome_list.tsv", header = FALSE) %>%
+  rename(genome = 1) %>%
+  mutate(genome = str_replace(genome, ".fna", "")) %>%
+  pull()
+  
+```
+
+
+```{r}
+filter_ancient <- fread("./05-results/methanobrevibacter_metadata.tsv") %>%
+  filter(Sample %in% samples) %>%
+  select(Sample, Bin, primary_cluster) %>%
+  mutate(primary_cluster = str_replace_all(primary_cluster, "1187", "sp. cluster 1187"),
+         primary_cluster = str_replace_all(primary_cluster, "1188", "sp. cluster 1188"),
+         primary_cluster = str_replace_all(primary_cluster, "1189", "sp. cluster 1189"),
+         primary_cluster = str_replace_all(primary_cluster, "1190", "sp. cluster 1190")) %>%
+  unite(sample_ID, Bin:primary_cluster, sep = " - ") %>%
+  rename(genome = Sample)
+
+genera <- fread("./05-results/Methanobacteriaceae_reference_genome_accessions.tsv") %>%
+  relocate(gtdb_genus, .before = species) %>%
+  unite(sample_ID, gtdb_genus:species, sep = " ") %>%
+  select(genome, sample_ID)
+
+full_metadata <- genera %>%
+  full_join(., filter_ancient)
+
+```
+
+
+# Tree of Life phylophlan method
+
+```{r}
+tre_methanobacteriaceae <- ape::read.tree("./05-results/methanobacteriaceae_phylophlan_aln_tree_of_life.raxml.support")
+
+tre_methanobacteriaceae <- root(tre_methanobacteriaceae, outgroup = "GCF_000024185.1_ASM2418v1_genomic")
+
+tre_methanobacteriaceae <- ggtree(tre_methanobacteriaceae, ladderize = T)
+
+methanobacteriaceae_tree <- tre_methanobacteriaceae %<+% full_metadata + 
+  #geom_tippoint(size = 5) +
+  geom_tiplab(aes(label = sample_ID), size = 2.5, hjust = -0.1) +
+  geom_treescale(x = 0, y = 4, width = 0.1, fontsize = 4) +
+  geom_nodelab(aes(label = ifelse(as.numeric(label) > 50, label, "")), size = 2, hjust = -0.1)
+
+methanobacteriaceae_tree
+
+```
+
