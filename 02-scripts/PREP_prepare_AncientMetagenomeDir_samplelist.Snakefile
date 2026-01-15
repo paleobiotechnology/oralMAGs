@@ -63,6 +63,7 @@ rule amdir:
         tbl = (samples.merge(libraries, how="outer", on=["archive_sample_accession"])
             .query("material == 'dental calculus'")
             .query("library_strategy == 'WGS' and archive_project.str.startswith('PRJ') and read_count > 5000 and instrument_model != 'Ion Torrent Proton'")
+            .query("project_name != 'NievesColon2020'")
             .sort_values(['publication_year', 'project_name', 'archive_sample_accession'])
             .to_csv(output[0], sep="\t", index=False, float_format="%.3f")
         )
