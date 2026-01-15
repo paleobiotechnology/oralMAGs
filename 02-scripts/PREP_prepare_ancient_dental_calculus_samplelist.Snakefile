@@ -62,8 +62,8 @@ rule amdir_velsko2024:
                                          'download_md5s'])
     
         # Filter for dental calculus samples with 
-        (samples.merge(libraries, how="left", on=["archive_sample_accession", "archive_project"]) \
-            .query("project_name == 'Velsko2024'") \
+        (samples.merge(libraries, how="left", on=["archive_sample_accession", "archive_project"])
+            .query("project_name == 'Velsko2024' and community_type == 'oral'")
             .to_csv(output[0], sep="\t", index=False, float_format="%.3f")
         )
 
