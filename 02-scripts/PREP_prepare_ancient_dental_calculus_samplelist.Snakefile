@@ -62,10 +62,15 @@ rule amdir_velsko2024:
                                          'download_md5s'])
     
         # Filter for dental calculus samples with 
-        (samples.merge(libraries, how="left", on=["archive_sample_accession", "archive_project"])
+        velsko2024 = (samples.merge(libraries, how="left", on=["archive_sample_accession", "archive_project"])
             .query("project_name == 'Velsko2024' and community_type == 'oral'")
-            .to_csv(output[0], sep="\t", index=False, float_format="%.3f")
         )
+        # Append the accession codes for samples that were not merged
+        velsko2024.loc[velsko2024['library_name'] == 'SIG040.A0101', 'archive_sample_accession'] = "ERS15409423.1"
+        velsko2024.loc[velsko2024['library_name'] == 'SIG040.A0201', 'archive_sample_accession'] = "ERS15409423.2"
+        velsko2024.loc[velsko2024['library_name'] == 'SIG046.A0101', 'archive_sample_accession'] = "ERS15409429.1"
+        velsko2024.loc[velsko2024['library_name'] == 'SIG046.A0201', 'archive_sample_accession'] = "ERS15409429.2"
+        velsko2024.to_csv(output[0], sep="\t", index=False, float_format="%.3f")
 
 rule join:
     input:
