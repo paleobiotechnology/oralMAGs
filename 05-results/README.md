@@ -2,6 +2,45 @@
 
 This folder contains all results generated in this project, including processed data and summary tables produced by the analysis workflows.
 
+Files that are used as input for generating figures:
+- `AC_cas_k_o_p.tsv` - CCTyper Cas gene hits known, orphan, putative; ancient calculus MAGs
+- `BM_cas_k_o_p.tsv` - CCTyper Cas gene hits known, orphan, putative; buccal mucosa MAGs
+- `HP_cas_k_o_p.tsv` - CCTyper Cas gene hits known, orphan, putative; hard palate MAGs
+- `KG_cas_k_o_p.tsv` - CCTyper Cas gene hits known, orphan, putative; keratinized gingiva MAGs
+- `MC_cas_k_o_p.tsv` - CCTyper Cas gene hits known, orphan, putative; modern calculus MAGs
+- `PQ_cas_k_o_p.tsv` - CCTyper Cas gene hits known, orphan, putative; plaque MAGs
+- `RS_cas_k_o_p.tsv` - CCTyper Cas gene hits known, orphan, putative; Reference HOMD genomes
+- `SL_cas_k_o_p.tsv` - CCTyper Cas gene hits known, orphan, putative; saliva MAGs
+- `TN_cas_k_o_p.tsv` - CCTyper Cas gene hits known, orphan, putative; tongue MAGs
+- `card_rgi_abx_resistance_gene_table.tsv.gz` - CARD RGI antibiotic resistance gene table
+- `class_order_table.tsv` - Classes listed in order by Phylum for plotting
+- `dRep_rgig7111_anaerovoracaceae_Cdb.csv` - dRep cluster table for Anaerovoracaceae genomes
+- `dRep_rgig7111_anaerovoracaceae_Mdb.csv.gz` - dRep MASH table for Anaerovoracaceae genomes
+- `dRep_rgig7111_anaerovoracaceae_genomeInfo.csv` - dRep genome info table for Anaerovoracaceae genomes
+- `doralis_scc.raxml.support` - Desulfobulbus oralis RAxML tree with bootstrap support
+- `drug_classes.tsv` - table organizing CARD drug classes
+- `duul01_mad_root.nwk` - DUUL01 RAxML tree with bootstrap support rooted using the MAD technique
+- `genomad_phage_imgvr_taxonomy.tsv` - Taxonomy of phages identified by geNomad, classified with IMGVR4
+- `human_pydamage_table.tsv.gz` - PyDamage estimations for contigs from human calculus assemblies
+- `kraken2_ci15_all_oral_samples.homd_mags_11_2025_species.tsv` - species count table for all oral samples classified by Kraken2 with HM database
+- `kraken2_classification_counts_gtdb207.tsv` - Number of species per oral samples classified by Kraken2 with the GTDB r207 database
+- `kraken2_classification_counts_homd.tsv` - Number of species per oral samples classified by Kraken2 with the HOMD database
+- `kraken2_classification_counts_homd_hpd_csc.tsv` - Number of species per oral samples classified by Kraken2 with the HOMD database, 4 additional samples
+- `kraken2_classification_counts_homd_mags.tsv` - Number of species per oral samples classified by Kraken2 with the HM database
+- `kraken2_classification_counts_homd_mags_csc_hpd.tsv` - Number of species per oral samples classified by Kraken2 with the HM database, 4 additional samples
+- `mag_sample_to_eager_label.tsv` - Sample label conversion table
+- `methanobrevibacter_c4_mad_root.nwk` - Phylophlan tree for Methanobrevibacter cluster 1190 rooted using the MAD technique
+- `neanderthal_pydamage_table.tsv` - PyDamage estimations for contigs from Neanderthal calculus assemblies
+- `phables_phage_imgvr_taxonomy.tsv` - Taxonomy of phages identified by Phables, classified with IMGVR4 
+- `phage_blastn_ani_clusters.tsv` - Clustering results of all complete, high, and medium quality phages identified by geNomad and Phables
+- `phylophlan_aln_methanomethylophilus_JTT_w_CSC_20251105.raxml.support` - Phylophlan tree of Methanomethylophilus with bootstrap support
+- `rgig7111_09_2025_mad_root.nwk` - RAxML tree of Ca. Cryptocalculus aphthonus rooted usign the MAD technique
+- `rgig7111_cctyper_table.tsv` - CCTyper Cas gene hits for Ca. Cryptocalculus aphthonus
+- `rgig7111_dlt_operon_table.tsv` - dlt gene table for Ca. Cryptocalculus aphthonus
+- `rgig7111_van_gene_table.tsv` - van operon gene table for Ca. Cryptocalculus aphthonus
+- `vanish_blossum_table.tsv` - Differential abundance table for VANISH/BloSSUM analysis
+- `vb_species_plot_order.tsv` - VANISH/BloSSUM species ordered for plotting
+
 ### `Archaea`: results and tables for *Methanobrevibacter*_A and *Methanomethylophilus* analyses 
 
 *Methanobrevibacter*_A:
