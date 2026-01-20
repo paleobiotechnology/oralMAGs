@@ -1,0 +1,346 @@
+out_type	Class	Industry	Bin	Type	Sub_type	Alt_sub_type	Full_type	GC_pct	completeness	contamination	checkM2.completeness	checkM2.contamination	primary_cluster	secondary_cluster	length	N50	gtdb_taxonomy	MAG_source	fBAPS_l1	fBAPS_l2	Study	Age_BP	Continent	Country	sample_host	Host	GUNC.n_contigs	checkM.N50_contigs	QUAL	Secondary_sample_accession	latitude	longitude	Present
+known	2	ancient	ERS11702722.bin.r.2	II	D		II-D	42.7	93.19	0	97.37	0.38	211	211_1	1525491	44017	g__RGIG7111;s__	Ancient	6	18	Velsko2022	200	Europe	Spain	Homo	Human	72	44017	High_w_GUNC	ERS11702722	43.182	-2.573	Yes
+known	2	ancient	ERS11702722.bin.r.2	II	A		II-A	42.7	93.19	0	97.37	0.38	211	211_1	1525491	44017	g__RGIG7111;s__	Ancient	6	18	Velsko2022	200	Europe	Spain	Homo	Human	72	44017	High_w_GUNC	ERS11702722	43.182	-2.573	Yes
+known	1	ancient	ERS11702723.bin.r.4	I	E		I-E	42.5	94.33	5.2	98.05	9.33	211	211_1	1644836	82990	g__RGIG7111;s__	Ancient	6	19	Velsko2022	200	Europe	Spain	Homo	Human	58	82990	Med_w_GUNC	ERS11702723	43.182	-2.573	Yes
+known	2	ancient	ERS11702723.bin.r.4	II	D		II-D	42.5	94.33	5.2	98.05	9.33	211	211_1	1644836	82990	g__RGIG7111;s__	Ancient	6	19	Velsko2022	200	Europe	Spain	Homo	Human	58	82990	Med_w_GUNC	ERS11702723	43.182	-2.573	Yes
+known	2	ancient	ERS11702724.bin.r.3	II	D		II-D	42.5	87.23	0	83.79	0.15	211	211_1	1264540	100690	g__RGIG7111;s__	Ancient	6	19	Velsko2022	200	Europe	Spain	Homo	Human	41	100690	Med_w_GUNC	ERS11702724	43.182	-2.573	Yes
+known	1	ancient	ERS11702724.bin.r.3	I	E		I-E	42.5	87.23	0	83.79	0.15	211	211_1	1264540	100690	g__RGIG7111;s__	Ancient	6	19	Velsko2022	200	Europe	Spain	Homo	Human	41	100690	Med_w_GUNC	ERS11702724	43.182	-2.573	Yes
+known	2	ancient	ERS11702727.bin.r.3	II	D		II-D	42.3	92.2	0	95.13	0.18	211	211_1	1480304	40798	g__RGIG7111;s__	Ancient	6	20	Velsko2022	200	Europe	Spain	Homo	Human	92	40798	High_w_GUNC	ERS11702727	43.182	-2.573	Yes
+known	2	ancient	ERS11702729.bin.r.1	II	D		II-D	42.5	94.33	0	97.96	0.17	211	211_1	1523531	106350	g__RGIG7111;s__	Ancient	6	19	Velsko2022	500	Europe	Spain	Homo	Human	40	106350	High_w_GUNC	ERS11702729	38.247	-0.808	Yes
+known	1	ancient	ERS11702729.bin.r.1	I	E		I-E	42.5	94.33	0	97.96	0.17	211	211_1	1523531	106350	g__RGIG7111;s__	Ancient	6	19	Velsko2022	500	Europe	Spain	Homo	Human	40	106350	High_w_GUNC	ERS11702729	38.247	-0.808	Yes
+known	2	ancient	ERS11702731.bin.r.10	II	D		II-D	42.5	94.33	0	100	0.32	211	211_1	1472495	26752	g__RGIG7111;s__	Ancient	3	7	Velsko2022	500	Europe	Spain	Homo	Human	103	26752	High_w_GUNC	ERS11702731	38.247	-0.808	Yes
+known	2	ancient	ERS11702731.bin.r.10	II	A		II-A	42.5	94.33	0	100	0.32	211	211_1	1472495	26752	g__RGIG7111;s__	Ancient	3	7	Velsko2022	500	Europe	Spain	Homo	Human	103	26752	High_w_GUNC	ERS11702731	38.247	-0.808	Yes
+known	1	ancient	ERS11702732.bin.r.2	I	E		I-E	42.3	94.33	0	98.15	0.09	211	211_1	1452745	104884	g__RGIG7111;s__	Ancient	6	19	Velsko2022	500	Europe	Spain	Homo	Human	24	104884	High_w_GUNC	ERS11702732	38.247	-0.808	Yes
+known	2	ancient	ERS11702732.bin.r.2	II	D		II-D	42.3	94.33	0	98.15	0.09	211	211_1	1452745	104884	g__RGIG7111;s__	Ancient	6	19	Velsko2022	500	Europe	Spain	Homo	Human	24	104884	High_w_GUNC	ERS11702732	38.247	-0.808	Yes
+known	2	ancient	ERS11702741.bin.r.6	II	D		II-D	42.9	93.62	0	96.09	0.5	211	211_1	1423006	48542	g__RGIG7111;s__	Ancient	3	9	Velsko2022	200	Europe	The Netherlands	Homo	Human	52	48542	High_w_GUNC	ERS11702741	52.548	4.914	Yes
+known	2	ancient	ERS11702742.bin.r.2	II	D		II-D	42.5	94.33	0	97.69	0.14	211	211_1	1520141	93474	g__RGIG7111;s__	Ancient	2	6	Velsko2022	200	Europe	The Netherlands	Homo	Human	39	93474	High_w_GUNC	ERS11702742	52.548	4.914	Yes
+known	2	ancient	ERS11702742.bin.r.2	II	A		II-A	42.5	94.33	0	97.69	0.14	211	211_1	1520141	93474	g__RGIG7111;s__	Ancient	2	6	Velsko2022	200	Europe	The Netherlands	Homo	Human	39	93474	High_w_GUNC	ERS11702742	52.548	4.914	Yes
+known	2	ancient	ERS11702746.bin.r.2	II	D		II-D	42.7	92.2	1.42	97.15	0.21	211	211_1	1335017	32428	g__RGIG7111;s__	Ancient	6	20	Velsko2022	200	Europe	The Netherlands	Homo	Human	66	32428	High_w_GUNC	ERS11702746	52.548	4.914	Yes
+known	2	ancient	ERS11702747.bin.r.4	II	D		II-D	42.7	94.33	0	99.94	0.14	211	211_1	1438052	79261	g__RGIG7111;s__	Ancient	6	18	Velsko2022	200	Europe	The Netherlands	Homo	Human	32	79261	High_w_GUNC	ERS11702747	52.548	4.914	Yes
+known	2	ancient	ERS11702748.bin.r.4	II	D		II-D	42.9	76.67	1.65	78.75	0.55	211	211_1	1112198	5259	g__RGIG7111;s__	Ancient	4	13	Velsko2022	200	Europe	The Netherlands	Homo	Human	252	5259	Med_w_GUNC	ERS11702748	52.548	4.914	Yes
+known	2	ancient	ERS11702749.bin.r.1	II	D		II-D	42.3	94.33	0.71	99.86	0.15	211	211_1	1559800	103450	g__RGIG7111;s__	Ancient	2	2	Velsko2022	200	Europe	The Netherlands	Homo	Human	46	103450	High_w_GUNC	ERS11702749	52.548	4.914	Yes
+known	1	ancient	ERS11702749.bin.r.1	I	C		I-C	42.3	94.33	0.71	99.86	0.15	211	211_1	1559800	103450	g__RGIG7111;s__	Ancient	2	2	Velsko2022	200	Europe	The Netherlands	Homo	Human	46	103450	High_w_GUNC	ERS11702749	52.548	4.914	Yes
+known	1	ancient	ERS11702750.bin.r.2	I	C		I-C	42.1	94.33	0	99.46	0.18	211	211_1	1513289	97088	g__RGIG7111;s__	Ancient	2	2	Velsko2022	200	Europe	The Netherlands	Homo	Human	49	97088	High_w_GUNC	ERS11702750	52.548	4.914	Yes
+known	2	ancient	ERS11702750.bin.r.2	II	D		II-D	42.1	94.33	0	99.46	0.18	211	211_1	1513289	97088	g__RGIG7111;s__	Ancient	2	2	Velsko2022	200	Europe	The Netherlands	Homo	Human	49	97088	High_w_GUNC	ERS11702750	52.548	4.914	Yes
+known	2	ancient	ERS11702751.bin.r.3	II	D		II-D	42.7	92.91	0.71	97.33	0.43	211	211_1	1366678	97471	g__RGIG7111;s__	Ancient	2	6	Velsko2022	200	Europe	The Netherlands	Homo	Human	33	97471	High_w_GUNC	ERS11702751	52.548	4.914	Yes
+known	2	ancient	ERS11702754.bin.r.3	II	D		II-D	42.6	91.84	0.71	94.15	0.13	211	211_1	1391732	25333	g__RGIG7111;s__	Ancient	2	2	Velsko2022	200	Europe	The Netherlands	Homo	Human	92	25333	High_w_GUNC	ERS11702754	52.548	4.914	Yes
+known	2	ancient	ERS11702757.bin.r.2	II	A		II-A	42.4	92.2	1.42	94.32	2.07	211	211_1	1446270	103352	g__RGIG7111;s__	Ancient	6	21	Velsko2022	200	Europe	The Netherlands	Homo	Human	33	103352	High_w_GUNC	ERS11702757	52.548	4.914	Yes
+known	2	ancient	ERS11702757.bin.r.2	II	D		II-D	42.4	92.2	1.42	94.32	2.07	211	211_1	1446270	103352	g__RGIG7111;s__	Ancient	6	21	Velsko2022	200	Europe	The Netherlands	Homo	Human	33	103352	High_w_GUNC	ERS11702757	52.548	4.914	Yes
+known	2	ancient	ERS11702758.bin.r.4	II	D		II-D	42.8	93.62	0	97.64	0.12	211	211_1	1449400	108417	g__RGIG7111;s__	Ancient	6	19	Velsko2022	200	Europe	The Netherlands	Homo	Human	25	108417	High_w_GUNC	ERS11702758	52.548	4.914	Yes
+known	1	ancient	ERS11702758.bin.r.4	I	E		I-E	42.8	93.62	0	97.64	0.12	211	211_1	1449400	108417	g__RGIG7111;s__	Ancient	6	19	Velsko2022	200	Europe	The Netherlands	Homo	Human	25	108417	High_w_GUNC	ERS11702758	52.548	4.914	Yes
+known	2	ancient	ERS11702762.bin.r.1	II	A		II-A	42.5	94.33	1.77	98.93	0.14	211	211_1	1420586	28994	g__RGIG7111;s__	Ancient	2	5	Velsko2022	200	Europe	The Netherlands	Homo	Human	84	28994	High_w_GUNC	ERS11702762	52.548	4.914	Yes
+known	2	ancient	ERS11702762.bin.r.1	II	D		II-D	42.5	94.33	1.77	98.93	0.14	211	211_1	1420586	28994	g__RGIG7111;s__	Ancient	2	5	Velsko2022	200	Europe	The Netherlands	Homo	Human	84	28994	High_w_GUNC	ERS11702762	52.548	4.914	Yes
+known	2	ancient	ERS11702763.bin.r.2	II	D		II-D	42.6	92.91	0	98.72	0.05	211	211_1	1417754	104517	g__RGIG7111;s__	Ancient	2	3	Velsko2022	200	Europe	The Netherlands	Homo	Human	25	104517	High_w_GUNC	ERS11702763	52.548	4.914	Yes
+known	2	ancient	ERS11702766.bin.r.1	II	D		II-D	42.7	89.29	1.65	93.61	0.09	211	211_1	1392867	21359	g__RGIG7111;s__	Ancient	6	20	Velsko2022	200	Europe	The Netherlands	Homo	Human	98	21359	Med_w_GUNC	ERS11702766	52.548	4.914	Yes
+known	1	ancient	ERS11702767.bin.r.1	I	C		I-C	42.4	94.33	0.71	99.39	0.13	211	211_1	1597033	125097	g__RGIG7111;s__	Ancient	2	2	Velsko2022	200	Europe	The Netherlands	Homo	Human	45	125097	High_w_GUNC	ERS11702767	52.548	4.914	Yes
+known	2	ancient	ERS11702767.bin.r.1	II	D		II-D	42.4	94.33	0.71	99.39	0.13	211	211_1	1597033	125097	g__RGIG7111;s__	Ancient	2	2	Velsko2022	200	Europe	The Netherlands	Homo	Human	45	125097	High_w_GUNC	ERS11702767	52.548	4.914	Yes
+known	2	ancient	ERS11702768.bin.r.3	II	D		II-D	42.7	93.26	0.02	96.92	0.68	211	211_1	1325469	29097	g__RGIG7111;s__	Ancient	2	5	Velsko2022	200	Europe	The Netherlands	Homo	Human	68	29097	High_w_GUNC	ERS11702768	52.548	4.914	Yes
+known	2	ancient	ERS11702769.bin.r.4	II	D		II-D	42.9	93.62	0	99.41	0.08	211	211_1	1445832	97331	g__RGIG7111;s__	Ancient	2	4	Velsko2022	200	Europe	The Netherlands	Homo	Human	48	97331	High_w_GUNC	ERS11702769	52.548	4.914	Yes
+known	2	ancient	ERS11702770.bin.r.4	II	D		II-D	42.9	87.94	0	96.17	2.47	211	211_1	1266674	21692	g__RGIG7111;s__	Ancient	2	5	Velsko2022	200	Europe	The Netherlands	Homo	Human	92	21692	Med_w_GUNC	ERS11702770	52.548	4.914	Yes
+known	2	ancient	ERS11702771.bin.r.4	II	D		II-D	42.7	92.91	0	97.08	0.12	211	211_1	1356509	31913	g__RGIG7111;s__	Ancient	6	20	Velsko2022	200	Europe	The Netherlands	Homo	Human	68	31913	High_w_GUNC	ERS11702771	52.548	4.914	Yes
+known	2	ancient	ERS11702772.bin.r.2	II	D		II-D	42.9	92.2	0	98.84	0.06	211	211_1	1328520	52923	g__RGIG7111;s__	Ancient	4	13	Velsko2022	200	Europe	The Netherlands	Homo	Human	51	52923	High_w_GUNC	ERS11702772	52.548	4.914	Yes
+known	2	ancient	ERS11702774.bin.r.6	II	D		II-D	42.8	94.33	0	99.85	0.38	211	211_1	1509845	99039	g__RGIG7111;s__	Ancient	2	2	Velsko2022	200	Europe	The Netherlands	Homo	Human	50	99039	High_w_GUNC	ERS11702774	52.548	4.914	Yes
+known	1	ancient	ERS11702774.bin.r.6	I	C		I-C	42.8	94.33	0	99.85	0.38	211	211_1	1509845	99039	g__RGIG7111;s__	Ancient	2	2	Velsko2022	200	Europe	The Netherlands	Homo	Human	50	99039	High_w_GUNC	ERS11702774	52.548	4.914	Yes
+known	1	ancient	ERS11702775.bin.r.6	I	E		I-E	42.7	93.62	0	98.44	0.13	211	211_1	1384606	90640	g__RGIG7111;s__	Ancient	6	20	Velsko2022	200	Europe	The Netherlands	Homo	Human	34	90640	High_w_GUNC	ERS11702775	52.548	4.914	Yes
+known	2	ancient	ERS11702775.bin.r.6	II	D		II-D	42.7	93.62	0	98.44	0.13	211	211_1	1384606	90640	g__RGIG7111;s__	Ancient	6	20	Velsko2022	200	Europe	The Netherlands	Homo	Human	34	90640	High_w_GUNC	ERS11702775	52.548	4.914	Yes
+known	2	ancient	ERS11702776.bin.r.2	II	D		II-D	42.5	93.62	0	99.93	0.1	211	211_1	1385543	104627	g__RGIG7111;s__	Ancient	3	9	Velsko2022	200	Europe	The Netherlands	Homo	Human	27	104627	High_w_GUNC	ERS11702776	52.548	4.914	Yes
+known	2	ancient	ERS11702777.bin.r.3	II	D		II-D	42.6	94.33	0.71	98.08	0.47	211	211_1	1406489	42753	g__RGIG7111;s__	Ancient	2	2	Velsko2022	200	Europe	The Netherlands	Homo	Human	72	42753	High_w_GUNC	ERS11702777	52.548	4.914	Yes
+known	2	ancient	ERS11702777.bin.r.3	II	A		II-A	42.6	94.33	0.71	98.08	0.47	211	211_1	1406489	42753	g__RGIG7111;s__	Ancient	2	2	Velsko2022	200	Europe	The Netherlands	Homo	Human	72	42753	High_w_GUNC	ERS11702777	52.548	4.914	Yes
+known	2	ancient	ERS11702779.bin.r.3	II	D		II-D	42.5	94.18	0	99.57	1.48	211	211_1	1421716	43755	g__RGIG7111;s__	Ancient	4	13	Velsko2022	200	Europe	The Netherlands	Homo	Human	83	43755	High_w_GUNC	ERS11702779	52.548	4.914	Yes
+known	1	ancient	ERS11702779.bin.r.3	I	C		I-C	42.5	94.18	0	99.57	1.48	211	211_1	1421716	43755	g__RGIG7111;s__	Ancient	4	13	Velsko2022	200	Europe	The Netherlands	Homo	Human	83	43755	High_w_GUNC	ERS11702779	52.548	4.914	Yes
+known	2	ancient	ERS11702780.bin.r.5	II	D		II-D	42.5	94.33	0	98.15	0.18	211	211_1	1435394	82716	g__RGIG7111;s__	Ancient	2	4	Velsko2022	200	Europe	The Netherlands	Homo	Human	52	82716	High_w_GUNC	ERS11702780	52.548	4.914	Yes
+known	2	ancient	ERS11702781.bin.r.3	II	D		II-D	42.5	93.62	0	97.7	0.06	211	211_1	1447068	99121	g__RGIG7111;s__	Ancient	4	13	Velsko2022	200	Europe	The Netherlands	Homo	Human	59	99121	High_w_GUNC	ERS11702781	52.548	4.914	Yes
+known	1	ancient	ERS11702781.bin.r.3	I	E		I-E	42.5	93.62	0	97.7	0.06	211	211_1	1447068	99121	g__RGIG7111;s__	Ancient	4	13	Velsko2022	200	Europe	The Netherlands	Homo	Human	59	99121	High_w_GUNC	ERS11702781	52.548	4.914	Yes
+known	2	ancient	ERS11702782.bin.r.1	II	A		II-A	42.7	94.33	0.71	99.23	0.54	211	211_1	1370409	33737	g__RGIG7111;s__	Ancient	2	5	Velsko2022	200	Europe	The Netherlands	Homo	Human	68	33737	High_w_GUNC	ERS11702782	52.548	4.914	Yes
+known	2	ancient	ERS11702782.bin.r.1	II	D		II-D	42.7	94.33	0.71	99.23	0.54	211	211_1	1370409	33737	g__RGIG7111;s__	Ancient	2	5	Velsko2022	200	Europe	The Netherlands	Homo	Human	68	33737	High_w_GUNC	ERS11702782	52.548	4.914	Yes
+known	2	ancient	ERS11702783.bin.r.2	II	D		II-D	42.8	92.2	0	98.69	0.12	211	211_1	1394025	32980	g__RGIG7111;s__	Ancient	4	11	Velsko2022	200	Europe	The Netherlands	Homo	Human	73	32980	High_w_GUNC	ERS11702783	52.548	4.914	Yes
+known	2	ancient	ERS11702789.bin.r.6	II	D		II-D	42.5	94.33	0.71	98.44	0.17	211	211_1	1436802	93529	g__RGIG7111;s__	Ancient	6	20	Velsko2022	200	Europe	The Netherlands	Homo	Human	39	93529	High_w_GUNC	ERS11702789	52.548	4.914	Yes
+known	1	ancient	ERS11702789.bin.r.6	I	E		I-E	42.5	94.33	0.71	98.44	0.17	211	211_1	1436802	93529	g__RGIG7111;s__	Ancient	6	20	Velsko2022	200	Europe	The Netherlands	Homo	Human	39	93529	High_w_GUNC	ERS11702789	52.548	4.914	Yes
+known	2	ancient	ERS11702790.bin.r.1	II	D		II-D	42.3	93.62	0	97.31	0.14	211	211_1	1442143	61216	g__RGIG7111;s__	Ancient	6	20	Velsko2022	200	Europe	The Netherlands	Homo	Human	44	61216	High_w_GUNC	ERS11702790	52.548	4.914	Yes
+known	2	ancient	ERS11702793.bin.r.5	II	D		II-D	42.5	94.33	0	100	0.16	211	211_1	1367796	103373	g__RGIG7111;s__	Ancient	4	13	Velsko2022	200	Europe	The Netherlands	Homo	Human	27	103373	High_w_GUNC	ERS11702793	52.548	4.914	Yes
+known	1	ancient	ERS11702793.bin.r.5	I	E		I-E	42.5	94.33	0	100	0.16	211	211_1	1367796	103373	g__RGIG7111;s__	Ancient	4	13	Velsko2022	200	Europe	The Netherlands	Homo	Human	27	103373	High_w_GUNC	ERS11702793	52.548	4.914	Yes
+known	2	ancient	ERS11702795.bin.r.3	II	A		II-A	42.7	92.91	1.77	96.77	0.1	211	211_1	1380837	17919	g__RGIG7111;s__	Ancient	3	7	Velsko2022	200	Europe	The Netherlands	Homo	Human	124	17919	High_w_GUNC	ERS11702795	52.548	4.914	Yes
+known	2	ancient	ERS11702795.bin.r.3	II	D		II-D	42.7	92.91	1.77	96.77	0.1	211	211_1	1380837	17919	g__RGIG7111;s__	Ancient	3	7	Velsko2022	200	Europe	The Netherlands	Homo	Human	124	17919	High_w_GUNC	ERS11702795	52.548	4.914	Yes
+known	2	ancient	ERS11702799.bin.r.1	II	D		II-D	42.5	94.33	0.71	100	0.83	211	211_1	1393569	104034	g__RGIG7111;s__	Ancient	4	11	Velsko2022	200	Europe	The Netherlands	Homo	Human	31	104034	High_w_GUNC	ERS11702799	52.548	4.914	Yes
+known	2	ancient	ERS11702800.bin.r.3	II	D		II-D	42.7	93.62	1.09	98.47	0.11	211	211_1	1358295	30817	g__RGIG7111;s__	Ancient	2	6	Velsko2022	200	Europe	The Netherlands	Homo	Human	74	30817	High_w_GUNC	ERS11702800	52.548	4.914	Yes
+known	2	ancient	ERS11702801.bin.r.6	II	D		II-D	42.5	94.33	1.06	100	0.49	211	211_1	1362381	50105	g__RGIG7111;s__	Ancient	2	5	Velsko2022	200	Europe	The Netherlands	Homo	Human	40	50105	High_w_GUNC	ERS11702801	52.548	4.914	Yes
+known	2	ancient	ERS11702802.bin.r.1	II	D		II-D	42.1	95.04	0	99.24	0.49	211	211_1	1524874	82721	g__RGIG7111;s__	Ancient	2	5	Velsko2022	200	Europe	The Netherlands	Homo	Human	51	82721	High_w_GUNC	ERS11702802	52.548	4.914	Yes
+known	2	ancient	ERS11702802.bin.r.1	II	A		II-A	42.1	95.04	0	99.24	0.49	211	211_1	1524874	82721	g__RGIG7111;s__	Ancient	2	5	Velsko2022	200	Europe	The Netherlands	Homo	Human	51	82721	High_w_GUNC	ERS11702802	52.548	4.914	Yes
+known	2	ancient	ERS11702803.bin.r.1	II	D		II-D	43	54.58	0.53	51.84	1.35	211	211_1	716190	1799	g__RGIG7111;s__	Ancient	2	5	Velsko2022	200	Europe	The Netherlands	Homo	Human	399	1799	Med_w_GUNC	ERS11702803	52.548	4.914	Yes
+known	2	ancient	ERS11702805.bin.r.1	II	A		II-A	42.5	94.33	0.71	99.2	0.48	211	211_1	1519057	97029	g__RGIG7111;s__	Ancient	3	9	Velsko2022	200	Europe	The Netherlands	Homo	Human	45	97029	High_w_GUNC	ERS11702805	52.548	4.914	Yes
+known	2	ancient	ERS11702805.bin.r.1	II	D		II-D	42.5	94.33	0.71	99.2	0.48	211	211_1	1519057	97029	g__RGIG7111;s__	Ancient	3	9	Velsko2022	200	Europe	The Netherlands	Homo	Human	45	97029	High_w_GUNC	ERS11702805	52.548	4.914	Yes
+known	2	ancient	ERS11702806.bin.r.2	II	A		II-A	42.6	93.62	0	99.3	0.13	211	211_1	1419152	52075	g__RGIG7111;s__	Ancient	3	8	Velsko2022	200	Europe	The Netherlands	Homo	Human	43	52075	High_w_GUNC	ERS11702806	52.548	4.914	Yes
+known	2	ancient	ERS11702806.bin.r.2	II	D		II-D	42.6	93.62	0	99.3	0.13	211	211_1	1419152	52075	g__RGIG7111;s__	Ancient	3	8	Velsko2022	200	Europe	The Netherlands	Homo	Human	43	52075	High_w_GUNC	ERS11702806	52.548	4.914	Yes
+known	2	ancient	ERS11702808.bin.r.1	II	D		II-D	42.7	92.91	0	98.9	0.1	211	211_1	1323076	66802	g__RGIG7111;s__	Ancient	4	11	Velsko2022	200	Europe	The Netherlands	Homo	Human	38	66802	High_w_GUNC	ERS11702808	52.548	4.914	Yes
+known	2	ancient	ERS11702809.bin.r.4	II	D		II-D	42.7	92.91	0	99.85	0.07	211	211_1	1363081	103913	g__RGIG7111;s__	Ancient	4	11	Velsko2022	200	Europe	The Netherlands	Homo	Human	32	103913	High_w_GUNC	ERS11702809	52.548	4.914	Yes
+known	2	ancient	ERS11702810.bin.r.5	II	D		II-D	42.7	92.91	0	98.43	0.06	211	211_1	1334365	86441	g__RGIG7111;s__	Ancient	6	21	Velsko2022	200	Europe	The Netherlands	Homo	Human	32	86441	High_w_GUNC	ERS11702810	52.548	4.914	Yes
+known	2	ancient	ERS11702812.bin.r.1	II	D		II-D	42.4	94.33	0.71	99.7	0.81	211	211_1	1547466	55720	g__RGIG7111;s__	Ancient	2	2	Velsko2022	200	Europe	The Netherlands	Homo	Human	61	55720	High_w_GUNC	ERS11702812	52.548	4.914	Yes
+known	2	ancient	ERS11702814.bin.r.2	II	D		II-D	42.9	92.2	0.71	98.73	0.55	211	211_1	1364134	51302	g__RGIG7111;s__	Ancient	3	8	Velsko2022	200	Europe	The Netherlands	Homo	Human	47	51302	High_w_GUNC	ERS11702814	52.548	4.914	Yes
+known	2	ancient	ERS11702814.bin.r.2	II	A		II-A	42.9	92.2	0.71	98.73	0.55	211	211_1	1364134	51302	g__RGIG7111;s__	Ancient	3	8	Velsko2022	200	Europe	The Netherlands	Homo	Human	47	51302	High_w_GUNC	ERS11702814	52.548	4.914	Yes
+known	1	ancient	ERS2985743.bin.r.17	I	E		I-E	42.4	94.33	0.75	100	0.36	211	211_1	1430003	62593	g__RGIG7111;s__	Ancient	3	10	Velsko2019	200	Europe	England	Homo	Human	39	62593	High_w_GUNC	ERS2985743	51.752	-1.257	Yes
+known	2	ancient	ERS2985743.bin.r.17	II	D		II-D	42.4	94.33	0.75	100	0.36	211	211_1	1430003	62593	g__RGIG7111;s__	Ancient	3	10	Velsko2019	200	Europe	England	Homo	Human	39	62593	High_w_GUNC	ERS2985743	51.752	-1.257	Yes
+known	2	ancient	ERS2985744.bin.r.1	II	D		II-D	42.6	94.33	0	99.3	0.09	211	211_1	1450868	103694	g__RGIG7111;s__	Ancient	2	3	Velsko2019	200	Europe	England	Homo	Human	28	103694	High_w_GUNC	ERS2985744	51.752	-1.257	Yes
+known	2	ancient	ERS2985748.bin.r.1	II	A		II-A	42.4	94.33	1.42	100	0.45	211	211_1	1401214	93649	g__RGIG7111;s__	Ancient	4	13	Velsko2019	200	Europe	England	Homo	Human	33	93649	High_w_GUNC	ERS2985748	51.752	-1.257	Yes
+known	2	ancient	ERS2985748.bin.r.1	II	D		II-D	42.4	94.33	1.42	100	0.45	211	211_1	1401214	93649	g__RGIG7111;s__	Ancient	4	13	Velsko2019	200	Europe	England	Homo	Human	33	93649	High_w_GUNC	ERS2985748	51.752	-1.257	Yes
+known	2	ancient	ERS2985751.bin.r.3	II	D		II-D	42.8	91.49	0.02	100	0.1	211	211_1	1304138	48133	g__RGIG7111;s__	Ancient	3	8	Velsko2019	200	Europe	England	Homo	Human	45	48133	High_w_GUNC	ERS2985751	51.752	-1.257	Yes
+known	2	ancient	ERS2985756.bin.r.9	II	A		II-A	42.4	94.33	0	97.69	0.1	211	211_1	1488252	115295	g__RGIG7111;s__	Ancient	2	6	Velsko2019	200	Europe	England	Homo	Human	27	115295	High_w_GUNC	ERS2985756	51.752	-1.257	Yes
+known	2	ancient	ERS2985756.bin.r.9	II	D		II-D	42.4	94.33	0	97.69	0.1	211	211_1	1488252	115295	g__RGIG7111;s__	Ancient	2	6	Velsko2019	200	Europe	England	Homo	Human	27	115295	High_w_GUNC	ERS2985756	51.752	-1.257	Yes
+known	1	ancient	ERS2985759.bin.r.9	I	E		I-E	42.7	92.91	0	98.84	0.08	211	211_1	1359914	127010	g__RGIG7111;s__	Ancient	6	21	Velsko2019	200	Europe	England	Homo	Human	24	127010	High_w_GUNC	ERS2985759	51.752	-1.257	Yes
+known	2	ancient	ERS2985759.bin.r.9	II	D		II-D	42.7	92.91	0	98.84	0.08	211	211_1	1359914	127010	g__RGIG7111;s__	Ancient	6	21	Velsko2019	200	Europe	England	Homo	Human	24	127010	High_w_GUNC	ERS2985759	51.752	-1.257	Yes
+known	2	ancient	ERS2985766.bin.r.2	II	D		II-D	42.3	88.65	0.02	95.33	0.6	211	211_1	1399579	114660	g__RGIG7111;s__	Ancient	2	6	Velsko2019	200	Europe	England	Homo	Human	45	114660	Med_w_GUNC	ERS2985766	51.752	-1.257	Yes
+known	1	ancient	ERS2985766.bin.r.2	I	C		I-C	42.3	88.65	0.02	95.33	0.6	211	211_1	1399579	114660	g__RGIG7111;s__	Ancient	2	6	Velsko2019	200	Europe	England	Homo	Human	45	114660	Med_w_GUNC	ERS2985766	51.752	-1.257	Yes
+known	2	ancient	ERS2985769.bin.r.4	II	D		II-D	42.5	92.2	0	97.74	0.22	211	211_1	1491552	83987	g__RGIG7111;s__	Ancient	6	21	Velsko2019	200	Europe	England	Homo	Human	46	83987	High_w_GUNC	ERS2985769	51.752	-1.257	Yes
+known	2	ancient	ERS2985769.bin.r.4	II	A		II-A	42.5	92.2	0	97.74	0.22	211	211_1	1491552	83987	g__RGIG7111;s__	Ancient	6	21	Velsko2019	200	Europe	England	Homo	Human	46	83987	High_w_GUNC	ERS2985769	51.752	-1.257	Yes
+known	2	ancient	ERS2985770.bin.r.2	II	A		II-A	42.7	93.62	0.02	99.41	0.16	211	211_1	1386114	101570	g__RGIG7111;s__	Ancient	3	8	Velsko2019	200	Europe	England	Homo	Human	27	101570	High_w_GUNC	ERS2985770	51.752	-1.257	Yes
+known	2	ancient	ERS2985770.bin.r.2	II	D		II-D	42.7	93.62	0.02	99.41	0.16	211	211_1	1386114	101570	g__RGIG7111;s__	Ancient	3	8	Velsko2019	200	Europe	England	Homo	Human	27	101570	High_w_GUNC	ERS2985770	51.752	-1.257	Yes
+known	2	ancient	ERS2985773.bin.r.2	II	D		II-D	42.4	93.62	2.13	97.64	1.41	211	211_1	1484509	109731	g__RGIG7111;s__	Ancient	4	11	Velsko2019	200	Europe	England	Homo	Human	34	109731	High_w_GUNC	ERS2985773	51.752	-1.257	Yes
+known	2	ancient	ERS2985775.bin.r.8	II	D		II-D	42.2	92.2	0.71	94.22	0.31	211	211_1	1505629	98899	g__RGIG7111;s__	Ancient	3	10	Velsko2019	200	Europe	England	Homo	Human	39	98899	High_w_GUNC	ERS2985775	51.752	-1.257	Yes
+known	1	ancient	ERS2985775.bin.r.8	I	C		I-C	42.2	92.2	0.71	94.22	0.31	211	211_1	1505629	98899	g__RGIG7111;s__	Ancient	3	10	Velsko2019	200	Europe	England	Homo	Human	39	98899	High_w_GUNC	ERS2985775	51.752	-1.257	Yes
+known	2	ancient	ERS2985776.bin.r.12	II	A		II-A	42.5	94.33	1.42	99.49	0.99	211	211_1	1556109	139397	g__RGIG7111;s__	Ancient	2	5	Velsko2019	200	Europe	England	Homo	Human	29	139397	High_w_GUNC	ERS2985776	51.752	-1.257	Yes
+known	2	ancient	ERS2985776.bin.r.12	II	D		II-D	42.5	94.33	1.42	99.49	0.99	211	211_1	1556109	139397	g__RGIG7111;s__	Ancient	2	5	Velsko2019	200	Europe	England	Homo	Human	29	139397	High_w_GUNC	ERS2985776	51.752	-1.257	Yes
+known	2	ancient	ERS2985777.bin.r.1	II	D		II-D	42.5	94.33	0.35	100	0.21	211	211_1	1382435	97431	g__RGIG7111;s__	Ancient	2	5	Velsko2019	200	Europe	England	Homo	Human	31	97431	High_w_GUNC	ERS2985777	51.752	-1.257	Yes
+known	2	ancient	ERS2985779.bin.r.2	II	D		II-D	42.8	91.58	0.35	98.08	0.39	211	211_1	1458171	27574	g__RGIG7111;s__	Ancient	4	13	Velsko2019	200	Europe	England	Homo	Human	94	27574	High_w_GUNC	ERS2985779	51.752	-1.257	Yes
+known	1	ancient	ERS2985779.bin.r.2	I	E		I-E	42.8	91.58	0.35	98.08	0.39	211	211_1	1458171	27574	g__RGIG7111;s__	Ancient	4	13	Velsko2019	200	Europe	England	Homo	Human	94	27574	High_w_GUNC	ERS2985779	51.752	-1.257	Yes
+known	2	ancient	ERS2985780.bin.r.3	II	D		II-D	42.9	94.33	0	99.55	0.09	211	211_1	1570417	82829	g__RGIG7111;s__	Ancient	4	13	Velsko2019	200	Europe	England	Homo	Human	52	82829	High_w_GUNC	ERS2985780	51.752	-1.257	Yes
+known	2	ancient	ERS2985784.bin.r.6	II	D		II-D	42.9	95.04	1.42	99.57	0.79	211	211_1	1424507	86700	g__RGIG7111;s__	Ancient	6	19	Velsko2019	200	Europe	England	Homo	Human	52	86700	High_w_GUNC	ERS2985784	51.752	-1.257	Yes
+known	2	ancient	ERS3636092.bin.r.8	II	D		II-D	42.9	93.97	0.02	99.14	0.19	211	211_1	1256946	48387	g__RGIG7111;s__	Ancient	4	13	Neukamm2020	4000	Africa	Egypt	Homo	Human	44	48387	High_w_GUNC	ERS3636092	29.24	31.1	Yes
+known	2	ancient	ERS3774418.bin.r.2	II	D		II-D	43	86.88	0.63	93.71	0.14	211	211_1	1429083	11856	g__RGIG7111;s__	Ancient	4	13	FellowsYates2021-nonhumanDNA	200	Africa	Liberia	Pan	Chimpanzee	197	11856	Med_w_GUNC	ERS3774418	6.428	-9.429	Yes
+known	2	ancient	ERS3774422.bin.r.21	II	A		II-A	42.3	90.78	0	93.26	0.13	211	211_1	1389938	98394	g__RGIG7111;s__	Ancient	6	20	FellowsYates2021-nonhumanDNA	200	Africa	Uganda	Pan	Chimpanzee	28	98394	High_w_GUNC	ERS3774422	0.48	30.38	Yes
+known	2	ancient	ERS3774422.bin.r.21	II	D		II-D	42.3	90.78	0	93.26	0.13	211	211_1	1389938	98394	g__RGIG7111;s__	Ancient	6	20	FellowsYates2021-nonhumanDNA	200	Africa	Uganda	Pan	Chimpanzee	28	98394	High_w_GUNC	ERS3774422	0.48	30.38	Yes
+known	1	ancient	ERS3774422.bin.r.21	III	A		III-A	42.3	90.78	0	93.26	0.13	211	211_1	1389938	98394	g__RGIG7111;s__	Ancient	6	20	FellowsYates2021-nonhumanDNA	200	Africa	Uganda	Pan	Chimpanzee	28	98394	High_w_GUNC	ERS3774422	0.48	30.38	Yes
+known	2	ancient	ERS3774460.bin.r.6	II	D		II-D	42.7	94.33	0	99.34	0.11	211	211_1	1417712	52926	g__RGIG7111;s__	Ancient	5	14	FellowsYates2021-humanaDNA	9300	Europe	Spain	Homo	Human	66	52926	High_w_GUNC	ERS3774460	38.919	-0.121	Yes
+known	1	ancient	ERS3774460.bin.r.6	I	E		I-E	42.7	94.33	0	99.34	0.11	211	211_1	1417712	52926	g__RGIG7111;s__	Ancient	5	14	FellowsYates2021-humanaDNA	9300	Europe	Spain	Homo	Human	66	52926	High_w_GUNC	ERS3774460	38.919	-0.121	Yes
+known	2	ancient	ERS3774465.bin.r.2	II	D		II-D	42.7	93.62	0.71	100	0.21	211	211_1	1364212	23125	g__RGIG7111;s__	Ancient	4	13	FellowsYates2021-humanaDNA	4500	Africa	Ethiopia	Homo	Human	89	23125	High_w_GUNC	ERS3774465	7.29	37.47	Yes
+known	2	ancient	ERS3774468.bin.r.2	II	D		II-D	42.8	94.33	0	99.48	0.1	211	211_1	1366658	82992	g__RGIG7111;s__	Ancient	5	14	FellowsYates2021-humanaDNA	9200	Europe	Germany	Homo	Human	31	82992	High_w_GUNC	ERS3774468	48.818	10.45	Yes
+known	2	ancient	ERS3774474.bin.r.1	II	D		II-D	42.6	82.37	1.77	88.42	1.23	211	211_1	1183225	4362	g__RGIG7111;s__	Ancient	6	21	FellowsYates2021-humanaDNA	300	Africa	Morocco	Homo	Human	355	4362	Med_w_GUNC	ERS3774474	31.51	-9.76	Yes
+known	1	ancient	ERS3774474.bin.r.1	I	E		I-E	42.6	82.37	1.77	88.42	1.23	211	211_1	1183225	4362	g__RGIG7111;s__	Ancient	6	21	FellowsYates2021-humanaDNA	300	Africa	Morocco	Homo	Human	355	4362	Med_w_GUNC	ERS3774474	31.51	-9.76	Yes
+known	1	ancient	ERS3774477.bin.r.1	I	E		I-E	42.6	88.38	0.71	92.3	0.87	211	211_1	1250620	8321	g__RGIG7111;s__	Ancient	6	19	FellowsYates2021-humanaDNA	300	Europe	Portugal	Homo	Human	199	8321	Med_w_GUNC	ERS3774477	31.51	-9.76	Yes
+known	1	ancient	ERS3774477.bin.r.1	I	E		I-E	42.6	88.38	0.71	92.3	0.87	211	211_1	1250620	8321	g__RGIG7111;s__	Ancient	6	19	FellowsYates2021-humanaDNA	300	Europe	Portugal	Homo	Human	199	8321	Med_w_GUNC	ERS3774477	31.51	-9.76	Yes
+known	2	ancient	ERS3774482.bin.r.3	II	D		II-D	42.7	91.49	0	98.91	0.13	211	211_1	1334546	20398	g__RGIG7111;s__	Ancient	6	17	FellowsYates2021-humanaDNA	200	Africa	South Africa	Homo	Human	108	20398	High_w_GUNC	ERS3774482	-34.03	18.46	Yes
+known	2	ancient	ERS3887047.bin.r.3	II	D		II-D	44.2	58.16	0.73	66.82	1.11	211	211_1	764190	2091	g__RGIG7111;s__	Ancient	6	21	Ottoni2019	100	Africa	Egypt	Papio	Baboon	393	2091	Med_w_GUNC	ERS3887047	39.97	-75.19	Yes
+known	2	ancient	ERS4042406.bin.r.4	II	D		II-D	42.4	92.91	0	97.03	0.06	211	211_1	1408690	81454	g__RGIG7111;s__	Ancient	6	20	Fagernas2020	1500	Europe	Great Britain	Homo	Human	36	81454	High_w_GUNC	ERS4042406	53.951	-1.1	Yes
+known	1	ancient	ERS4042423.bin.r.10	I	E		I-E	42.4	94.33	0	99.13	0.14	211	211_1	1423098	103373	g__RGIG7111;s__	Ancient	3	10	Fagernas2020	1100	Europe	Spain	Homo	Human	27	103373	High_w_GUNC	ERS4042423	42.84	-2.517	Yes
+known	2	ancient	ERS4042423.bin.r.10	II	D		II-D	42.4	94.33	0	99.13	0.14	211	211_1	1423098	103373	g__RGIG7111;s__	Ancient	3	10	Fagernas2020	1100	Europe	Spain	Homo	Human	27	103373	High_w_GUNC	ERS4042423	42.84	-2.517	Yes
+known	2	ancient	ERS4042427.bin.r.2	II	D		II-D	42.3	94.33	0	99.51	0.1	211	211_1	1527852	113450	g__RGIG7111;s__	Ancient	4	13	Fagernas2020	1100	Europe	Spain	Homo	Human	42	113450	High_w_GUNC	ERS4042427	42.84	-2.517	Yes
+known	2	ancient	ERS4042431.bin.r.1	II	D		II-D	42.6	92.91	0	95.7	0.06	211	211_1	1398724	103363	g__RGIG7111;s__	Ancient	6	20	Fagernas2020	1000	Europe	Spain	Homo	Human	26	103363	High_w_GUNC	ERS4042431	42.84	-2.517	Yes
+known	2	ancient	ERS4042435.bin.r.12	II	D		II-D	42.6	94.33	0	100	0.12	211	211_1	1402050	52885	g__RGIG7111;s__	Ancient	6	19	Fagernas2020	700	Europe	Great Britain	Homo	Human	46	52885	High_w_GUNC	ERS4042435	53.91	-1.29	Yes
+known	1	ancient	ERS6205386.bin.r.4	I	E		I-E	42.5	85.82	0.73	94.74	2.12	211	211_1	1279509	7375	g__RGIG7111;s__	Ancient	4	13	Granehall2021	4800	Europe	Italy	Homo	Human	252	7375	Med_w_GUNC	ERS6205386	46.09	11.12	Yes
+known	1	ancient	ERS6205386.bin.r.4	I	E		I-E	42.5	85.82	0.73	94.74	2.12	211	211_1	1279509	7375	g__RGIG7111;s__	Ancient	4	13	Granehall2021	4800	Europe	Italy	Homo	Human	252	7375	Med_w_GUNC	ERS6205386	46.09	11.12	Yes
+known	1	ancient	ERS6205386.bin.r.4	I	E		I-E	42.5	85.82	0.73	94.74	2.12	211	211_1	1279509	7375	g__RGIG7111;s__	Ancient	4	13	Granehall2021	4800	Europe	Italy	Homo	Human	252	7375	Med_w_GUNC	ERS6205386	46.09	11.12	Yes
+known	2	ancient	ERS6205387.bin.r.5	II	D		II-D	42.8	94.33	0	99.42	0.07	211	211_1	1386964	49983	g__RGIG7111;s__	Ancient	4	13	Granehall2021	4800	Europe	Italy	Homo	Human	67	49983	High_w_GUNC	ERS6205387	46.09	11.12	Yes
+known	2	ancient	ERS6205391.bin.r.9	II	D		II-D	42.3	94.33	0	100	0.17	211	211_1	1475481	98578	g__RGIG7111;s__	Ancient	6	18	Granehall2021	1300	Europe	Italy	Homo	Human	55	98578	High_w_GUNC	ERS6205391	46.32	11.29	Yes
+known	2	ancient	ERS6205392.bin.r.2	II	D		II-D	42.6	94.33	0	98.81	0.38	211	211_1	1386262	34850	g__RGIG7111;s__	Ancient	6	17	Granehall2021	1300	Europe	Italy	Homo	Human	63	34850	High_w_GUNC	ERS6205392	46.53	11.26	Yes
+known	2	ancient	ERS6205395.bin.r.1	II	D		II-D	42.5	92.91	0	98.67	0.08	211	211_1	1467587	64435	g__RGIG7111;s__	Ancient	6	20	Granehall2021	1300	Europe	Italy	Homo	Human	58	64435	High_w_GUNC	ERS6205395	46.69	11.14	Yes
+known	1	ancient	ERS6205395.bin.r.1	I	E		I-E	42.5	92.91	0	98.67	0.08	211	211_1	1467587	64435	g__RGIG7111;s__	Ancient	6	20	Granehall2021	1300	Europe	Italy	Homo	Human	58	64435	High_w_GUNC	ERS6205395	46.69	11.14	Yes
+known	2	ancient	ERS6205396.bin.r.1	II	D		II-D	42.4	94.33	0	99.47	0.12	211	211_1	1469273	98722	g__RGIG7111;s__	Ancient	3	8	Granehall2021	1300	Europe	Italy	Homo	Human	43	98722	High_w_GUNC	ERS6205396	46.69	11.14	Yes
+known	2	ancient	ERS6205396.bin.r.1	II	A		II-A	42.4	94.33	0	99.47	0.12	211	211_1	1469273	98722	g__RGIG7111;s__	Ancient	3	8	Granehall2021	1300	Europe	Italy	Homo	Human	43	98722	High_w_GUNC	ERS6205396	46.69	11.14	Yes
+known	2	ancient	ERS6205397.bin.r.1	II	D		II-D	42.3	93.62	0	100	0.35	211	211_1	1480534	82842	g__RGIG7111;s__	Ancient	6	18	Granehall2021	1300	Europe	Italy	Homo	Human	43	82842	High_w_GUNC	ERS6205397	46.64	10.67	Yes
+known	1	ancient	ERS6205398.bin.r.8	I	E		I-E	42.5	93.97	0	99.75	0.11	211	211_1	1397323	95056	g__RGIG7111;s__	Ancient	3	10	Granehall2021	1300	Europe	Italy	Homo	Human	61	95056	High_w_GUNC	ERS6205398	46.7	10.52	Yes
+known	2	ancient	ERS6205398.bin.r.8	II	D		II-D	42.5	93.97	0	99.75	0.11	211	211_1	1397323	95056	g__RGIG7111;s__	Ancient	3	10	Granehall2021	1300	Europe	Italy	Homo	Human	61	95056	High_w_GUNC	ERS6205398	46.7	10.52	Yes
+known	2	ancient	ERS6205399.bin.r.1	II	D		II-D	42.3	92.91	0	99.37	0.12	211	211_1	1443335	104508	g__RGIG7111;s__	Ancient	6	19	Granehall2021	1300	Europe	Italy	Homo	Human	36	104508	High_w_GUNC	ERS6205399	46.7	10.52	Yes
+known	1	ancient	ERS6205399.bin.r.1	I	E		I-E	42.3	92.91	0	99.37	0.12	211	211_1	1443335	104508	g__RGIG7111;s__	Ancient	6	19	Granehall2021	1300	Europe	Italy	Homo	Human	36	104508	High_w_GUNC	ERS6205399	46.7	10.52	Yes
+known	2	ancient	ERS6205401.bin.r.4	II	A		II-A	42.4	94.33	0	99.47	0.38	211	211_1	1498646	101814	g__RGIG7111;s__	Ancient	3	8	Granehall2021	1300	Europe	Italy	Homo	Human	49	101814	High_w_GUNC	ERS6205401	46.73	11.67	Yes
+known	2	ancient	ERS6205401.bin.r.4	II	D		II-D	42.4	94.33	0	99.47	0.38	211	211_1	1498646	101814	g__RGIG7111;s__	Ancient	3	8	Granehall2021	1300	Europe	Italy	Homo	Human	49	101814	High_w_GUNC	ERS6205401	46.73	11.67	Yes
+known	2	ancient	ERS6256688.bin.r.3	II	D		II-D	42.5	93.62	2.13	98.25	2.45	211	211_1	1495102	45200	g__RGIG7111;s__	Ancient	6	18	Ottoni2021	400	Europe	Serbia	Homo	Human	73	45200	High_w_GUNC	ERS6256688	44.557	22.026	Yes
+known	2	ancient	ERS6256693.bin.r.15	II	D		II-D	42.8	93.62	0	99.87	0.11	211	211_1	1276075	36777	g__RGIG7111;s__	Ancient	5	14	Ottoni2021	9300	Europe	Serbia	Homo	Human	59	36777	High_w_GUNC	ERS6256693	44.6	22	Yes
+known	1	ancient	ERS6256698.bin.r.9	I	E		I-E	42.8	89.65	1.06	92.89	0.11	211	211_1	1317495	23364	g__RGIG7111;s__	Ancient	5	14	Ottoni2021	7600	Europe	Serbia	Homo	Human	84	23364	Med_w_GUNC	ERS6256698	44.53	22.05	Yes
+known	2	ancient	ERS6256698.bin.r.9	II	D		II-D	42.8	89.65	1.06	92.89	0.11	211	211_1	1317495	23364	g__RGIG7111;s__	Ancient	5	14	Ottoni2021	7600	Europe	Serbia	Homo	Human	84	23364	Med_w_GUNC	ERS6256698	44.53	22.05	Yes
+known	2	ancient	ERS6256699.bin.r.19	II	D		II-D	43.3	93.05	0.73	98.15	0.27	211	211_1	1473808	43909	g__RGIG7111;s__	Ancient	4	13	Ottoni2021	7000	Europe	Serbia	Homo	Human	62	43909	High_w_GUNC	ERS6256699	44.53	22.05	Yes
+known	2	ancient	ERS6256700.bin.r.5	II	D		II-D	43.1	69.89	0.02	83.86	2.39	211	211_1	850386	4668	g__RGIG7111;s__	Ancient	5	14	Ottoni2021	8100	Europe	Serbia	Homo	Human	224	4668	Med_w_GUNC	ERS6256700	44.53	22.05	Yes
+known	2	ancient	ERS6256701.bin.r.1	II	D		II-D	43	94.33	0.16	97.84	0.74	211	211_1	1339722	43956	g__RGIG7111;s__	Ancient	5	14	Ottoni2021	7600	Europe	Serbia	Homo	Human	52	43956	High_w_GUNC	ERS6256701	44.53	22.05	Yes
+known	1	ancient	ERS6256702.bin.r.4	I	C		I-C	42.3	94.33	0	99.24	0.17	211	211_1	1492797	91583	g__RGIG7111;s__	Ancient	5	14	Ottoni2021	8100	Europe	Serbia	Homo	Human	39	91583	High_w_GUNC	ERS6256702	44.53	22.05	Yes
+known	2	ancient	ERS6256702.bin.r.4	II	D		II-D	42.3	94.33	0	99.24	0.17	211	211_1	1492797	91583	g__RGIG7111;s__	Ancient	5	14	Ottoni2021	8100	Europe	Serbia	Homo	Human	39	91583	High_w_GUNC	ERS6256702	44.53	22.05	Yes
+known	2	ancient	ERS6256704.bin.r.18	II	D		II-D	42.9	91.49	0.02	95.28	1.1	211	211_1	1303286	83710	g__RGIG7111;s__	Ancient	5	14	Ottoni2021	7600	Europe	Serbia	Homo	Human	34	83710	High_w_GUNC	ERS6256704	44.53	22.05	Yes
+known	2	ancient	ERS6256705.bin.r.2	II	D		II-D	42.8	81.74	1.77	87.01	1.84	211	211_1	1116215	5944	g__RGIG7111;s__	Ancient	5	14	Ottoni2021	7500	Europe	Serbia	Homo	Human	229	5944	Med_w_GUNC	ERS6256705	44.636	22.3	Yes
+known	2	ancient	ERS6256708.bin.r.14	II	D		II-D	43	86.86	0	90.79	0.07	211	211_1	1199257	15264	g__RGIG7111;s__	Ancient	4	13	Ottoni2021	7100	Europe	Serbia	Homo	Human	113	15264	Med_w_GUNC	ERS6256708	44.59	22.67	Yes
+known	2	ancient	ERS6256712.bin.r.1	II	D		II-D	43.2	91.49	2.2	91.88	0.32	211	211_1	1225688	12518	g__RGIG7111;s__	Ancient	3	9	Ottoni2021	7400	Europe	Romania	Homo	Human	137	12518	High_w_GUNC	ERS6256712	44.62	22.61	Yes
+known	1	ancient	ERS6256712.bin.r.1	I	E		I-E	43.2	91.49	2.2	91.88	0.32	211	211_1	1225688	12518	g__RGIG7111;s__	Ancient	3	9	Ottoni2021	7400	Europe	Romania	Homo	Human	137	12518	High_w_GUNC	ERS6256712	44.62	22.61	Yes
+known	2	ancient	ERS6256713.bin.r.8	II	D		II-D	42.8	88.65	0.89	96.16	0.17	211	211_1	1334772	27908	g__RGIG7111;s__	Ancient	6	18	Ottoni2021	7400	Europe	Romania	Homo	Human	79	27908	Med_w_GUNC	ERS6256713	44.62	22.61	Yes
+known	1	ancient	ERS6256718.bin.r.8	I	E		I-E	42.8	93.51	0	95.98	0.1	211	211_1	1352805	55478	g__RGIG7111;s__	Ancient	5	14	Ottoni2021	14800	Europe	Italy	Homo	Human	41	55478	High_w_GUNC	ERS6256718	41.96	13.56	Yes
+known	2	ancient	ERS6256718.bin.r.8	II	D		II-D	42.8	93.51	0	95.98	0.1	211	211_1	1352805	55478	g__RGIG7111;s__	Ancient	5	14	Ottoni2021	14800	Europe	Italy	Homo	Human	41	55478	High_w_GUNC	ERS6256718	41.96	13.56	Yes
+known	1	ancient	ERS6256724.bin.r.9	I	C		I-C	42.4	51.79	3.1	44.62	3.5	211	211_1	796606	1629	g__RGIG7111;s__	Ancient	4	13	Ottoni2021	5700	Europe	Italy	Homo	Human	492	1629	Med_w_GUNC	ERS6256724	44.162	8.328	Yes
+known	2	ancient	ERS6636099.bin.r.2	II	D		II-D	42.7	94.33	0	99.84	0.11	211	211_1	1346084	91624	g__RGIG7111;s__	Ancient	4	13	Fagernas2022	4700	Europe	Spain	Homo	Human	36	91624	High_w_GUNC	ERS6636099	38.102	-1.865	Yes
+known	1	ancient	ERS6636099.bin.r.2	I	E		I-E	42.7	94.33	0	99.84	0.11	211	211_1	1346084	91624	g__RGIG7111;s__	Ancient	4	13	Fagernas2022	4700	Europe	Spain	Homo	Human	36	91624	High_w_GUNC	ERS6636099	38.102	-1.865	Yes
+known	2	ancient	ERS6636154.bin.r.10	II	D		II-D	42.9	94.33	0.71	98.94	0.13	211	211_1	1530666	82666	g__RGIG7111;s__	Ancient	4	13	Fagernas2022	4700	Europe	Spain	Homo	Human	49	82666	High_w_GUNC	ERS6636154	38.102	-1.865	Yes
+known	2	ancient	ERSX0002001.bin.r.19	II	D		II-D	42.5	87.23	0	97.7	0.09	211	211_1	1232186	127561	g__RGIG7111;s__	Ancient	3	8	RIII2023	700	Europe	Great Britain	Homo	Human	21	127561	Med_w_GUNC	ERSX0002001	52.633	-1.136	Yes
+known	2	ancient	ERSX0002001.bin.r.19	II	A		II-A	42.5	87.23	0	97.7	0.09	211	211_1	1232186	127561	g__RGIG7111;s__	Ancient	3	8	RIII2023	700	Europe	Great Britain	Homo	Human	21	127561	Med_w_GUNC	ERSX0002001	52.633	-1.136	Yes
+known	2	ancient	ERSX0003001.bin.r.16	II	D		II-D	42.7	93.62	0	99.74	0.1	211	211_1	1283429	97393	g__RGIG7111;s__	Ancient	4	13	SMH2023	700	Europe	Germany	Homo	Human	26	97393	High_w_GUNC	ERSX0003001	48.839	9.227	Yes
+known	2	ancient	ERSX0003003.bin.r.18	II	D		II-D	42.5	93.62	0	97.34	0.65	211	211_1	1449619	103365	g__RGIG7111;s__	Ancient	4	13	SMH2023	700	Europe	Germany	Homo	Human	35	103365	High_w_GUNC	ERSX0003003	48.839	9.227	Yes
+known	2	ancient	ERSX0004017.bin.r.2	II	D		II-D	42.5	94.33	0	100	0.13	211	211_1	1453275	82406	g__RGIG7111;s__	Ancient	6	21	PacificCalculus	653	Oceania	Efate	Homo	Human	51	82406	High_w_GUNC	ERSX0004017	-17.6358	168.2048	Yes
+known	2	ancient	ERSX0004019.bin.r.5	II	D		II-D	42.9	91.11	0	97.01	0.09	211	211_1	1296666	34986	g__RGIG7111;s__	Ancient	5	15	PacificCalculus	140	Oceania	Efate	Homo	Human	55	34986	High_w_GUNC	ERSX0004019	-17.7994	168.5396	Yes
+known	2	ancient	ERSX0004021.bin.r.8	II	D		II-D	42.7	92.55	0	95.78	0.1	211	211_1	1410193	32109	g__RGIG7111;s__	Ancient	6	21	PacificCalculus	150	Oceania	Efate	Homo	Human	79	32109	High_w_GUNC	ERSX0004021	-17.7994	168.5396	Yes
+known	1	ancient	ERSX0004050.bin.r.2	III	A		III-A	43.8	74.69	1.77	83.53	1.23	211	211_1	1005784	2637	g__RGIG7111;s__	Ancient	5	15	PacificCalculus	2200	Oceania	Vao	Homo	Human	431	2637	Med_w_GUNC	ERSX0004050	-15.8979	167.3091	Yes
+known	1	ancient	ERSX0004057.bin.r.4	I	C		I-C	42.7	94.33	0	99.27	0.12	211	211_1	1532507	73107	g__RGIG7111;s__	Ancient	5	15	PacificCalculus	400	Asia	Taiwan	Homo	Human	39	73107	High_w_GUNC	ERSX0004057	25.155	121.764	Yes
+known	2	ancient	ERSX0004057.bin.r.4	II	D		II-D	42.7	94.33	0	99.27	0.12	211	211_1	1532507	73107	g__RGIG7111;s__	Ancient	5	15	PacificCalculus	400	Asia	Taiwan	Homo	Human	39	73107	High_w_GUNC	ERSX0004057	25.155	121.764	Yes
+known	2	ancient	ERSX0004058.bin.r.4	II	D		II-D	42.9	92.2	1.89	92.63	0.21	211	211_1	1332175	14663	g__RGIG7111;s__	Ancient	6	19	PacificCalculus	400	Asia	Taiwan	Homo	Human	140	14663	High_w_GUNC	ERSX0004058	25.155	121.764	Yes
+known	2	ancient	ERSX0004059.bin.r.2	II	D		II-D	42.8	94.33	0	100	0.26	211	211_1	1435009	83877	g__RGIG7111;s__	Ancient	6	18	PacificCalculus	400	Asia	Taiwan	Homo	Human	37	83877	High_w_GUNC	ERSX0004059	25.155	121.764	Yes
+known	1	ancient	ERSX0004066.bin.r.3	I	E		I-E	42.8	89.36	3.55	92.24	4.26	211	211_1	1464890	27698	g__RGIG7111;s__	Ancient	5	15	PacificCalculus	485	Oceania	Taumako_Duff_Islands	Homo	Human	88	27698	Med_w_GUNC	ERSX0004066	-9.8778	167.1772	Yes
+known	1	ancient	ERSX0004078.bin.r.1	I	C		I-C	42.7	78.02	4.35	76.34	3.74	211	211_1	1152632	4117	g__RGIG7111;s__	Ancient	6	21	PacificCalculus	3000	Oceania	Flores	Homo	Human	345	4117	Med_w_GUNC	ERSX0004078	-8.6224	120.9186	Yes
+known	2	ancient	ERSX0004082.bin.r.2	II	D		II-D	42.8	92.91	0	96.7	0.1	211	211_1	1370109	36281	g__RGIG7111;s__	Ancient	6	21	PacificCalculus	350	Oceania	Rapa_Nui	Homo	Human	62	36281	High_w_GUNC	ERSX0004082	-27.105794	-109.363193	Yes
+known	2	ancient	ERSX0004083.bin.r.6	II	A		II-A	42.4	94.33	0	97.23	0.11	211	211_1	1419423	102295	g__RGIG7111;s__	Ancient	4	12	PacificCalculus	1500	Oceania	Viti_Levu	Homo	Human	33	102295	High_w_GUNC	ERSX0004083	-18.1421	177.5077	Yes
+known	2	ancient	ERSX0004083.bin.r.6	II	D		II-D	42.4	94.33	0	97.23	0.11	211	211_1	1419423	102295	g__RGIG7111;s__	Ancient	4	12	PacificCalculus	1500	Oceania	Viti_Levu	Homo	Human	33	102295	High_w_GUNC	ERSX0004083	-18.1421	177.5077	Yes
+known	2	ancient	ERSX0004084.bin.r.3	II	D		II-D	42.4	95.04	1.42	98.2	0.27	211	211_1	1456928	74412	g__RGIG7111;s__	Ancient	4	12	PacificCalculus	1500	Oceania	Viti_Levu	Homo	Human	51	74412	High_w_GUNC	ERSX0004084	-18.1421	177.5077	Yes
+known	2	ancient	ERSX0004085.bin.r.4	II	D		II-D	42.4	94.33	0	97.94	0.14	211	211_1	1448234	82618	g__RGIG7111;s__	Ancient	4	12	PacificCalculus	1500	Oceania	Viti_Levu	Homo	Human	57	82618	High_w_GUNC	ERSX0004085	-18.1421	177.5077	Yes
+known	2	ancient	ERSX0004102.bin.r.1	II	A		II-A	42.5	94.33	0	97.79	0.35	211	211_1	1552693	55617	g__RGIG7111;s__	Ancient	4	12	PacificCalculus	454	Oceania	Raiatea	Homo	Human	76	55617	High_w_GUNC	ERSX0004102	-16.8424	-151.3873	Yes
+known	2	ancient	ERSX0004102.bin.r.1	II	D		II-D	42.5	94.33	0	97.79	0.35	211	211_1	1552693	55617	g__RGIG7111;s__	Ancient	4	12	PacificCalculus	454	Oceania	Raiatea	Homo	Human	76	55617	High_w_GUNC	ERSX0004102	-16.8424	-151.3873	Yes
+known	2	ancient	ERSX0004103.bin.r.2	II	D		II-D	42.5	92.91	0	97.32	0.06	211	211_1	1359055	107240	g__RGIG7111;s__	Ancient	4	12	PacificCalculus	454	Oceania	Raiatea	Homo	Human	29	107240	High_w_GUNC	ERSX0004103	-16.8424	-151.3873	Yes
+known	2	ancient	SRS11653536.bin.r.2	II	D		II-D	43.2	71.68	0.83	71.67	4.53	211	211_1	844835	2557	g__RGIG7111;s__	Ancient	4	13	Quagliariello2022	6900	Europe	Italy	Homo	Human	368	2557	Med_w_GUNC	SRS11653536	41.21	16.06	Yes
+known	2	ancient	SRS11653551.bin.r.1	II	D		II-D	42.9	91.84	0.85	95.24	0.18	211	211_1	1250609	12486	g__RGIG7111;s__	Ancient	4	13	Quagliariello2022	4800	Europe	Italy	Homo	Human	130	12486	High_w_GUNC	SRS11653551	40.99	15.64	Yes
+known	2	ancient	SRS11653584.bin.r.2	II	D		II-D	43.1	85.46	0.78	93.71	1.62	211	211_1	1195022	8456	g__RGIG7111;s__	Ancient	4	13	Quagliariello2022	6300	Europe	Italy	Homo	Human	206	8456	Med_w_GUNC	SRS11653584	41.3	15.2	Yes
+known	2	ancient	SRS11653597.bin.r.2	II	D		II-D	43.2	76.66	2.79	79.84	2.93	211	211_1	998449	2643	g__RGIG7111;s__	Ancient	4	13	Quagliariello2022	6300	Europe	Italy	Homo	Human	424	2643	Med_w_GUNC	SRS11653597	41.3	15.2	Yes
+known	2	ancient	SRS15300787.bin.r.20	II	D		II-D	42.8	94.15	3.66	94.34	2.47	211	211_1	1370037	38181	g__RGIG7111;s__	Ancient	5	16	Honap2023	700	North America	USA	Homo	Human	55	38181	High_w_GUNC	SRS15300787	35.477	-97.105	Yes
+known	2	ancient	SRS15300788.bin.r.9	II	D		II-D	42.6	94.33	0	98.61	0.15	211	211_1	1410402	98075	g__RGIG7111;s__	Ancient	5	16	Honap2023	700	North America	USA	Homo	Human	32	98075	High_w_GUNC	SRS15300788	35.477	-97.105	Yes
+known	2	ancient	SRS15300790.bin.r.4	II	D		II-D	43.1	75.43	1.39	68.89	4.9	211	211_1	907536	2463	g__RGIG7111;s__	Ancient	5	16	Honap2023	700	North America	USA	Homo	Human	391	2463	Med_w_GUNC	SRS15300790	35.477	-97.105	Yes
+known	2	ancient	SRS15300793.bin.r.3	II	A		II-A	43.1	94.33	0	99.5	0.16	211	211_1	1575083	77958	g__RGIG7111;s__	Ancient	5	16	Honap2023	700	North America	USA	Homo	Human	61	77958	High_w_GUNC	SRS15300793	35.477	-97.105	Yes
+known	2	ancient	SRS15300793.bin.r.3	II	D		II-D	43.1	94.33	0	99.5	0.16	211	211_1	1575083	77958	g__RGIG7111;s__	Ancient	5	16	Honap2023	700	North America	USA	Homo	Human	61	77958	High_w_GUNC	SRS15300793	35.477	-97.105	Yes
+known	1	ancient	SRS15300794.bin.r.2	I	E		I-E	42.8	94.33	0	99.21	0.16	211	211_1	1550810	92601	g__RGIG7111;s__	Ancient	5	16	Honap2023	700	North America	USA	Homo	Human	37	92601	High_w_GUNC	SRS15300794	35.477	-97.105	Yes
+known	2	ancient	SRS15300794.bin.r.2	II	D		II-D	42.8	94.33	0	99.21	0.16	211	211_1	1550810	92601	g__RGIG7111;s__	Ancient	5	16	Honap2023	700	North America	USA	Homo	Human	37	92601	High_w_GUNC	SRS15300794	35.477	-97.105	Yes
+known	2	ancient	SRS15300795.bin.r.8	II	D		II-D	43	93.62	0	98.84	0.38	211	211_1	1395247	40656	g__RGIG7111;s__	Ancient	5	16	Honap2023	700	North America	USA	Homo	Human	56	40656	High_w_GUNC	SRS15300795	35.477	-97.105	Yes
+known	2	ancient	SRS15300800.bin.r.6	II	D		II-D	42.9	94.33	1.42	99.86	0.28	211	211_1	1316093	73550	g__RGIG7111;s__	Ancient	5	16	Honap2023	700	North America	USA	Homo	Human	31	73550	High_w_GUNC	SRS15300800	35.477	-97.105	Yes
+known	2	ancient	SRS15300801.bin.r.19	II	D		II-D	42.7	94.33	1.6	99.13	0.05	211	211_1	1532534	103520	g__RGIG7111;s__	Ancient	5	16	Honap2023	700	North America	USA	Homo	Human	31	103520	High_w_GUNC	SRS15300801	35.477	-97.105	Yes
+known	1	ancient	SRS15300801.bin.r.19	I	E		I-E	42.7	94.33	1.6	99.13	0.05	211	211_1	1532534	103520	g__RGIG7111;s__	Ancient	5	16	Honap2023	700	North America	USA	Homo	Human	31	103520	High_w_GUNC	SRS15300801	35.477	-97.105	Yes
+known	2	ancient	SRS15300802.bin.r.2	II	A		II-A	42.7	94.33	0.71	100	1.7	211	211_1	1467415	97528	g__RGIG7111;s__	Ancient	5	16	Honap2023	700	North America	USA	Homo	Human	44	97528	High_w_GUNC	SRS15300802	35.477	-97.105	Yes
+known	2	ancient	SRS15300802.bin.r.2	II	D		II-D	42.7	94.33	0.71	100	1.7	211	211_1	1467415	97528	g__RGIG7111;s__	Ancient	5	16	Honap2023	700	North America	USA	Homo	Human	44	97528	High_w_GUNC	SRS15300802	35.477	-97.105	Yes
+known	2	ancient	SRS15300805.bin.r.7	II	D		II-D	42.4	94.33	0	99.36	0.08	211	211_1	1487989	103356	g__RGIG7111;s__	Ancient	5	16	Honap2023	700	North America	USA	Homo	Human	49	103356	High_w_GUNC	SRS15300805	35.477	-97.105	Yes
+known	1	ancient	SRS15300808.bin.r.2	I	E		I-E	43	68.27	0.78	69.31	2.72	211	211_1	854365	2059	g__RGIG7111;s__	Ancient	5	16	Honap2023	700	North America	USA	Homo	Human	450	2059	Med_w_GUNC	SRS15300808	35.477	-97.105	Yes
+known	1	ancient	SRS15300811.bin.r.6	I	E		I-E	42.7	94.33	0	98.4	0.06	211	211_1	1385948	97355	g__RGIG7111;s__	Ancient	5	16	Honap2023	700	North America	USA	Homo	Human	30	97355	High_w_GUNC	SRS15300811	35.477	-97.105	Yes
+known	2	ancient	SRS15300811.bin.r.6	II	D		II-D	42.7	94.33	0	98.4	0.06	211	211_1	1385948	97355	g__RGIG7111;s__	Ancient	5	16	Honap2023	700	North America	USA	Homo	Human	30	97355	High_w_GUNC	SRS15300811	35.477	-97.105	Yes
+known	2	ancient	SRS3078091.bin.r.6	II	D		II-D	42.4	94.33	1.77	99.39	0.19	211	211_1	1545174	85760	g__RGIG7111;s__	Ancient	6	21	Mann2018	1000	Europe	Ireland	Homo	Human	36	85760	High_w_GUNC	SRS3078091	54.005	-8.201	Yes
+known	2	ancient	SRS3078097.bin.r.2	II	D		II-D	42.3	90.78	0.24	98.59	0.17	211	211_1	1482539	52789	g__RGIG7111;s__	Ancient	2	6	Mann2018	1000	Europe	Ireland	Homo	Human	57	52789	High_w_GUNC	SRS3078097	54.005	-8.201	Yes
+known	1	ancient	SRS3078097.bin.r.2	I	C		I-C	42.3	90.78	0.24	98.59	0.17	211	211_1	1482539	52789	g__RGIG7111;s__	Ancient	2	6	Mann2018	1000	Europe	Ireland	Homo	Human	57	52789	High_w_GUNC	SRS3078097	54.005	-8.201	Yes
+known	2	ancient	SRS3078111.bin.r.1	II	D		II-D	42.7	90.07	0	98.34	0.19	211	211_1	1357302	17042	g__RGIG7111;s__	Ancient	4	11	Mann2018	1000	Europe	Ireland	Homo	Human	122	17042	High_w_GUNC	SRS3078111	54.005	-8.201	Yes
+known	2	ancient	SRS3078126.bin.r.2	II	D		II-D	42.8	91.84	0.78	97.03	0.32	211	211_1	1321461	17094	g__RGIG7111;s__	Ancient	3	7	Mann2018	1000	Europe	Ireland	Homo	Human	129	17094	High_w_GUNC	SRS3078126	54.005	-8.201	Yes
+known	2	ancient	SRS3078131.bin.r.1	II	D		II-D	42.7	93.62	0.71	99.57	0.11	211	211_1	1341199	31685	g__RGIG7111;s__	Ancient	4	13	Mann2018	1000	Europe	Ireland	Homo	Human	55	31685	High_w_GUNC	SRS3078131	54.005	-8.201	Yes
+known	2	ancient	SRS3078139.bin.r.2	II	D		II-D	42.8	91.13	0.71	95.6	0.19	211	211_1	1316430	20986	g__RGIG7111;s__	Ancient	6	21	Mann2018	1000	Europe	Ireland	Homo	Human	98	20986	High_w_GUNC	SRS3078139	54.005	-8.201	Yes
+known	2	ancient	SRS3078156.bin.r.9	II	D		II-D	42.6	92.91	0.78	98.73	1.59	211	211_1	1427090	53355	g__RGIG7111;s__	Ancient	4	13	Mann2018	1000	Europe	Ireland	Homo	Human	61	53355	High_w_GUNC	SRS3078156	54.005	-8.201	Yes
+known	2	ancient	SRS3078158.bin.r.4	II	A		II-A	42.4	95.04	1.65	100	0.85	211	211_1	1514144	55696	g__RGIG7111;s__	Ancient	4	13	Mann2018	1000	Europe	Ireland	Homo	Human	58	55696	High_w_GUNC	SRS3078158	54.005	-8.201	Yes
+known	2	ancient	SRS3078158.bin.r.4	II	D		II-D	42.4	95.04	1.65	100	0.85	211	211_1	1514144	55696	g__RGIG7111;s__	Ancient	4	13	Mann2018	1000	Europe	Ireland	Homo	Human	58	55696	High_w_GUNC	SRS3078158	54.005	-8.201	Yes
+known	2	ancient	SRS3078160.bin.r.4	II	D		II-D	42.6	92.2	0.02	98.76	0.73	211	211_1	1442417	24681	g__RGIG7111;s__	Ancient	2	2	Mann2018	300	Europe	The Netherlands	Homo	Human	95	24681	High_w_GUNC	SRS3078160	52.548	4.912	Yes
+known	2	ancient	SRS3078163.bin.r.2	II	D		II-D	42.8	94.56	0	100	0.25	211	211_1	1301207	54529	g__RGIG7111;s__	Ancient	4	13	Mann2018	1000	Europe	Ireland	Homo	Human	38	54529	High_w_GUNC	SRS3078163	54.005	-8.201	Yes
+known	2	ancient	SRS3078175.bin.r.3	II	D		II-D	42.8	91.26	0.26	94.65	0.27	211	211_1	1346677	12233	g__RGIG7111;s__	Ancient	5	16	Mann2018	700	North America	USA	Homo	Human	158	12233	High_w_GUNC	SRS3078175	40.23	-90.143	Yes
+known	2	ancient	SRS3078195.bin.r.11	II	D		II-D	42.8	91.49	0	92.63	0.1	211	211_1	1309057	99608	g__RGIG7111;s__	Ancient	6	21	Mann2018	4400	Asia	Mongolia	Homo	Human	20	99608	High_w_GUNC	SRS3078195	49.66	99.61	Yes
+known	1	ancient	SRS3078197.bin.r.1	I	E		I-E	43.1	92.2	0.71	98.48	0.14	211	211_1	1525016	52385	g__RGIG7111;s__	Ancient	4	13	Mann2018	1000	Europe	Ireland	Homo	Human	54	52385	High_w_GUNC	SRS3078197	54.005	-8.201	Yes
+known	2	ancient	SRS3078197.bin.r.1	II	D		II-D	43.1	92.2	0.71	98.48	0.14	211	211_1	1525016	52385	g__RGIG7111;s__	Ancient	4	13	Mann2018	1000	Europe	Ireland	Homo	Human	54	52385	High_w_GUNC	SRS3078197	54.005	-8.201	Yes
+known	2	ancient	SRS3078200.bin.r.2	II	D		II-D	42.6	93.62	0	97.33	0.42	211	211_1	1408876	34911	g__RGIG7111;s__	Ancient	4	12	Mann2018	800	Caribbean	Guadeloupe	Homo	Human	79	34911	High_w_GUNC	SRS3078200	16.254	-61.203	Yes
+known	2	ancient	SRS3078204.bin.r.31	II	D		II-D	42.7	94.33	1.42	99.93	0.29	211	211_1	1547845	97096	g__RGIG7111;s__	Ancient	4	13	Mann2018	4700	Europe	Spain	Homo	Human	47	97096	High_w_GUNC	SRS3078204	38.102	-1.865	Yes
+known	1	ancient	SRS3078204.bin.r.31	I	C		I-C	42.7	94.33	1.42	99.93	0.29	211	211_1	1547845	97096	g__RGIG7111;s__	Ancient	4	13	Mann2018	4700	Europe	Spain	Homo	Human	47	97096	High_w_GUNC	SRS3078204	38.102	-1.865	Yes
+known	1	ancient	SRS4625245.bin.r.10	I	C		I-C	42.4	94.33	0.71	97.92	0.5	211	211_1	1568110	103446	g__RGIG7111;s__	Ancient	3	10	Ozga2019	100	Africa	Tanzania	Pan	Chimpanzee	37	103446	High_w_GUNC	SRS4625245	-4.69	29.62	Yes
+known	2	ancient	SRS4625245.bin.r.10	II	D		II-D	42.4	94.33	0.71	97.92	0.5	211	211_1	1568110	103446	g__RGIG7111;s__	Ancient	3	10	Ozga2019	100	Africa	Tanzania	Pan	Chimpanzee	37	103446	High_w_GUNC	SRS4625245	-4.69	29.62	Yes
+known	2	ancient	SRS4625248.bin.r.2	II	D		II-D	42.7	92.91	0.07	97.67	2.3	211	211_1	1378302	65675	g__RGIG7111;s__	Ancient	6	17	Ozga2019	100	Africa	Tanzania	Pan	Chimpanzee	46	65675	High_w_GUNC	SRS4625248	-4.69	29.62	Yes
+known	1	ancient	SRS473746.bin.r.29	I	E		I-E	42.6	82.62	2.13	90.74	0.12	211	211_1	1292328	109223	g__RGIG7111;s__	Ancient	6	19	Warinner2014	900	Europe	Germany	Homo	Human	24	109223	Med_w_GUNC	SRS473746	51.565	8.84	Yes
+known	2	ancient	SRS473746.bin.r.29	II	D		II-D	42.6	82.62	2.13	90.74	0.12	211	211_1	1292328	109223	g__RGIG7111;s__	Ancient	6	19	Warinner2014	900	Europe	Germany	Homo	Human	24	109223	Med_w_GUNC	SRS473746	51.565	8.84	Yes
+known	2	ancient	SRS6212649.bin.r.11	II	D		II-D	42.4	92.2	0.71	98.92	0.02	211	211_1	1457638	101654	g__RGIG7111;s__	Ancient	5	15	Eisenhofer2020	230	Asia	Japan	Homo	Human	33	101654	High_w_GUNC	SRS6212649	35.713	139.767	Yes
+known	2	ancient	SRS6212649.bin.r.11	II	A		II-A	42.4	92.2	0.71	98.92	0.02	211	211_1	1457638	101654	g__RGIG7111;s__	Ancient	5	15	Eisenhofer2020	230	Asia	Japan	Homo	Human	33	101654	High_w_GUNC	SRS6212649	35.713	139.767	Yes
+known	2	ancient	SRS6212650.bin.r.1	II	D		II-D	42.6	92.91	0.38	95.27	0.16	211	211_1	1415918	34827	g__RGIG7111;s__	Ancient	6	21	Eisenhofer2020	230	Asia	Japan	Homo	Human	58	34827	High_w_GUNC	SRS6212650	35.71	139.78	Yes
+known	1	ancient	SRS6212651.bin.r.4	I	E		I-E	42.3	94.33	0.71	99.46	0.17	211	211_1	1501409	106272	g__RGIG7111;s__	Ancient	5	15	Eisenhofer2020	230	Asia	Japan	Homo	Human	29	106272	High_w_GUNC	SRS6212651	35.71	139.78	Yes
+known	2	ancient	SRS6212651.bin.r.4	II	D		II-D	42.3	94.33	0.71	99.46	0.17	211	211_1	1501409	106272	g__RGIG7111;s__	Ancient	5	15	Eisenhofer2020	230	Asia	Japan	Homo	Human	29	106272	High_w_GUNC	SRS6212651	35.71	139.78	Yes
+known	2	ancient	SRS6212652.bin.r.4	II	A		II-A	42.5	94.33	0	99.3	0.19	211	211_1	1465556	65749	g__RGIG7111;s__	Ancient	6	21	Eisenhofer2020	230	Asia	Japan	Homo	Human	52	65749	High_w_GUNC	SRS6212652	35.71	139.78	Yes
+known	2	ancient	SRS6212652.bin.r.4	II	D		II-D	42.5	94.33	0	99.3	0.19	211	211_1	1465556	65749	g__RGIG7111;s__	Ancient	6	21	Eisenhofer2020	230	Asia	Japan	Homo	Human	52	65749	High_w_GUNC	SRS6212652	35.71	139.78	Yes
+known	2	ancient	SRS6212654.bin.r.2	II	D		II-D	42.8	94.33	0	97.94	0.36	211	211_1	1414289	80924	g__RGIG7111;s__	Ancient	6	21	Eisenhofer2020	230	Asia	Japan	Homo	Human	36	80924	High_w_GUNC	SRS6212654	35.71	139.78	Yes
+known	1	ancient	SRS6212655.bin.r.6	I	E		I-E	42.3	94.33	0.71	100	0.48	211	211_1	1435890	103367	g__RGIG7111;s__	Ancient	5	15	Eisenhofer2020	230	Asia	Japan	Homo	Human	36	103367	High_w_GUNC	SRS6212655	35.71	139.78	Yes
+known	2	ancient	SRS6212655.bin.r.6	II	D		II-D	42.3	94.33	0.71	100	0.48	211	211_1	1435890	103367	g__RGIG7111;s__	Ancient	5	15	Eisenhofer2020	230	Asia	Japan	Homo	Human	36	103367	High_w_GUNC	SRS6212655	35.71	139.78	Yes
+known	2	ancient	SRS6212656.bin.r.4	II	D		II-D	42.9	89.88	0.95	94.34	0.07	211	211_1	1343317	7010	g__RGIG7111;s__	Ancient	5	15	Eisenhofer2020	2700	Asia	Japan	Homo	Human	263	7010	Med_w_GUNC	SRS6212656	34.64	137.14	Yes
+known	2	ancient	SRS6212658.bin.r.3	II	D		II-D	42.7	94.33	0	99.17	0.13	211	211_1	1500731	112715	g__RGIG7111;s__	Ancient	5	15	Eisenhofer2020	2700	Asia	Japan	Homo	Human	46	112715	High_w_GUNC	SRS6212658	39.12	141.81	Yes
+known	2	ancient	SRS6212660.bin.r.3	II	D		II-D	42.6	92.2	0	96.33	1.85	211	211_1	1487227	73802	g__RGIG7111;s__	Ancient	5	15	Eisenhofer2020	230	Asia	Japan	Homo	Human	54	73802	High_w_GUNC	SRS6212660	35.71	139.78	Yes
+known	2	ancient	SRS6212661.bin.r.1	II	D		II-D	42.5	93.62	0	97.81	0.1	211	211_1	1463701	56917	g__RGIG7111;s__	Ancient	6	21	Eisenhofer2020	230	Asia	Japan	Homo	Human	44	56917	High_w_GUNC	SRS6212661	35.71	139.78	Yes
+known	1	ancient	SRS6212661.bin.r.1	I	C		I-C	42.5	93.62	0	97.81	0.1	211	211_1	1463701	56917	g__RGIG7111;s__	Ancient	6	21	Eisenhofer2020	230	Asia	Japan	Homo	Human	44	56917	High_w_GUNC	SRS6212661	35.71	139.78	Yes
+known	2	ancient	SRS6212663.bin.r.2	II	D		II-D	42.7	91.49	0.71	98.39	0.14	211	211_1	1332146	100640	g__RGIG7111;s__	Ancient	6	20	Eisenhofer2020	230	Asia	Japan	Homo	Human	26	100640	High_w_GUNC	SRS6212663	35.71	139.78	Yes
+known	2	ancient	SRS7212798.bin.r.2	II	D		II-D	42.6	92.2	0	98.6	0.31	211	211_1	1540101	143221	g__RGIG7111;s__	Ancient	4	13	Jacobson2020	3000	Europe	Italy	Homo	Human	26	143221	High_w_GUNC	SRS7212798	40.544	8.321	Yes
+known	1	ancient	SRS7890498.bin.r.2	I	E		I-E	42.5	70.35	2.72	81.9	3.53	211	211_1	970866	2306	g__RGIG7111;s__	Ancient	1	1	Weyrich2017	49000	Europe	Spain	Homo	Neanderthal	457	2306	Med_w_GUNC	SRS7890498	43.386	-5.328	Yes
+known	1	ancient	SRS9263818.bin.r.3	I	E		I-E	41.6	51.83	5.09	55.45	5.67	211	211_1	859240	1931	g__RGIG7111;s__	Ancient	4	13	Modi2021	3400	Europe	Italy	Homo	Human	458	1931	Med_w_GUNC	SRS9263818	42.527	11.601	Yes
+known	2	ancient	ERSX0005001.bin.r.34	II	D		II-D	42.8	94.33	0	98.32	0.25	211	211_1	1404684	97539	g__RGIG7111;s__	Ancient	1	1	This_study	55000	Asia	Russia	Homo	Neanderthal	39	97539	High_w_GUNC	ERSX0005001			Yes
+known	2	non_industrial	CMC010.B.bin.r.43	II	D		II-D	43	88.65	0	97.8	0.07	211	211_1	1502474	52931	g__RGIG7111;s__	CMC	6	20	Velsko2023	7	Africa	Cameroon	Homo	Human	60	52931	Med_w_GUNC	CMC010	14	3.05	Yes
+known	1	non_industrial	CMC010.B.bin.r.43	I	E		I-E	43	88.65	0	97.8	0.07	211	211_1	1502474	52931	g__RGIG7111;s__	CMC	6	20	Velsko2023	7	Africa	Cameroon	Homo	Human	60	52931	Med_w_GUNC	CMC010	14	3.05	Yes
+known	2	non_industrial	CMC018.B.bin.r.71	II	D		II-D	43	85.82	0	95.74	0.09	211	211_1	1260789	52935	g__RGIG7111;s__	CMC	6	20	Velsko2023	7	Africa	Cameroon	Homo	Human	35	52935	Med_w_GUNC	CMC018	14	3.05	Yes
+known	2	non_industrial	CMC022.B.bin.r.112	II	D		II-D	42.7	91.49	0	98.42	0.07	211	211_1	1381228	78182	g__RGIG7111;s__	CMC	6	21	Velsko2023	7	Africa	Cameroon	Homo	Human	29	61203	High_w_GUNC	CMC022	14	3.05	Yes
+known	2	non_industrial	CMC023.A.bin.r.36	II	D		II-D	42.9	90.07	0	98.09	0.13	211	211_1	1527754	49216	g__RGIG7111;s__	CMC	6	20	Velsko2023	7	Africa	Cameroon	Homo	Human	49	49216	High_w_GUNC	CMC023	14	3.05	Yes
+known	2	non_industrial	CMC024.B.bin.r.1	II	D		II-D	43.1	90.07	0	95.39	0.03	211	211_1	1346937	145638	g__RGIG7111;s__	CMC	6	17	Velsko2023	7	Africa	Cameroon	Homo	Human	30	98487	High_w_GUNC	CMC024	14	3.05	Yes
+known	1	non_industrial	CMC026.B.bin.r.75	I	E		I-E	42.7	87.94	0	99.2	0.07	211	211_1	1283108	61264	g__RGIG7111;s__	CMC	6	19	Velsko2023	7	Africa	Cameroon	Homo	Human	41	46360	Med_w_GUNC	CMC026	14	3.05	Yes
+known	2	non_industrial	CMC026.B.bin.r.75	II	D		II-D	42.7	87.94	0	99.2	0.07	211	211_1	1283108	61264	g__RGIG7111;s__	CMC	6	19	Velsko2023	7	Africa	Cameroon	Homo	Human	41	46360	Med_w_GUNC	CMC026	14	3.05	Yes
+known	2	non_industrial	CMC035.B.bin.r.73	II	A		II-A	42.4	92.2	0.71	96.53	0.52	211	211_1	1450339	108844	g__RGIG7111;s__	CMC	6	20	Velsko2023	7	Africa	Cameroon	Homo	Human	26	104548	High_w_GUNC	CMC035	14	3.05	Yes
+known	2	non_industrial	CMC035.B.bin.r.73	II	D		II-D	42.4	92.2	0.71	96.53	0.52	211	211_1	1450339	108844	g__RGIG7111;s__	CMC	6	20	Velsko2023	7	Africa	Cameroon	Homo	Human	26	104548	High_w_GUNC	CMC035	14	3.05	Yes
+known	2	non_industrial	CMC038.A.bin.r.94	II	D		II-D	43.1	90.07	0	95.94	0.08	211	211_1	1367848	46611	g__RGIG7111;s__	CMC	6	20	Velsko2023	7	Africa	Cameroon	Homo	Human	50	46611	High_w_GUNC	CMC038	14	3.05	Yes
+known	1	non_industrial	CMC038.A.bin.r.94	I	E		I-E	43.1	90.07	0	95.94	0.08	211	211_1	1367848	46611	g__RGIG7111;s__	CMC	6	20	Velsko2023	7	Africa	Cameroon	Homo	Human	50	46611	High_w_GUNC	CMC038	14	3.05	Yes
+known	1	non_industrial	CMC038.B.bin.r.113	I	E		I-E	43	91.49	0	98.36	0.08	211	211_1	1389951	65302	g__RGIG7111;s__	CMC	6	20	Velsko2023	7	Africa	Cameroon	Homo	Human	38	65302	High_w_GUNC	CMC038	14	3.05	Yes
+known	2	non_industrial	CMC038.B.bin.r.113	II	D		II-D	43	91.49	0	98.36	0.08	211	211_1	1389951	65302	g__RGIG7111;s__	CMC	6	20	Velsko2023	7	Africa	Cameroon	Homo	Human	38	65302	High_w_GUNC	CMC038	14	3.05	Yes
+			CMC001.B.bin.r.58				none																										No
+			CMC017.B.bin.r.90				none																										No
+			CMC025.B.bin.r.89				none																										No
+			ERS11702728.bin.r.2				none																										No
+			ERS11702738.bin.r.6				none																										No
+			ERS11702745.bin.r.1				none																										No
+			ERS11702752.bin.r.1				none																										No
+			ERS11702760.bin.r.4				none																										No
+			ERS11702764.bin.r.2				none																										No
+			ERS11702784.bin.r.4				none																										No
+			ERS11702792.bin.r.3				none																										No
+			ERS11702798.bin.r.3				none																										No
+			ERS2985746.bin.r.1				none																										No
+			ERS2985749.bin.r.10				none																										No
+			ERS2985750.bin.r.6				none																										No
+			ERS2985761.bin.r.8				none																										No
+			ERS2985763.bin.r.4				none																										No
+			ERS2985764.bin.r.1				none																										No
+			ERS2985771.bin.r.3				none																										No
+			ERS2985774.bin.r.4				none																										No
+			ERS3395767.bin.r.9				none																										No
+			ERS3774416.bin.r.1				none																										No
+			ERS3774458.bin.r.5				none																										No
+			ERS3774463.bin.r.5				none																										No
+			ERS3774475.bin.r.2				none																										No
+			ERS3774478.bin.r.2				none																										No
+			ERS3774484.bin.r.4				none																										No
+			ERS6205385.bin.r.3				none																										No
+			ERS6205388.bin.r.5				none																										No
+			ERS6205390.bin.r.1				none																										No
+			ERS6205394.bin.r.1				none																										No
+			ERS6205402.bin.r.3				none																										No
+			ERS6256686.bin.r.3				none																										No
+			ERS6256687.bin.r.19				none																										No
+			ERS6256689.bin.r.10				none																										No
+			ERS6256692.bin.r.6				none																										No
+			ERS6256694.bin.r.5				none																										No
+			ERS6256703.bin.r.5				none																										No
+			ERS6256706.bin.r.10				none																										No
+			ERS6256711.bin.r.8				none																										No
+			ERS6256714.bin.r.8				none																										No
+			ERS6256716.bin.r.10				none																										No
+			ERS6256717.bin.r.3				none																										No
+			ERS6256719.bin.r.10				none																										No
+			ERS6256721.bin.r.2				none																										No
+			ERS6256726.bin.r.12				none																										No
+			ERS6256727.bin.r.9				none																										No
+			ERS6636085.bin.r.1				none																										No
+			ERS6636090.bin.r.1				none																										No
+			ERSX0003002.bin.r.10				none																										No
+			ERSX0004030.bin.r.5				none																										No
+			ERSX0004033.bin.r.2				none																										No
+			ERSX0004077.bin.r.4				none																										No
+			ERSX0004087.bin.r.1				none																										No
+			SRS11653539.bin.r.2				none																										No
+			SRS11653582.bin.r.1				none																										No
+			SRS11653583.bin.r.1				none																										No
+			SRS11653589.bin.r.1				none																										No
+			SRS11653590.bin.r.1				none																										No
+			SRS11653591.bin.r.4				none																										No
+			SRS11653593.bin.r.5				none																										No
+			SRS11653594.bin.r.2				none																										No
+			SRS11653610.bin.r.2				none																										No
+			SRS15300807.bin.r.18				none																										No
+			SRS3078087.bin.r.3				none																										No
+			SRS3078155.bin.r.1				none																										No
+			SRS3078181.bin.r.3				none																										No
+			SRS3078183.bin.r.2				none																										No
+			SRS3078192.bin.r.5				none																										No
+			SRS3078198.bin.r.3				none																										No
+			SRS3078201.bin.r.6				none																										No
+			SRS4625244.bin.r.8				none																										No
+			SRS473742.bin.r.1				none																										No
+			SRS7212788.bin.r.6				none																										No
+			SRS7212792.bin.r.3				none																										No
+			SRS7212800.bin.r.4				none																										No
+			SRS7212801.bin.r.2				none																										No
+			SRS7212802.bin.r.4				none																										No
+			SRS7967575.bin.r.3				none																										No
+			SRS7967576.bin.r.4				none																										No
+			SRS9263822.bin.r.8				none																										No

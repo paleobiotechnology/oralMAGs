@@ -1,0 +1,745 @@
+---
+title: "Archaea MAGs Summary Figures - Extended data figure 8"
+author: "Keri Burge"
+date: "2025-07-29"
+output: html_document
+---
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(janitor)
+library(ggplot2)
+library(tidyverse)
+
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+
+Set the working directory of the notebook to the parent directory of the 
+notebook itself.  
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath(".."))
+```
+
+
+#Metadata
+Read in metadata tables
+```{r}
+methanobrevibacter_metadata <- fread("05-results/methanobrevibacter_metadata.tsv") %>%
+  mutate(Genera = "Methanobrevibacter")
+
+methanomethylophilus_metadata <- fread("05-results/methanomethylophilus_metadata.tsv") %>%
+  mutate(Genera = "Methanomethylophilus") %>%
+  mutate(total_snps = as.integer(total_snps))
+
+stats <- methanobrevibacter_metadata %>%
+  full_join(., methanomethylophilus_metadata) %>%
+  filter(!str_detect(Bin, "GC"))
+```
+
+
+# A: Number of MAGs produced from each sample host, faceted by quality. 
+High, with GUNG - >90% complete, <5% contamination, passing GUNC clade credibility score; Medium, with GUNC - >50% complete, <10% contamination, passing GUNC clade credibility score.
+
+```{r}
+quality_colors <- c("High, with GUNC" = "#ff3e38",
+                    "Medium, with GUNC" = "#ff8c8d")
+
+number_mags_plot <- stats %>%
+  filter(!str_detect(Bin, "GC")) %>%
+  dplyr::select(Bin, Genera, Host, pass.GUNC, checkM.completeness, checkM.contamination) %>%
+  mutate(Quality = ifelse(checkM.completeness > 90 & checkM.contamination < 5, "High, with GUNC", "Medium, with GUNC")) %>%
+  mutate(Host = stringr::str_replace_all(Host, " ", "\n")) %>%
+  mutate(Host = factor(Host, levels = c("Baboon", "Chimpanzee", "Modern\nhuman", "Ancient\nhuman", "Neanderthal"))) %>%
+  mutate(Genera = factor(Genera, levels = c("Methanomethylophilus", "Methanobrevibacter"))) %>%
+  count(Genera, Host, Quality) %>%
+  mutate(Quality = factor(Quality, levels = c("Medium, with GUNC", "High, with GUNC"))) %>%
+  ggplot(aes(x = Host, y = n, fill = Quality)) +
+    #geom_col(position = "dodge", color = "black", size = 0.3) +
+    geom_bar(stat = "identity", position = position_dodge(preserve = "single"), color = "black", size = 0.3) +
+    facet_wrap(~ Genera) +
+    scale_fill_manual(values = quality_colors) +
+    labs(x = "Host", y = "Number of MAGs", fill = "MAG Quality") +
+    theme_minimal() +
+    geom_text(aes(label = n),
+              position = position_dodge(width = 0.9),
+              vjust = -0.2, size = 3) +
+    theme(strip.text = element_text(size = 11),
+          axis.text.y = element_text(size = 10))
+
+
+number_mags_plot
+
+#ggsave("./05-results/archaea_number_mags_by_host_and_quality.pdf", plot = number_mags_plot, device = "pdf", scale = 1, width = 10, height = 4, units = c("in"), dpi = 300) 
+
+#Individuals plots 
+quality_colors <- c("High" = "#ff3e38",
+                    "Medium" = "#ff8c8d")
+
+number_mags_plot_methanobrevibacter <- stats %>%
+  dplyr::select(Bin, Genera, Host, pass.GUNC, checkM.completeness, checkM.contamination) %>%
+  filter(Genera == "Methanobrevibacter") %>%
+  mutate(Quality = ifelse(checkM.completeness > 90 & checkM.contamination < 5, "High", "Medium")) %>%
+  mutate(Host = stringr::str_replace_all(Host, " ", "\n")) %>%
+  mutate(Host = factor(Host, levels = c("Baboon", "Chimpanzee", "Modern\nhuman", "Ancient\nhuman", "Neanderthal"))) %>%
+  mutate(Quality = factor(Quality, levels = c("Medium", "High"))) %>%
+  count(Host, Quality) %>%
+  ggplot(aes(x = Host, y = n, fill = Quality)) +
+    #geom_col(position = "dodge", color = "black", size = 0.3) +
+    geom_bar(stat = "identity", position = position_dodge(preserve = "single"), color = "black", size = 0.3) +
+    scale_fill_manual(values = quality_colors) +
+    labs(x = "Host", y = "Number of MAGs", fill = "MAG Quality") +
+    theme_minimal() +
+    geom_text(aes(label = n),
+              position = position_dodge(width = 0.9),
+              vjust = -0.2, size = 3) +
+    theme(strip.text = element_text(size = 11),
+          axis.text.y = element_text(size = 11),
+          axis.text.x = element_text(size = 11),
+          axis.title.y = element_text(size = 13),
+          axis.title.x = element_text(size = 13))
+
+number_mags_plot_methanobrevibacter
+
+#ggsave("./05-results/methanobrevibacter_number_mags_by_host_and_quality_w_CSC.pdf", plot = number_mags_plot_methanobrevibacter, device = "pdf", scale = 1, width = 8, height = 4, units = c("in"), dpi = 300) 
+
+number_mags_plot_methanomethylophilus <- stats %>%
+  dplyr::select(Bin, Genera, Host, pass.GUNC, checkM.completeness, checkM.contamination) %>%
+  filter(Genera == "Methanomethylophilus") %>%
+  mutate(Quality = ifelse(checkM.completeness > 90 & checkM.contamination < 5, "High", "Medium")) %>%
+  mutate(Host = stringr::str_replace_all(Host, " ", "\n")) %>%
+  mutate(Host = factor(Host, levels = c("Baboon", "Chimpanzee", "Modern\nhuman", "Ancient\nhuman", "Neanderthal"))) %>%
+  mutate(Quality = factor(Quality, levels = c("Medium", "High"))) %>%
+  count(Host, Quality) %>%
+  ggplot(aes(x = Host, y = n, fill = Quality)) +
+    #geom_col(position = "dodge", color = "black", size = 0.3) +
+    geom_bar(stat = "identity", position = position_dodge(preserve = "single"), color = "black", size = 0.3) +
+    scale_fill_manual(values = quality_colors) +
+    labs(x = "Host", y = "Number of MAGs", fill = "MAG Quality") +
+    theme_minimal() +
+    geom_text(aes(label = n),
+              position = position_dodge(width = 0.9),
+              vjust = -0.2, size = 3) +
+    theme(strip.text = element_text(size = 11),
+          axis.text.y = element_text(size = 11),
+          axis.text.x = element_text(size = 11),
+          axis.title.y = element_text(size = 13),
+          axis.title.x = element_text(size = 13)) +
+  expand_limits(y = c(0, 20))
+
+number_mags_plot_methanomethylophilus
+
+#ggsave("./05-results/methanomethylophilus_number_mags_by_host_and_quality_w_CSC.pdf", plot = number_mags_plot_methanomethylophilus, device = "pdf", scale = 1, width = 8, height = 4, units = c("in"), dpi = 300)
+```
+
+
+#B. Damage estimates for reads of each sample mapped back to contigs in the RGIG7111 pr_cl_1286 MAG produced from that sample. 
+Library build method impacts observed damage patterns, and samples are grouped by library build method: None - no uracil deglycosylase (UDG) enzymatic treatment; Half- UDG-half treated; Proof-reading enzyme - libraries built with a proof-reading enzyme; mixed - multiple libraries per sample, where libraries were built with different protocols.
+
+```{r}
+enzyme_colors <- c("None" = "#C70E7B", "Half" = "#e386bd", "Proof-reading enzyme" = "#007BC3", "Mixed" = "#6a3d9a")
+```
+
+
+Split by Genus and species cluster (document how many MAGs are in each species cluster on the plot)
+
+## Methanobrevibacter
+```{r}
+#read in the list of contigs from each genera
+methanobrevibacter_contig_list <- fread("05-results/methanobrevibacter_contig_list.tsv") %>%
+  filter(!str_detect(MAG, "GC")) %>%
+  rename(Sample = MAG) %>%
+  inner_join(., methanobrevibacter_metadata %>%
+               select(Bin, Sample)) %>%
+  select(-Sample) %>%
+  mutate(SampleID = Bin) %>%
+  separate_wider_delim(SampleID, names = c("SampleID"), delim = ".b", too_many = "drop") %>%
+  separate(SampleID, into = "SampleID", sep = "_", extra = "drop")
+
+```
+
+
+```{r}
+methanobrevibacter_pydamage_list <- methanobrevibacter_contig_list %>%
+  select(SampleID) %>%
+  unique() %>%
+  # remove modern samples (pyDamage wasn't run on CMC, and modern calculus samples have empty tables)
+  filter(!str_detect(SampleID, "CMC|ERS3395767")) %>%
+  mutate(SampleID = str_replace_all(SampleID, "^","/mnt/archgen/microbiome_paleobiotech/calcBGCecoevo/04-analysis/metagenome_assembly/pydamage/"),
+         SampleID = str_replace_all(SampleID, "$","-megahit.pydamage.csv.gz")) %>%
+  pull(SampleID)
+
+methanobrevibacter_pydamage_table <- map_dfr(methanobrevibacter_pydamage_list, function(fn) {
+  fread(fn, sep = ",", fill = T) %>%
+  mutate(SampleID = (fn)) %>%
+  select(1,2,5,11,12,14:42) %>%
+  rename(Contig = reference)
+}) %>%
+  inner_join(methanobrevibacter_contig_list, by = "Contig") %>%
+  mutate(pass_pydamage = ifelse(qvalue <= 0.05 & predicted_accuracy >= 0.5, "Yes","No")) %>%
+  select(SampleID, Bin, pass_pydamage, everything())
+
+methanobrevibacter_pydamage_table %>%
+  group_by(Bin, pass_pydamage) %>%
+  count() %>%
+  ungroup()
+```
+
+
+```{r}
+# read in the library table from ancient metagenomeDir to get the UDG treatments for libraries of all samples included here
+methanobrevibacter_sampleIDs <- methanobrevibacter_metadata %>%
+  filter(!str_detect(Bin, "GC")) %>%
+  select(Bin) %>%
+  mutate(SampleID = Bin) %>%
+  separate_wider_delim(SampleID, names = c("SampleID"), delim = ".b", too_many = "drop") %>%
+  separate(SampleID, into = "SampleID", sep = "_", extra = "drop") %>%
+  filter(!str_detect(SampleID, "CMC|ERS3395767")) 
+
+amgd <- fread("https://raw.githubusercontent.com/SPAAM-community/AncientMetagenomeDir/refs/heads/master/ancientmetagenome-hostassociated/libraries/ancientmetagenome-hostassociated_libraries.tsv") %>%
+  select(archive_sample_accession, library_treatment, library_polymerase) %>%
+  rename(SampleID = archive_sample_accession) %>%
+  unique() %>%
+  right_join(., methanobrevibacter_sampleIDs %>%
+              select(SampleID)) %>%
+  unique()
+
+amgd %>%
+  group_by(SampleID) %>%
+  count() %>%
+  ungroup() %>%
+  filter(n > 1) %>%
+  left_join(., amgd, by = "SampleID") 
+
+amgd %>%
+  group_by(SampleID) %>%
+  count() %>%
+  ungroup() %>%
+  filter(n > 1) %>%
+  left_join(., amgd, by = "SampleID") %>%
+  select(SampleID) %>%
+  unique()
+```
+
+
+```{r}
+methanobrevibacter_damage_curves <- methanobrevibacter_pydamage_table %>%
+  select(-SampleID, -pass_pydamage, -predicted_accuracy, -damage_model_p, -pvalue, -qvalue, -nb_reads_aligned, -coverage, -reflen) %>%
+  pivot_longer(!Bin:Contig, names_to = "Base", values_to = "Damage") %>%
+  group_by(Bin, Base) %>%
+  summarize(mean_damage = mean(Damage)) %>%
+  ungroup() %>%
+  mutate(Base = str_remove_all(Base, "CtoT-"),
+         Base = as.numeric(Base)) %>%
+  left_join(., methanobrevibacter_metadata %>%
+              select(Bin, Study, primary_cluster), by = "Bin") %>%
+  mutate(sample = Bin) %>%
+  separate_wider_delim(sample, names = "SampleID", delim = ".bin", too_many = "drop") %>%
+  separate(SampleID, into = "SampleID", sep = "_", extra = "drop") %>%
+  left_join(., amgd %>%
+              mutate(library_treatment = ifelse(str_detect(SampleID, "ERS3774422|ERS3774441|ERS3774458|ERS3774460|ERS3774463|ERS3774464|ERS3774468|ERS3774469|ERS3774470"), "mixed", library_treatment))) %>%
+  mutate(library_treatment = ifelse(Study == "PacificCalculus", "half-udg",
+                                    ifelse(Study == "SMH2023","mixed",
+                                           ifelse(str_detect(Study, "Velsko2019|Warinner2014|Eisenhofer2020|Ozga2019"), "proof-reading enzyme",
+                                                  ifelse(Study == "RIII2023", "none", library_treatment))))) %>%
+  # the Pacific samples processed in Otago were not UDG-treated so fix that
+  mutate(library_treatment = ifelse(str_detect(SampleID, "ERSX0004018|ERSX0004033|ERSX0005001"), "none",library_treatment),
+         Study = ifelse(Study == "PacificCalculus", "Velsko2024",Study),
+         Study = str_remove_all(Study, "-nonhumanDNA"),
+         Study = str_remove_all(Study, "-humanaDNA"),
+         Study = ifelse(str_detect(Study, "SMH"),"RIII2023",Study),
+         library_treatment = str_replace_all(library_treatment, "none", "None"),
+         library_treatment = str_replace_all(library_treatment, "mixed", "Mixed"),
+         library_treatment = str_replace_all(library_treatment, "half-udg", "Half"),
+         library_treatment = str_replace_all(library_treatment, "proof", "Proof")) %>%
+  arrange(Bin, Base) %>%
+  filter(Base <= 5) %>%
+  mutate(library_treatment = fct_relevel(library_treatment, c("None", "Half", "Proof-reading enzyme", "Mixed")))
+
+methanobrevibacter_summary_counts <- methanobrevibacter_damage_curves %>%
+  select(Bin, primary_cluster, library_treatment) %>%
+  unique() %>%
+  group_by(primary_cluster, library_treatment) %>%
+  summarise(total = n()) %>%
+  mutate(label = paste0("n = ", total),
+         Base = 4,          
+         mean_damage = 0.4) %>%
+  mutate(primary_cluster = str_replace(primary_cluster, "1", "1188"),
+         primary_cluster = str_replace(primary_cluster, "2", "1189"),
+         primary_cluster = str_replace(primary_cluster, "3", "1187"),
+         primary_cluster = str_replace(primary_cluster, "4", "1190")) 
+
+methanobrevibacter_damage_curves_plot <- methanobrevibacter_damage_curves %>%
+  mutate(primary_cluster = str_replace(primary_cluster, "1", "1188"),
+         primary_cluster = str_replace(primary_cluster, "2", "1189"),
+         primary_cluster = str_replace(primary_cluster, "3", "1187"),
+         primary_cluster = str_replace(primary_cluster, "4", "1190")) %>%
+  ggplot(., aes(x = Base, y = mean_damage, group = Bin)) + # , group = Country
+         geom_line(aes(color = library_treatment), linewidth=0.5) + # aes(color = Country) , linetype = classified
+         # geom_point() +
+         theme_minimal(base_size = 12) +
+         theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5, size = 12)) +
+         theme(axis.text.y = element_text(size = 12)) +
+         theme(strip.text = element_text(size = 12)) +
+         scale_color_manual(values = enzyme_colors, name = "Library treatment") +
+         # theme(panel.grid.minor = element_blank()) +
+         scale_y_continuous(breaks=scales::pretty_breaks(n=5)) +
+         scale_x_continuous(breaks=scales::pretty_breaks(n=5)) +
+         # ylim(0,0.4) +
+         ylab("5' C->T frequency") +
+         xlab("Base") +
+         facet_grid(primary_cluster ~ factor(library_treatment, c("None", "Half", "Proof-reading enzyme", "Mixed"))) +
+         geom_text(data = methanobrevibacter_summary_counts,
+                          aes(x = Base, y = mean_damage, label = label),
+                          inherit.aes = FALSE,
+                          size = 3.5)
+
+methanobrevibacter_damage_curves_plot
+
+#ggsave("05-results/methanobrevibacter_damage_curves.pdf", plot = methanobrevibacter_damage_curves_plot, device = "pdf",
+       scale = 1, width = 10, height = 6, units = c("in"), dpi = 300)
+```
+
+
+## Methanomethylophilus
+```{r}
+#read in the list of contigs from each genera
+methanomethylophilus_contig_list <- fread("05-results/methanomethylophilus_contig_list.tsv") %>%
+  filter(!str_detect(MAG, "GC")) %>%
+  rename(Sample = MAG) %>%
+  inner_join(., methanomethylophilus_metadata %>%
+               select(Bin, Sample)) %>%
+  select(-Sample) %>%
+  mutate(SampleID = Bin) %>%
+  separate_wider_delim(SampleID, names = c("SampleID"), delim = ".b", too_many = "drop") %>%
+  separate(SampleID, into = "SampleID", sep = "_", extra = "drop")
+
+```
+
+
+```{r}
+methanomethylophilus_pydamage_list <- methanomethylophilus_contig_list %>%
+  select(SampleID) %>%
+  unique() %>%
+  # remove modern samples (pyDamage wasn't run on CMC, and modern calculus samples have empty tables)
+  filter(!str_detect(SampleID, "CMC|ERS3395768")) %>%
+  mutate(SampleID = str_replace_all(SampleID, "^","/mnt/archgen/microbiome_paleobiotech/calcBGCecoevo/04-analysis/metagenome_assembly/pydamage/"),
+         SampleID = str_replace_all(SampleID, "$","-megahit.pydamage.csv.gz")) %>%
+  pull(SampleID)
+
+methanomethylophilus_pydamage_table <- map_dfr(methanomethylophilus_pydamage_list, function(fn) {
+  fread(fn, sep = ",", fill = T) %>%
+  mutate(SampleID = (fn)) %>%
+  select(1,2,5,11,12,14:42) %>%
+  rename(Contig = reference)
+}) %>%
+  inner_join(methanomethylophilus_contig_list, by = "Contig") %>%
+  mutate(pass_pydamage = ifelse(qvalue <= 0.05 & predicted_accuracy >= 0.5, "Yes","No")) %>%
+  select(SampleID, Bin, pass_pydamage, everything())
+
+methanomethylophilus_pydamage_table %>%
+  group_by(Bin, pass_pydamage) %>%
+  count() %>%
+  ungroup()
+```
+
+
+```{r}
+# read in the library table from ancient metagenomeDir to get the UDG treatments for libraries of all samples included here
+methanomethylophilus_sampleIDs <- methanomethylophilus_metadata %>%
+  filter(!str_detect(Bin, "GC")) %>%
+  select(Bin) %>%
+  mutate(SampleID = Bin) %>%
+  separate_wider_delim(SampleID, names = c("SampleID"), delim = ".b", too_many = "drop") %>%
+  separate(SampleID, into = "SampleID", sep = "_", extra = "drop") %>%
+  filter(!str_detect(SampleID, "CMC|ERS3395768")) 
+
+amgd <- fread("https://raw.githubusercontent.com/SPAAM-community/AncientMetagenomeDir/refs/heads/master/ancientmetagenome-hostassociated/libraries/ancientmetagenome-hostassociated_libraries.tsv") %>%
+  select(archive_sample_accession, library_treatment, library_polymerase) %>%
+  rename(SampleID = archive_sample_accession) %>%
+  unique() %>%
+  right_join(., methanomethylophilus_sampleIDs %>%
+              select(SampleID)) %>%
+  unique()
+
+amgd %>%
+  group_by(SampleID) %>%
+  count() %>%
+  ungroup() %>%
+  filter(n > 1) %>%
+  left_join(., amgd, by = "SampleID") 
+
+amgd %>%
+  group_by(SampleID) %>%
+  count() %>%
+  ungroup() %>%
+  filter(n > 1) %>%
+  left_join(., amgd, by = "SampleID") %>%
+  select(SampleID) %>%
+  unique()
+```
+
+
+```{r}
+methanomethylophilus_damage_curves <- methanomethylophilus_pydamage_table %>%
+  select(-SampleID, -pass_pydamage, -predicted_accuracy, -damage_model_p, -pvalue, -qvalue, -nb_reads_aligned, -coverage, -reflen) %>%
+  pivot_longer(!Bin:Contig, names_to = "Base", values_to = "Damage") %>%
+  group_by(Bin, Base) %>%
+  summarize(mean_damage = mean(Damage)) %>%
+  ungroup() %>%
+  mutate(Base = str_remove_all(Base, "CtoT-"),
+         Base = as.numeric(Base)) %>%
+  left_join(., methanomethylophilus_metadata %>%
+              select(Bin, Study, primary_cluster), by = "Bin") %>%
+  mutate(sample = Bin) %>%
+  separate_wider_delim(sample, names = "SampleID", delim = ".bin", too_many = "drop") %>%
+  separate(SampleID, into = "SampleID", sep = "_", extra = "drop") %>%
+  left_join(., amgd %>%
+              mutate(library_treatment = ifelse(str_detect(SampleID, "ERS3774419|ERS3774421|ERS3774422|ERS3774425"), "mixed", library_treatment))) %>%
+  mutate(library_treatment = ifelse(Study == "PacificCalculus", "half-udg",
+                                    ifelse(Study == "SMH2023","mixed",
+                                           ifelse(str_detect(Study, "Velsko2019|Warinner2014|Eisenhofer2020|Ozga2019"), "proof-reading enzyme",
+                                                  ifelse(Study == "RIII2023", "none", library_treatment))))) %>%
+  # the Pacific samples processed in Otago were not UDG-treated so fix that
+  mutate(library_treatment = ifelse(str_detect(SampleID, "ERSX0004018|ERSX0004033|ERSX0005001"), "none",library_treatment),
+         Study = ifelse(Study == "PacificCalculus", "Velsko2024",Study),
+         Study = str_remove_all(Study, "-nonhumanDNA"),
+         Study = str_remove_all(Study, "-humanaDNA"),
+         Study = ifelse(str_detect(Study, "SMH"),"RIII2023",Study),
+         library_treatment = str_replace_all(library_treatment, "none", "None"),
+         library_treatment = str_replace_all(library_treatment, "mixed", "Mixed"),
+         library_treatment = str_replace_all(library_treatment, "half-udg", "Half"),
+         library_treatment = str_replace_all(library_treatment, "proof", "Proof")) %>%
+  arrange(Bin, Base) %>%
+  filter(Base <= 5) %>%
+  mutate(library_treatment = fct_relevel(library_treatment, c("None", "Half", "Proof-reading enzyme", "Mixed")))
+
+methanomethylophilus_summary_counts <- methanomethylophilus_damage_curves %>%
+  select(Bin, primary_cluster, library_treatment) %>%
+  unique() %>%
+  group_by(primary_cluster, library_treatment) %>%
+  summarise(total = n()) %>%
+  mutate(label = paste0("n = ", total),
+         Base = 4,          
+         mean_damage = 0.4) %>%
+  mutate(primary_cluster = case_when(
+    primary_cluster == "1" ~ "3192",
+    primary_cluster == "2" ~ "3193",
+    primary_cluster == "3" ~ "3194",
+    primary_cluster == "4" ~ "3195",
+    TRUE ~ primary_cluster)) 
+
+
+methanomethylophilus_damage_curves_plot <- methanomethylophilus_damage_curves %>%
+  mutate(primary_cluster = case_when(
+    primary_cluster == "1" ~ "3192",
+    primary_cluster == "2" ~ "3193",
+    primary_cluster == "3" ~ "3194",
+    primary_cluster == "4" ~ "3195",
+    TRUE ~ primary_cluster)) %>%
+  ggplot(., aes(x = Base, y = mean_damage, group = Bin)) + # , group = Country
+         geom_line(aes(color = library_treatment), linewidth=0.5) + # aes(color = Country) , linetype = classified
+         # geom_point() +
+         theme_minimal(base_size = 12) +
+         theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5, size = 12)) +
+         theme(axis.text.y = element_text(size = 12)) +
+         theme(strip.text = element_text(size = 12)) +
+         scale_color_manual(values = enzyme_colors, name = "Library treatment") +
+         # theme(panel.grid.minor = element_blank()) +
+         scale_y_continuous(breaks=scales::pretty_breaks(n=5)) +
+         scale_x_continuous(breaks=scales::pretty_breaks(n=5)) +
+         ylim(0,0.5) +
+         ylab("5' C->T frequency") +
+         xlab("Base") +
+         facet_grid(primary_cluster ~ factor(library_treatment, c("None", "Half", "Proof-reading enzyme", "Mixed"))) +
+         geom_text(data = methanomethylophilus_summary_counts,
+                   aes(x = Base, y = mean_damage, label = label),
+                   inherit.aes = FALSE,
+                   size = 3.5)
+
+methanomethylophilus_damage_curves_plot
+
+#ggsave("05-results/methanomethylophilus_damage_curves.pdf", plot = methanomethylophilus_damage_curves_plot, device = "pdf",
+       scale = 1, width = 10, height = 4, units = c("in"), dpi = 300)
+```
+
+
+# C. Number of contigs per MAG
+Species across the top and genera rows
+
+```{r}
+combined_metadata <- methanobrevibacter_metadata %>%
+  full_join(., methanomethylophilus_metadata) %>%
+  rename(Genus = Genera) %>%
+  filter(!str_detect(Bin, "GC"))
+```
+
+
+```{r}
+n_contigs_plot <- combined_metadata %>%
+  mutate(as.character = "primary_cluster") %>%
+  mutate(Genus = factor(Genus, levels = c("Methanomethylophilus", "Methanobrevibacter"))) %>%
+  #mutate(primary_cluster = factor(primary_cluster, levels = c("1", "2", "3", "4"))) %>%
+  ggplot(., aes(x = primary_cluster, y = quast_n_contigs)) + 
+  facet_grid(~Genus, scales = "free_x") +
+  ggdist::stat_halfeye(
+    fill = "#C70E7B",
+    adjust = .5, 
+    width = .8, 
+    justification = -.4, 
+    .width = 0, 
+    point_colour = NA
+  ) + 
+  geom_boxplot(
+    fill = "#C70E7B",
+    width = .3, 
+    outlier.color = NA 
+  ) +
+  ggdist::stat_dots(
+    color = "#C70E7B",
+    side = "left", 
+    justification = 1.3, 
+    binwidth = .4
+  ) + 
+  theme_minimal() +
+  theme(
+    legend.position = "none", 
+    plot.title = element_text(hjust = 0.5),
+    strip.text = element_text(size = 12),
+    axis.text.y = element_text(size = 11),
+    axis.text.x = element_text(size = 11),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12)
+    ) +
+  labs(
+    title = "", 
+    y = "Number of Contigs", 
+    x = "Species Cluster"
+    ) 
+
+
+n_contigs_plot
+
+#ggsave("05-results/archaea_n_contigs_plot.pdf", plot = n_contigs_plot, device = "pdf",
+       scale = 1, width = 10, height = 5, units = c("in"), dpi = 300)
+
+```
+
+
+# D. Mean GC% per MAG
+```{r}
+GC_plot <- combined_metadata %>%
+  mutate(as.character = "primary_cluster") %>%
+  #mutate(primary_cluster = factor(primary_cluster, levels = c("1", "2", "3", "4"))) %>%
+  mutate(Genus = factor(Genus, levels = c("Methanomethylophilus", "Methanobrevibacter"))) %>%
+  ggplot(., aes(x = primary_cluster, y = quast_GC)) + 
+  facet_grid(~Genus, scales = "free_x") +
+  ggdist::stat_halfeye(
+    fill = "#C70E7B",
+    adjust = .5, 
+    width = .5, 
+    justification = -.4, 
+    .width = 0, 
+    point_colour = NA
+  ) + 
+  geom_boxplot(
+    fill = "#C70E7B",
+    width = .3, 
+    outlier.color = NA 
+  ) +
+  ggdist::stat_dots(
+    color = "#C70E7B",
+    side = "left", 
+    justification = 1.3, 
+    binwidth = NA
+  ) + 
+  theme_minimal() +
+  theme(
+    legend.position = "none", 
+    plot.title = element_text(hjust = 0.5),
+    strip.text = element_text(size = 12),
+    axis.text.y = element_text(size = 11),
+    axis.text.x = element_text(size = 11),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12)
+    ) +
+  labs(
+    title = "", 
+    y = "%GC", 
+    x = "Species Cluster"
+    ) 
+
+GC_plot
+
+#gsave("05-results/archaea_GC_plot.pdf", plot = GC_plot, device = "pdf", scale = 1, width = 10, height = 5, units = c("in"), dpi = 300)
+```
+
+E. Completeness estimates vs. total MAG length in base pairs, i - checkM estimate; ii - checkM2 estimate. CheckM2 was only run on MAGs assembled in this study.
+```{r}
+mag_source_colors <- c("Ancient human" = "#f07c13",
+                       "CMC" = "#c70f7c",
+                       "Modern" = "#f4b95a",
+                       "Non-human primate" = "#6a3d9a",
+                       "Neanderthal" = "#e386bd")
+
+
+checkM_v_length <- combined_metadata %>%
+  mutate(as.character = "primary_cluster") %>%
+  #mutate(primary_cluster = factor(primary_cluster, levels = c("1", "2", "3", "4"))) %>%
+  mutate(Genus = factor(Genus, levels = c("Methanomethylophilus", "Methanobrevibacter"))) %>%
+  mutate(mag_source = Industrialization) %>%
+  mutate(mag_source = str_replace_all(mag_source, "Non_industrial", "CMC"),
+         mag_source = str_replace_all(mag_source, "Industrial", "Modern")) %>%
+  mutate(mag_source = ifelse(str_detect(Host, "Ancient human"), "Ancient human", mag_source),
+         mag_source = ifelse(str_detect(Host, "Neanderthal"), "Neanderthal", mag_source)) %>%
+  mutate(quast_total_length = quast_total_length/100000) %>%
+  ggplot(., aes(x = quast_total_length, y = checkM.completeness, color = mag_source)) +
+    geom_point() +
+  scale_color_manual(values = mag_source_colors, name = "MAG source") +
+  theme_minimal() +
+  facet_grid(Genus ~ primary_cluster) +
+  theme(
+    strip.text = element_text(size = 12),
+    axis.text.y = element_text(size = 11),
+    axis.text.x = element_text(size = 11),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12),
+    legend.text = element_text(size = 11),
+    legend.title = element_text(size = 12)
+    ) +
+  labs(
+    title = "", 
+    y = "Completeness (%)", 
+    x = expression("Length (bp)" ~ (x10^5))
+    ) +
+  guides(colour = guide_legend(override.aes = list(size=2.5)))
+  
+checkM_v_length
+  
+#ggsave("05-results/checkM_completeness_v_length.pdf", plot = checkM_v_length, device = "pdf", scale = 1, width = 15, height = 5, units = c("in"), dpi = 300)
+```
+
+
+```{r}
+checkM2_v_length <- stats %>%
+  inner_join(combined_metadata) %>%
+  mutate(as.character = "primary_cluster") %>%
+  #mutate(primary_cluster = factor(primary_cluster, levels = c("1", "2", "3", "4"))) %>%
+  mutate(Genera = factor(Genera, levels = c("Methanomethylophilus", "Methanobrevibacter"))) %>%
+  mutate(mag_source = Industrialization) %>%
+  mutate(mag_source = str_replace_all(mag_source, "Non_industrial", "CMC"),
+         mag_source = str_replace_all(mag_source, "Industrial", "Modern")) %>%
+  mutate(mag_source = ifelse(str_detect(Host, "Ancient human"), "Ancient human", mag_source),
+         mag_source = ifelse(str_detect(Host, "Neanderthal"), "Neanderthal", mag_source)) %>%
+  mutate(quast_total_length = quast_total_length/100000) %>%
+  ggplot(., aes(x = quast_total_length, y = checkM2.completeness, color = mag_source)) +
+    geom_point() +
+  scale_color_manual(values = mag_source_colors, name = "MAG source") +
+  theme_minimal() +
+  facet_grid(Genera ~ primary_cluster) +
+  theme(
+    strip.text = element_text(size = 12),
+    axis.text.y = element_text(size = 11),
+    axis.text.x = element_text(size = 11),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12),
+    legend.text = element_text(size = 11),
+    legend.title = element_text(size = 12)
+    ) +
+  labs(
+    title = "", 
+    y = "checkM2 completeness (%)", 
+    x = expression("Length (bp)" ~ (x10^5))
+    ) +
+  guides(colour = guide_legend(override.aes = list(size=2.5)))
+  
+checkM2_v_length
+  
+#ggsave("05-results/checkM2_completeness_v_length.pdf", plot = checkM2_v_length, device = "pdf", scale = 1, width = 15, height = 5, units = c("in"), dpi = 300)
+```
+
+
+# F. CheckM2-estimated completeness vs. the number of genes identified in each MAG. 
+```{r}
+methanomethylophilus_panaroo <- fread("05-results/methanomethylophilus_full_tree_panaroo_gene_presence_absence.Rtab") %>%
+  pivot_longer(-Gene, names_to = "Sample", values_to = "pres_abs") %>%
+  group_by(Sample) %>%
+  mutate(pres_abs = as.integer(pres_abs)) %>%
+  summarize(count = sum(pres_abs)) %>%
+  filter(!str_detect(Sample, "GC")) %>%
+  mutate(Bin = if_else(str_detect(Sample, "GC|refbinned"), Sample, 
+                        str_replace_all(Sample, "-metaspades_00", ".bin.r.") %>%
+                        str_replace_all("-metaspades_0", ".bin.r.") %>%
+                        str_replace_all("-metaspades", ".bin.r.") %>%
+                        str_replace_all("-megahit_00", ".bin.r.") %>%
+                        str_replace_all("-megahit_0", ".bin.r.") %>%
+                        str_replace_all("-megahit_", ".bin.r.") %>%
+                        str_replace_all("_", ""))) %>%
+  select(-Sample)
+
+methanobrevibacter_panaroo <- fread("05-results/methanobrevibacter_full_tree_panaroo_gene_presence_absence.Rtab") %>%
+  pivot_longer(-Gene, names_to = "Sample", values_to = "pres_abs") %>%
+  group_by(Sample) %>%
+  mutate(pres_abs = as.integer(pres_abs)) %>%
+  summarize(count = sum(pres_abs)) %>%
+  filter(!str_detect(Sample, "GCA_016294135.1_ASM1629413v1_genomic"),
+         !str_detect(Sample, "ERS6955108-megahit_007")) %>%
+   mutate(Bin = if_else(str_detect(Sample, "GC|refbinned"), Sample, 
+                        str_replace_all(Sample, "-metaspades_00", ".bin.r.") %>%
+                        str_replace_all("-metaspades_0", ".bin.r.") %>%
+                        str_replace_all("-metaspades", ".bin.r.") %>%
+                        str_replace_all("-megahit_00", ".bin.r.") %>%
+                        str_replace_all("-megahit_0", ".bin.r.") %>%
+                        str_replace_all("-megahit_", ".bin.r.") %>%
+                        str_replace_all("_", ""))) %>%
+  select(-Sample)
+
+gene_count <- methanomethylophilus_panaroo %>%
+  full_join(., methanobrevibacter_panaroo)
+
+gene_count_v_completeness <- combined_metadata %>%
+  inner_join(gene_count) %>%
+  mutate(primary_cluster = ifelse(str_detect(Bin, "GCF_001639275.1_ASM163927v1_genomic"), "1188", primary_cluster)) %>%
+  mutate(checkM2.completeness = ifelse(str_detect(Bin, "GCF_001639275.1_ASM163927v1_genomic"), "96.97", checkM2.completeness)) %>%
+  mutate(Genus = ifelse(str_detect(Bin, "GCF_001639275.1_ASM163927v1_genomic"), "Methanobrevibacter", Genus)) %>%
+  mutate(primary_cluster = as.character(primary_cluster)) %>%
+  mutate(checkM2.completeness = as.integer(checkM2.completeness)) %>%
+  #mutate(primary_cluster = factor(primary_cluster, levels = c("1", "2", "3", "4"))) %>%
+  mutate(mag_source = Industrialization) %>%
+  mutate(mag_source = str_replace_all(mag_source, "Non_industrial", "CMC"),
+         mag_source = str_replace_all(mag_source, "Industrial", "Modern")) %>%
+  mutate(mag_source = ifelse(str_detect(Host, "Ancient human"), "Ancient human", mag_source),
+         mag_source = ifelse(str_detect(Host, "Neanderthal"), "Neanderthal", mag_source)) %>%
+  mutate(mag_source = ifelse(str_detect(Bin, "GCF_001639275.1_ASM163927v1_genomic"), "NCBI", mag_source)) %>%
+  mutate(Genus = factor(Genus, levels = c("Methanomethylophilus", "Methanobrevibacter"))) %>%
+  ggplot(., aes(x = count, y = checkM2.completeness, color = mag_source)) +
+    geom_point() +
+  scale_color_manual(values = mag_source_colors, name = "MAG source") +
+  theme_minimal() +
+  facet_grid(Genus ~ primary_cluster) +
+  theme(
+    strip.text = element_text(size = 12),
+    axis.text.y = element_text(size = 11),
+    axis.text.x = element_text(size = 11),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12),
+    legend.text = element_text(size = 11),
+    legend.title = element_text(size = 12),
+    legend.position="bottom"
+    ) +
+  labs(
+    title = "", 
+    y = "Completeness (%)", 
+    x = "Gene count"
+    ) +
+  guides(colour = guide_legend(override.aes = list(size=2.5)))
+
+
+gene_count_v_completeness
+
+#ggsave("05-results/checkM2_completeness_v_gene_count.pdf", plot = gene_count_v_completeness, device = "pdf", scale = 1, width = 15, height = 4.5, units = c("in"), dpi = 300)
+```
+
+

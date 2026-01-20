@@ -1,0 +1,128 @@
+Broad_drug_class	Drug Class
+Aminocoumarin antibiotic	aminocoumarin antibiotic
+Aminoglycoside antibiotic	aminoglycoside antibiotic
+Antibacterial free fatty acids	antibacterial free fatty acids
+Beta-lactam	carbapenem
+Beta-lactam	cephalosporin
+Beta-lactam	cephamycin
+Beta-lactam	penam
+Beta-lactam, multi-class	carbapenem; cephalosporin
+Beta-lactam, multi-class	carbapenem; cephalosporin; cephamycin
+Beta-lactam, multi-class	carbapenem; cephalosporin; cephamycin; penam
+Beta-lactam, multi-class	carbapenem; cephalosporin; cephamycin; penam; penem
+Beta-lactam, multi-class	carbapenem; cephalosporin; penam
+Beta-lactam, multi-class	carbapenem; penam
+Beta-lactam, multi-class	carbapenem; penam; penem
+Beta-lactam, multi-class	cephalosporin; cephamycin
+Beta-lactam, multi-class	cephalosporin; cephamycin; penam
+Beta-lactam, multi-class	cephalosporin; cephamycin; penam; penem
+Beta-lactam, multi-class	cephalosporin; penam
+Beta-lactam, multi-class	cephalosporin; penam; penem
+Beta-lactam, multi-class	cephalosporin; penem
+Beta-lactam, multi-class	monobactam; carbapenem; cephalosporin
+Beta-lactam, multi-class	monobactam; carbapenem; cephalosporin; cephamycin; penam
+Beta-lactam, multi-class	monobactam; carbapenem; cephalosporin; cephamycin; penam; penem
+Beta-lactam, multi-class	monobactam; carbapenem; cephalosporin; penam
+Beta-lactam, multi-class	monobactam; carbapenem; cephalosporin; penam; penem
+Beta-lactam, multi-class	monobactam; cephalosporin
+Beta-lactam, multi-class	monobactam; cephalosporin; cephamycin; penam; penem
+Beta-lactam, multi-class	monobactam; cephalosporin; penam
+Beta-lactam, multi-class	monobactam; cephalosporin; penam; penem
+Beta-lactam, multi-class	penam; penem
+Bicyclomycin-like antibiotic	bicyclomycin-like antibiotic
+Diaminopyrimidine antibiotic	diaminopyrimidine antibiotic
+Disinfecting agents and antiseptics	disinfecting agents and antiseptics
+Elfamycin antibiotic	elfamycin antibiotic
+Fluoroquinolone antibiotic	fluoroquinolone antibiotic
+Fusidane antibiotic	fusidane antibiotic
+Glycopeptide antibiotic	glycopeptide antibiotic
+Lincosamide antibiotic	lincosamide antibiotic
+Macrolide antibiotic	macrolide antibiotic
+Multi-class	aminoglycoside antibiotic; aminocoumarin antibiotic
+Multi-class	aminoglycoside antibiotic; cephalosporin; cephamycin; penam
+Multi-class	aminoglycoside antibiotic; tetracycline antibiotic; phenicol antibiotic
+Multi-class	carbapenem; cephalosporin; penam; tetracycline antibiotic
+Multi-class	cephalosporin; penam; peptide antibiotic
+Multi-class	fluoroquinolone antibiotic; aminoglycoside antibiotic
+Multi-class	fluoroquinolone antibiotic; aminoglycoside antibiotic; disinfecting agents and antiseptics
+Multi-class	fluoroquinolone antibiotic; aminoglycoside antibiotic; penam; tetracycline antibiotic; disinfecting agents and antiseptics
+Multi-class	fluoroquinolone antibiotic; cephalosporin; cephamycin; penam
+Multi-class	fluoroquinolone antibiotic; cephalosporin; glycylcycline; cephamycin; penam; tetracycline antibiotic; rifamycin antibiotic; phenicol antibiotic; disinfecting agents and antiseptics
+Multi-class	fluoroquinolone antibiotic; cephalosporin; glycylcycline; penam; tetracycline antibiotic; oxazolidinone antibiotic; glycopeptide antibiotic; rifamycin antibiotic; phenicol antibiotic; disinfecting agents and antiseptics
+Multi-class	fluoroquinolone antibiotic; cephalosporin; glycylcycline; penam; tetracycline antibiotic; rifamycin antibiotic; phenicol antibiotic; disinfecting agents and antiseptics
+Multi-class	fluoroquinolone antibiotic; cephalosporin; penam; tetracycline antibiotic; peptide antibiotic; disinfecting agents and antiseptics
+Multi-class	fluoroquinolone antibiotic; diaminopyrimidine antibiotic; phenicol antibiotic
+Multi-class	fluoroquinolone antibiotic; disinfecting agents and antiseptics
+Multi-class	fluoroquinolone antibiotic; glycylcycline; tetracycline antibiotic; diaminopyrimidine antibiotic; nitrofuran antibiotic
+Multi-class	fluoroquinolone antibiotic; lincosamide antibiotic; nucleoside antibiotic; phenicol antibiotic; disinfecting agents and antiseptics
+Multi-class	fluoroquinolone antibiotic; monobactam; carbapenem; cephalosporin; glycylcycline; cephamycin; penam; tetracycline antibiotic; rifamycin antibiotic; phenicol antibiotic; penem; disinfecting agents and antiseptics
+Multi-class	fluoroquinolone antibiotic; monobactam; cephalosporin
+Multi-class	fluoroquinolone antibiotic; rifamycin antibiotic
+Multi-class	fluoroquinolone antibiotic; tetracycline antibiotic
+Multi-class	fluoroquinolone antibiotic; tetracycline antibiotic; disinfecting agents and antiseptics
+Multi-class	fluoroquinolone antibiotic; tetracycline antibiotic; nitroimidazole antibiotic
+Multi-class	lincosamide antibiotic; streptogramin antibiotic; oxazolidinone antibiotic; glycopeptide antibiotic; phenicol antibiotic
+Multi-class	lincosamide antibiotic; streptogramin antibiotic; oxazolidinone antibiotic; phenicol antibiotic
+Multi-class	lincosamide antibiotic; streptogramin antibiotic; pleuromutilin antibiotic
+Multi-class	lincosamide antibiotic; streptogramin antibiotic; streptogramin A antibiotic; oxazolidinone antibiotic; phenicol antibiotic; pleuromutilin antibiotic
+Multi-class	lincosamide antibiotic; streptogramin antibiotic; streptogramin A antibiotic; pleuromutilin antibiotic
+Multi-class	lincosamide antibiotic; streptogramin antibiotic; streptogramin A antibiotic; streptogramin B antibiotic; pleuromutilin antibiotic
+Multi-class	lincosamide antibiotic; streptogramin antibiotic; streptogramin B antibiotic
+Multi-class	macrolide antibiotic; aminocoumarin antibiotic
+Multi-class	macrolide antibiotic; aminoglycoside antibiotic; cephalosporin; tetracycline antibiotic; peptide antibiotic; rifamycin antibiotic; disinfecting agents and antiseptics
+Multi-class	macrolide antibiotic; aminoglycoside antibiotic; oxazolidinone antibiotic; diaminopyrimidine antibiotic; phenicol antibiotic
+Multi-class	macrolide antibiotic; carbapenem; tetracycline antibiotic; diaminopyrimidine antibiotic; phenicol antibiotic; disinfecting agents and antiseptics
+Multi-class	macrolide antibiotic; disinfecting agents and antiseptics
+Multi-class	macrolide antibiotic; fluoroquinolone antibiotic; aminoglycoside antibiotic; carbapenem; cephalosporin; cephamycin; penam; tetracycline antibiotic; phenicol antibiotic; disinfecting agents and antiseptics
+Multi-class	macrolide antibiotic; fluoroquinolone antibiotic; aminoglycoside antibiotic; carbapenem; cephalosporin; glycylcycline; cephamycin; penam; tetracycline antibiotic; peptide antibiotic; aminocoumarin antibiotic; rifamycin antibiotic; phenicol antibiotic; penem; disinfecting agents and antiseptics
+Multi-class	macrolide antibiotic; fluoroquinolone antibiotic; aminoglycoside antibiotic; carbapenem; cephalosporin; penam; peptide antibiotic; penem
+Multi-class	macrolide antibiotic; fluoroquinolone antibiotic; aminoglycoside antibiotic; cephalosporin
+Multi-class	macrolide antibiotic; fluoroquinolone antibiotic; aminoglycoside antibiotic; cephalosporin; penam; tetracycline antibiotic; aminocoumarin antibiotic; diaminopyrimidine antibiotic; phenicol antibiotic
+Multi-class	macrolide antibiotic; fluoroquinolone antibiotic; cephalosporin; cephamycin; penam; tetracycline antibiotic
+Multi-class	macrolide antibiotic; fluoroquinolone antibiotic; cephalosporin; fusidane antibiotic
+Multi-class	macrolide antibiotic; fluoroquinolone antibiotic; lincosamide antibiotic; carbapenem; cephalosporin; tetracycline antibiotic; rifamycin antibiotic; diaminopyrimidine antibiotic; phenicol antibiotic; penem
+Multi-class	macrolide antibiotic; fluoroquinolone antibiotic; monobactam; aminoglycoside antibiotic; carbapenem; cephalosporin; cephamycin; penam; tetracycline antibiotic; peptide antibiotic; aminocoumarin antibiotic; diaminopyrimidine antibiotic; sulfonamide antibiotic; phenicol antibiotic; penem
+Multi-class	macrolide antibiotic; fluoroquinolone antibiotic; monobactam; aminoglycoside antibiotic; carbapenem; cephalosporin; cephamycin; penam; tetracycline antibiotic; peptide antibiotic; aminocoumarin antibiotic; diaminopyrimidine antibiotic; sulfonamide antibiotic; phenicol antibiotic; penem; disinfecting agents and antiseptics
+Multi-class	macrolide antibiotic; fluoroquinolone antibiotic; monobactam; aminoglycoside antibiotic; carbapenem; cephalosporin; cephamycin; penam; tetracycline antibiotic; phenicol antibiotic; penem; disinfecting agents and antiseptics
+Multi-class	macrolide antibiotic; fluoroquinolone antibiotic; monobactam; carbapenem; cephalosporin; cephamycin; penam; tetracycline antibiotic; peptide antibiotic; aminocoumarin antibiotic; diaminopyrimidine antibiotic; sulfonamide antibiotic; phenicol antibiotic; penem
+Multi-class	macrolide antibiotic; fluoroquinolone antibiotic; penam
+Multi-class	macrolide antibiotic; fluoroquinolone antibiotic; penam; tetracycline antibiotic
+Multi-class	macrolide antibiotic; fluoroquinolone antibiotic; rifamycin antibiotic
+Multi-class	macrolide antibiotic; fluoroquinolone antibiotic; tetracycline antibiotic; phenicol antibiotic
+Multi-class	macrolide antibiotic; fluoroquinolone antibiotic; tetracycline antibiotic; phenicol antibiotic; disinfecting agents and antiseptics
+Multi-class	macrolide antibiotic; glycylcycline; tetracycline antibiotic
+Multi-class	macrolide antibiotic; lincosamide antibiotic
+Multi-class	macrolide antibiotic; lincosamide antibiotic; orthosomycin antibiotic
+Multi-class	macrolide antibiotic; lincosamide antibiotic; streptogramin antibiotic
+Multi-class	macrolide antibiotic; lincosamide antibiotic; streptogramin antibiotic; oxazolidinone antibiotic; glycopeptide antibiotic; phenicol antibiotic; pleuromutilin antibiotic
+Multi-class	macrolide antibiotic; lincosamide antibiotic; streptogramin antibiotic; streptogramin A antibiotic; streptogramin B antibiotic
+Multi-class	macrolide antibiotic; lincosamide antibiotic; streptogramin antibiotic; streptogramin B antibiotic
+Multi-class	macrolide antibiotic; lincosamide antibiotic; streptogramin antibiotic; tetracycline antibiotic
+Multi-class	macrolide antibiotic; monobactam; tetracycline antibiotic; aminocoumarin antibiotic
+Multi-class	macrolide antibiotic; penam
+Multi-class	macrolide antibiotic; streptogramin antibiotic
+Multi-class	macrolide antibiotic; streptogramin antibiotic; phosphonic acid antibiotic
+Multi-class	macrolide antibiotic; streptogramin antibiotic; streptogramin B antibiotic
+Multi-class	macrolide antibiotic; tetracycline antibiotic; disinfecting agents and antiseptics
+Multi-class	monobactam; carbapenem; cephalosporin; cephamycin; penam; phenicol antibiotic; penem
+Multi-class	nucleoside antibiotic; disinfecting agents and antiseptics
+Multi-class	oxazolidinone antibiotic; phenicol antibiotic
+Multi-class	penam; tetracycline antibiotic
+Multi-class	peptide antibiotic; aminocoumarin antibiotic; rifamycin antibiotic
+Multi-class	rifamycin antibiotic; isoniazid-like antibiotic
+Multi-class	streptogramin antibiotic; streptogramin A antibiotic; pleuromutilin antibiotic
+Multi-class	tetracycline antibiotic; disinfecting agents and antiseptics
+Multi-class	tetracycline antibiotic; oxazolidinone antibiotic; phenicol antibiotic
+Mupirocin-like antibiotic	mupirocin-like antibiotic
+Nitroimidazole antibiotic	nitroimidazole antibiotic
+Nucleoside antibiotic	nucleoside antibiotic
+Peptide antibiotic	peptide antibiotic
+Phenicol antibiotic	phenicol antibiotic
+Phosphonic acid antibiotic	phosphonic acid antibiotic
+Pleuromutilin antibiotic	pleuromutilin antibiotic
+Rifamycin antibiotic	rifamycin antibiotic
+Streptogramin antibiotic	streptogramin antibiotic; streptogramin A antibiotic
+Streptogramin antibiotic	streptogramin antibiotic; streptogramin B antibiotic
+Sulfonamide antibiotic	sulfonamide antibiotic
+Tetracycline antibiotic	glycylcycline; tetracycline antibiotic
+Tetracycline antibiotic	tetracycline antibiotic

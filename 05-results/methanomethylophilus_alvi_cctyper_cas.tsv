@@ -1,0 +1,2 @@
+Contig	Operon	Start	End	Prediction	Complete_Interference	Complete_Adaptation	Best_type	Best_score	Genes	Positions	E-values	CoverageSeq	CoverageHMM	Strand_Interference	Strand_Adaptation
+NZ_CP017686.1	NZ_CP017686.1@16	873498	879877	V-A	100%	100%	V-A	8.0	['Cas2_11_CAS-I-II-III-IV-V-VI', 'Cas1_0_V', 'Cas1_0_V', 'Cas4_0_V', 'Cas12a_1_VA', 'CasR_1_CAS-I-II-III-IV-V-VI']	[862, 863, 864, 865, 866, 867]	['2.00e-15', '1.10e-69', '1.80e-40', '4.20e-56', '0.00e+00', '1.30e-03']	[0.78, 0.97, 0.935, 0.927, 0.995, 0.312]	[0.958, 0.505, 0.416, 0.989, 0.997, 0.367]	-1	-1
