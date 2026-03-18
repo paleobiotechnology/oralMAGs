@@ -43,11 +43,11 @@ rule amdir_velsko2024:
         samples = pd.read_csv(AMDIR_SAMPLES_TSV, sep="\t")
         samples['archive_accession'] = samples['archive_accession'].str.split(",")
         samples = (samples.drop(['archive_accession'], axis=1) \
-            .merge(samples[['project_name', 'sample_name', 'archive_accession']]
-                   .set_index(['project_name', 'sample_name'])
+            .merge(samples[['project_name', 'sample_name', 'site_name', 'archive_accession']]
+                   .set_index(['project_name', 'sample_name', 'site_name'])
                    .explode('archive_accession')
                    .reset_index(),
-                   how="left", on=['project_name', 'sample_name'])
+                   how="left", on=['project_name', 'sample_name', 'site_name'])
             .rename({'archive_accession': 'archive_sample_accession'}, axis=1)
         )
 
