@@ -63,7 +63,7 @@ rule amdir_velsko2024:
     
         # Filter for dental calculus samples with 
         velsko2024 = (samples.merge(libraries, how="left", on=["archive_sample_accession", "archive_project"])
-            .query("project_name == 'Velsko2024' and community_type == 'oral'")
+            .query("project_name == 'Velsko2024' and (community_type == 'oral' or archive_sample_accession == 'ERS15409414')")
         )
         # Append the accession codes for samples that were not merged
         velsko2024.loc[velsko2024['library_name'] == 'SIG040.A0101', 'archive_sample_accession'] = "ERS15409423.1"
