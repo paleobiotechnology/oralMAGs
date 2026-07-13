@@ -16,7 +16,7 @@ this project.
 
 The files starting with the prefix `ENVS` are conda environments used in combination with Snakemake.
 
-### `Archaea`: scripts for *Methanobrevibacter*_A and *Methanomethylophilus* analyses and figures
+### `Archaea`: scripts for *Methanocatella* and *Methanomethylophilus* analyses and figures
 
 - `aDNA-BAMPlotter_2kb_intervals.py`: scipt modified from https://github.com/MeriamGuellil/aDNA-BAMPlotter to visualize genome mapping across across 2kb base pair intervals (extended data figure 9)
 - `extended_data_8_archaea_mags_summary_figure.Rmd`: visualize methanogenic archaea MAG assembly metrics (extended data figure 8)
@@ -26,8 +26,8 @@ The files starting with the prefix `ENVS` are conda environments used in combina
 - `methanobrevibacter_cluster1189_tree_and_metadata.Rmd`: visualize Ca. *Methanobrevibacter*_A *senecta* (pr_cl_1189) single copy core gene tree and metadata (supplemental figure 38)
 - `methanobrevibacter_cluster1190_tree_and_metadata.Rmd`: visualize Ca. *Methanobrevibacter*_A *cohabitans* (pr_cl_1190) single copy core gene tree and metadata (supplemental figure 40)
 - `methanobrevibacter_methanogenesis_genes_tree_heatmap.Rmd`: visualize the presence/absence of genes involved in methanogenesis in *Methanobrevibacter*_A MAGs (supplemental figure 46)
-- `methanobacteriaceae_species_refs_and_cluster_reps.Rmd`: visualize how *Methanobrevibacter*_A cluster representatives are related to species within the *Methanobacteriaceae* family (supplemental figure 41)
-- `methanomethylophilus_tree_and_metadata.Rmd`: visulize *Methanomethylophilus* full genus tree and metadata (supplemental figure 33)
+- `methanobacteriaceae_tree.Rmd`: visualize how *Methanobrevibacter*_A cluster representatives are related to species within the *Methanobacteriaceae* family (supplemental figure 41)
+- `methanomethylophilus_tree_and_metadata.Rmd`: visulize *Methanomethylophilus* full genus tree and metadatia (supplemental figure 33)
 - `methanomethylophilus_cluster3192_tree.Rmd`: visualize Ca. *Methanomethylophilus fidelis* (pr_cl_3192) single copy core gene tree and metadata (supplemental figure 34)
 - `archaea_cas_alignments.Rmd`: create MUSCLE and MAFFT percent identity heat maps for *Methanobrevibacter*_A cas IIIA and *Methanomethylophilus* cas IIA (supplemental figures 42 and 43)
-- `mad.R`: Minimal Ancestor Deviation (MAD) rooting R script file used for single copy core gene tree rooting
+- `mad.R`: Minimal Ancestor Deviation (MAD) rooting R script file used for single copy core gene tree rooting 

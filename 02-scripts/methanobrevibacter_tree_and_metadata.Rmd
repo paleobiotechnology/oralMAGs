@@ -10,17 +10,6 @@ output:
 ---
 
 
-```{r}
-if (!require("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-
-BiocManager::install("ggtree")
-
-
-install.packages("aplot")
-```
-
-
 ```{r load_libraries, echo = F, message = F}
 library(knitr)
 library(data.table)
@@ -104,8 +93,11 @@ fastBAPS_clusters_colors <- c("1" = "#9ECAE1",
 ```{r}
 metadata <- fread("05-results/methanobrevibacter_metadata.tsv") %>%
   rename(Label = Bin) %>%
-  rename(Bin = prepublication_bin) %>%
-  relocate(Bin, .before = Label)
+  rename(Bin = prepublication_bin) 
+%>%
+  #relocate(Bin, .before = Label) %>%
+  mutate(Bin = ifelse(str_detect(Bin, "CMC|ERSX0004033"), Bin, Label))
+
 
 ```
 
@@ -115,6 +107,13 @@ metadata <- fread("05-results/methanobrevibacter_metadata.tsv") %>%
 ```{r}
 # read in the tree
 tre_methanobrevibacter <- ape::read.tree("./05-results/phylophlan_aln_methanobrevibacter_full_tree.raxml.support")
+
+fix_labels <- fread("05-results/methanobrevibacter_metadata.tsv") %>%
+  rename(Label = Bin) %>%
+  rename(Bin = prepublication_bin) %>%
+  relocate(Bin, .before = Label) %>%
+  select(Label, Bin) %>%
+  mutate(Bin = ifelse(str_detect(Bin, "CMC|ERSX0004033"), Bin, Label))
 
 # adjust tip labels
 tre_methanobrevibacter$tip.label <- tre_methanobrevibacter$tip.label %>%
@@ -132,7 +131,9 @@ tre_methanobrevibacter$tip.label <- tre_methanobrevibacter$tip.label %>%
   #mutate(Bin = str_replace_all(Bin, "GCF_001639275.1_ASM163927v1_genomic", "GCF_001639275.1")) %>%
   #mutate(Bin = str_replace_all(Bin, "GCA_000437055.1_MGS186_genomic", "GCA_000437055.1")) %>%
   #mutate(Bin = str_replace_all(Bin, "GCA_016294135.1_ASM1629413v1_genomic", "GCA_016294135.1")) %>%
-  pull(Bin)
+  left_join(., fix_labels) %>%
+  select(Label) %>%
+  pull()
 
 # root the tree in M. ruminantium
 tre_methanobrevibacter <- root(tre_methanobrevibacter, outgroup = "GCA_016294135.1_ASM1629413v1_genomic")
@@ -153,9 +154,10 @@ methanobrevibacter_tree_age <- methanobrevibacter_tree %<+% metadata +
   geom_nodelab(aes(label = ifelse(as.numeric(label) > 50, label, "")), size = 2, hjust = -0.1) +
   guides(shape = guide_legend(override.aes = list(size = 3))) 
 +
-  geom_tiplab(aes(label = Label ), size = 1.5, hjust = -0.1)
+  geom_tiplab(aes(label = Label), size = 1.5, hjust = -0.1)
 
 methanobrevibacter_tree_age
+
 ```
 
 
@@ -164,13 +166,13 @@ methanobrevibacter_tree_age
 methanobrevibacter_metadata2 <- metadata %>%
   mutate(Industrialization = if_else(Industrialization == "", "Reference", Industrialization)) %>%
   mutate(Industrialization = ifelse(str_detect(sample_host, "Homo sapiens neanderthalensis"), "Neanderthal", Industrialization)) %>%
-  dplyr::select(Bin, Industrialization, primary_cluster, Continent) %>%
+  dplyr::select(Label, Industrialization, primary_cluster, Continent) %>%
   mutate(primary_cluster = as.character(primary_cluster)) %>%
   mutate(Industrialization = str_replace_all(Industrialization, "Non_industrial", "Modern non-industrial"),
          Industrialization = str_replace_all(Industrialization, "Industrial", "Modern industrial"),
          Industrialization = str_replace_all(Industrialization, "Ancient", "Ancient Human")) %>%
-  dplyr::select(Bin, primary_cluster, Industrialization, Continent) %>%
-  pivot_longer(!Bin, names_to = "category", values_to = "Geo_Cluster") %>%
+  dplyr::select(Label, primary_cluster, Industrialization, Continent) %>%
+  pivot_longer(!Label, names_to = "category", values_to = "Geo_Cluster") %>%
   mutate(category = factor(category, levels = c("primary_cluster", "Industrialization", "Continent")))
 
 
@@ -192,7 +194,7 @@ geo_host_colors <- c("1188" = "#4292C6",
                        "Non-human primate" = "#b2815e")
 
 
-heatmap_metadata <- ggplot(methanobrevibacter_metadata2, aes(x = category, y = Bin, fill = Geo_Cluster)) +
+heatmap_metadata <- ggplot(methanobrevibacter_metadata2, aes(x = category, y = Label, fill = Geo_Cluster)) +
   geom_tile() +
   theme_void() +
   theme(axis.title.x=element_blank(),
@@ -207,7 +209,7 @@ heatmap_metadata
 
 
 #Species cluster
-species_clusters_heatmap <- ggplot(metadata, aes(x = "primary_cluster", y = Bin, fill = primary_cluster)) +
+species_clusters_heatmap <- ggplot(metadata, aes(x = "primary_cluster", y = Label, fill = primary_cluster)) +
   geom_tile() +
   theme_void() +
   theme(axis.title.x=element_blank(),
@@ -219,7 +221,7 @@ species_clusters_heatmap <- ggplot(metadata, aes(x = "primary_cluster", y = Bin,
   scale_fill_manual(values = cluster_colors, name = "Species")
 
 #Continent
-continent_heatmap <- ggplot(metadata, aes(x = "Continent", y = Bin, fill = Continent)) +
+continent_heatmap <- ggplot(metadata, aes(x = "Continent", y = Label, fill = Continent)) +
   geom_tile() +
   theme_void() +
   theme(axis.title.x=element_blank(),
@@ -237,7 +239,7 @@ mag_source_heatmap <- metadata %>%
   mutate(Industrialization = str_replace_all(Industrialization, "Non_industrial", "Modern non-industrial"),
          Industrialization = str_replace_all(Industrialization, "Industrial", "Modern industrial"),
          Industrialization = str_replace_all(Industrialization, "Ancient", "Ancient Human")) %>%
-  ggplot(., aes(x = "Industrialization", y = Bin, fill = Industrialization)) +
+  ggplot(., aes(x = "Industrialization", y = Label, fill = Industrialization)) +
   geom_tile() +
   theme_void() +
   theme(axis.title.x=element_blank(),
@@ -255,7 +257,7 @@ mag_source_heatmap <- metadata %>%
 ## Additional metada
 ### Age
 ```{r}
-heatmap_age <- ggplot(metadata, aes(x = "log_age", y = Bin, fill = log_age)) +
+heatmap_age <- ggplot(metadata, aes(x = "log_age", y = Label, fill = log_age)) +
   geom_tile() +
   theme_void() +
   theme(axis.title.x=element_blank(),
@@ -272,7 +274,7 @@ heatmap_age
 
 ### Latitude
 ```{r}
-latitude <- ggplot(metadata, aes(x = "latitude", y = Bin, fill = latitude)) +
+latitude <- ggplot(metadata, aes(x = "latitude", y = Label, fill = latitude)) +
   geom_tile() +
   theme_void() +
   theme(axis.title.x=element_blank(),
@@ -289,7 +291,7 @@ latitude
 
 ### Longitude
 ```{r}
-longitude <- ggplot(metadata, aes(x = "longitude", y = Bin, fill = longitude)) +
+longitude <- ggplot(metadata, aes(x = "longitude", y = Label, fill = longitude)) +
   geom_tile() +
   theme_void() +
   theme(axis.title.x=element_blank(),
@@ -306,7 +308,7 @@ longitude
 
 ### Contig Count
 ```{r}
-contigs <- ggplot(metadata, aes(x = "quast_n_contigs", y = Bin, fill = quast_n_contigs)) +
+contigs <- ggplot(metadata, aes(x = "quast_n_contigs", y = Label, fill = quast_n_contigs)) +
   geom_tile() +
   theme_void() +
   theme(axis.title.x=element_blank(),
@@ -324,14 +326,14 @@ contigs
 ### N50
 ```{r}
 n50 <- metadata %>%
-  select(Bin, quast_N50) %>%
+  select(Label, quast_N50) %>%
   mutate(n50 = ifelse(quast_N50 <= 5000, "5000",
                       ifelse(quast_N50 > 5000 & quast_N50 <= 10000, "10000",
                              ifelse(quast_N50 > 10000 & quast_N50 <= 50000, "50000",
                                     ifelse(quast_N50 > 50000 & quast_N50 <= 100000, "100000","150000"))))) %>%
   dplyr::select(-quast_N50) %>%
   mutate(n50 = fct_relevel(n50, "5000","10000","50000","100000")) %>%
-  ggplot(., aes(x = "n50", y = Bin, fill = n50)) +
+  ggplot(., aes(x = "n50", y = Label, fill = n50)) +
   geom_tile() +
   theme_void() +
   theme(axis.title.x=element_blank(),
@@ -349,7 +351,7 @@ n50
 
 ### Completeness
 ```{r}
-completeness <- ggplot(metadata, aes(x = "checkM.completeness", y = Bin, fill = checkM.completeness)) +
+completeness <- ggplot(metadata, aes(x = "checkM.completeness", y = Label, fill = checkM.completeness)) +
   geom_tile() +
   theme_void() +
   theme(axis.title.x=element_blank(),
@@ -426,7 +428,11 @@ methanobrevibacter_cas_input <- crispr_pairs %>%
   #select(-cctyper) %>%
   pivot_longer(cols = c(crispr1, crispr2), names_to = "category", values_to = "crispr_metadata") 
 
-heatmap_crispr <- ggplot(methanobrevibacter_cas_input, aes(x = category, y = Bin, fill = crispr_metadata)) +
+methanobrevibacter_cas_input <- methanobrevibacter_cas_input %>%
+  inner_join(., metadata %>%
+               select(Label, Bin), by = "Bin")
+
+heatmap_crispr <- ggplot(methanobrevibacter_cas_input, aes(x = category, y = Label, fill = crispr_metadata)) +
   geom_tile() +
   theme_void() +
   theme(axis.title.x = element_blank(),
@@ -475,8 +481,8 @@ dev.off()
 
 ## CAZyme
 ```{r}
-cazymes_methanobrevibacter <-fread("05-results/methanobrevibacter_dbcan3_cazyme_table.tsv")
-cazymes_oralis <-fread("05-results/dbcan3_cazyme_table_methanobrevibacter_oralis.tsv")
+cazymes_methanobrevibacter <- fread("05-results/methanobrevibacter_dbcan3_cazyme_table.tsv")
+cazymes_oralis <- fread("05-results/dbcan3_cazyme_table_methanobrevibacter_oralis.tsv")
 
 methanobrevibacter_metadata <- fread("05-results/methanobrevibacter_metadata.tsv") %>%
   dplyr::select(-Oral_site)
@@ -507,12 +513,12 @@ heatmap_cazyme <- cazymes_methanobrevibacter_table2 %>%
   filter(!HMMER == "CE4") %>%
   filter(!HMMER == "GH13") %>%
   full_join(., metadata %>%
-              select(Bin)) %>%
+              select(Label, Bin)) %>%
   mutate(functional_category = as.character(trimws(functional_category))) %>%
-  complete(HMMER, Bin, fill = list(functional_category = NA)) %>%
+  complete(HMMER, Label, fill = list(functional_category = NA)) %>%
   filter(!is.na(HMMER)) %>% 
   mutate(HMMER = factor(HMMER, levels = c("GT2", "GT4", "GT66", "GT81", "GT116", "GH154"))) %>%
-  ggplot(aes(x = HMMER, y = Bin, fill = functional_category)) +
+  ggplot(aes(x = HMMER, y = Label, fill = functional_category)) +
   geom_tile(color = "white") +
   scale_fill_manual(values = c(cazyme_colors, "#f0f0f0"),
                     na.value = "#f0f0f0") +
@@ -544,7 +550,7 @@ nimI <- fread("05-results/methanobrevibacter_card_table.tsv") %>%
   full_join(., metadata) %>%
   mutate(nimI = if_else(is.na(nimI), "Absent", nimI))
 
-heatmap_nimI <- ggplot(nimI, aes(x = "nimI", y = Bin, fill = nimI)) +
+heatmap_nimI <- ggplot(nimI, aes(x = "nimI", y = Label, fill = nimI)) +
   geom_tile() +
   theme_void() +
   theme(axis.title.x=element_blank(),
@@ -574,7 +580,7 @@ methanobrevibacter_prophages <- fread("05-results/methanobrevibacter_prophages.t
 prophage_colors <- c("Present" = "#f6865e",
               "Absent" = "#FBD9D2")
 
-prophage_heatmap <- ggplot(methanobrevibacter_prophages, aes(x = "Prophage", y = Bin, fill = Prophage)) +
+prophage_heatmap <- ggplot(methanobrevibacter_prophages, aes(x = "Prophage", y = Label, fill = Prophage)) +
   geom_tile() +
   theme_void() +
   theme(axis.title.x=element_blank(),
@@ -607,10 +613,13 @@ gene_counts <- methanogenesis_pres_abs %>%
                         str_replace_all("-megahit_00", ".bin.r.") %>%
                         str_replace_all("-megahit_0", ".bin.r.") %>%
                         str_replace_all("-megahit_", ".bin.r.") %>%
-                        str_replace_all("_", ""))) 
+                        str_replace_all("_", ""))) %>%
+  full_join(., metadata %>%
+              select(Bin, Label)) %>%
+  filter(Bin != "GCF_912073625.1_PRJEB46774_genomic")
 
 gene_counts_bar_plot <- gene_counts %>%
-  ggplot(., aes(x = total, y = reorder(Bin, total))) +
+  ggplot(., aes(x = total, y = reorder(Label, total))) +
     geom_col(fill = "#C7E9C0") +
     theme_classic() +
     theme(
@@ -674,11 +683,15 @@ heatmap_panaroo
 
 ## Combine 
 ```{r}
-methanobrevibacter_full_tree <- species_clusters_heatmap %>% insert_left(methanobrevibacter_tree_age, width = 7) %>% insert_right(mag_source_heatmap) %>% insert_right(heatmap_age, width = 1) %>% insert_right(continent_heatmap) %>% insert_right(latitude, width = 1) %>% insert_right(longitude, width = 1) %>% insert_right(completeness, width = 1) %>% insert_right(contigs, width = 1) %>% insert_right(n50, width = 1) %>% insert_right(heatmap_crispr, width = 1) %>% insert_right(heatmap_cazyme, width = 1) %>% insert_right(heatmap_nimI, width = 1) %>% insert_right(prophage_heatmap, width = 1) %>% insert_right(gene_counts_bar_plot, width = 1) 
+methanobrevibacter_full_tree <- species_clusters_heatmap %>% aplot::insert_left(methanobrevibacter_tree_age, width = 7) 
+
+
+
+methanobrevibacter_full_tree <- species_clusters_heatmap %>% insert_left(methanobrevibacter_tree_age, width = 7) %>% insert_right(mag_source_heatmap, width = 1) %>% insert_right(heatmap_age, width = 1) %>% insert_right(continent_heatmap, width = 1) %>% insert_right(latitude, width = 1) %>% insert_right(longitude, width = 1) %>% insert_right(completeness, width = 1) %>% insert_right(contigs, width = 1) %>% insert_right(n50, width = 1) %>% insert_right(heatmap_crispr, width = 1) %>% insert_right(heatmap_cazyme, width = 1) %>% insert_right(heatmap_nimI, width = 1) %>% insert_right(prophage_heatmap, width = 1) %>% insert_right(gene_counts_bar_plot, width = 1) 
 
 methanobrevibacter_full_tree
 
-#ggsave("./05-results/methanobrevibacter_phylophlan_full_metadata_tmp.pdf", plot = methanobrevibacter_full_tree, device = "pdf", scale = 1, width = 32, height = 16, units = c("in"), dpi = 300) 
+#ggsave("./05-results/methanobrevibacter_phylophlan_full_metadata_20260707.pdf", plot = methanobrevibacter_full_tree, device = "pdf", scale = 1, width = 32, height = 16, units = c("in"), dpi = 300) 
 ```
 
 
@@ -686,7 +699,7 @@ methanobrevibacter_full_tree
 # Species sharing 
 ```{r}
 individual_id_species <- metadata %>%
-  filter(!str_detect(Bin, "GC")) %>%
+  filter(!str_detect(Label, "GC")) %>%
   select(Secondary_sample_accession, primary_cluster) %>%
   mutate(value = 1) %>%
   unique() %>%
@@ -736,7 +749,7 @@ UpSet(comb_mat, set_order  = set_order, comb_order = ord, top_annotation = top_a
 bar_heights <- comb_size(comb_mat)
 
 #run in the console to save pdf
-pdf(file = "/mnt/archgen/microbiome_calculus/ancient_archaea/05-results/methanobrevibacter_species_sharing_upset_plot.pdf",
+pdf(file = "",
     width = 6,
     height = 3)
 

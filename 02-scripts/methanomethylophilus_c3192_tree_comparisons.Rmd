@@ -1,0 +1,384 @@
+---
+title: "Methanomethylophilus c3192 tree comparisons"
+author: "Keri Burge"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(janitor)
+library(ape)
+library(ggtree)
+library(aplot)
+library(viridis)
+library(tidyverse)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+Set the working directory of the notebook to the parent directory of the 
+notebook itself.  
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath(".."))
+```
+
+
+```{r}
+complete_metadata <- fread("./05-results/methanomethylophilus_metadata.tsv") %>%
+  rename(Label = Bin) %>%
+  rename(Bin = prepublication_bin) 
+
+metadata <- fread("./05-results/methanomethylophilus_metadata.tsv") %>%
+  rename(Label = Bin) %>%
+  rename(Bin = prepublication_bin) 
+```
+
+
+
+# No out group
+## RAxML with no out group
+```{r}
+methanomethylophilus_c3192_raxml_no_out <- ape::read.tree("./05-results/methanomethylophilus_c3192_mad_root.nwk")
+
+methanomethylophilus_c3192_raxml_no_out$tip.label <- methanomethylophilus_c3192_raxml_no_out$tip.label %>%
+  as.data.frame() %>%
+  dplyr::rename(Bin = 1) %>%
+  mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
+                        str_replace_all(Bin, "-metaspades_00", ".bin.r.") %>%
+                        str_replace_all("-metaspades_0", ".bin.r.") %>%
+                        str_replace_all("-metaspades", ".bin.r.") %>%
+                        str_replace_all("-megahit_00", ".bin.r.") %>%
+                        str_replace_all("-megahit_0", ".bin.r.") %>%
+                        str_replace_all("-megahit_", ".bin.r.") %>%
+                        str_replace_all("_", ""))) %>%
+  inner_join(metadata, by = "Bin") %>%
+  select(Label) %>%
+  pull(Label)
+
+methanomethylophilus_c3192_raxml_no_out <- root(methanomethylophilus_c3192_raxml_no_out, outgroup = "ERS5710613.bin.r.61")
+
+
+
+```
+
+
+## CASTER with no out group
+
+```{r}
+methanomethylophilus_c3192_caster_no_outgroup <- ape::read.tree("./05-results/methanomethylophilus_c3192_no_outgroup.caster.nwk")
+
+
+fix_labels <- metadata %>%
+  select(Label, Bin) %>%
+  mutate(Bin = ifelse(str_detect(Bin, "CMC|ERSX"), Bin, Label))
+
+
+methanomethylophilus_c3192_caster_no_outgroup$tip.label  <- methanomethylophilus_c3192_caster_no_outgroup$tip.label %>%
+  as.data.frame() %>%
+  dplyr::rename(Bin = 1) %>%
+  mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
+                        str_replace_all(Bin, "-metaspades_00", ".bin.r.") %>%
+                        str_replace_all("-metaspades_0", ".bin.r.") %>%
+                        str_replace_all("-metaspades", ".bin.r.") %>%
+                        str_replace_all("-megahit_00", ".bin.r.") %>%
+                        str_replace_all("-megahit_0", ".bin.r.") %>%
+                        str_replace_all("-megahit_", ".bin.r.") %>%
+                        str_replace_all("_", ""))) %>%
+  inner_join(., fix_labels) %>%
+  select(Label) %>%
+  pull()
+
+
+methanomethylophilus_c3192_caster_no_outgroup <- root(methanomethylophilus_c3192_caster_no_outgroup, outgroup = "ERS5710613.bin.r.61")
+
+
+methanomethylophilus_c3192_caster_no_outgroup_tree <- ggtree(methanomethylophilus_c3192_caster_no_outgroup, ladderize = T)
+
+
+
+```
+
+
+## Tanglegram
+```{r}
+#Ladderize the trees
+t1_ladder <- ladderize(methanomethylophilus_c3192_raxml_no_out) #RAxML tree
+t2_ladder <- ladderize(methanomethylophilus_c3192_caster_no_outgroup) #CASTER tree
+
+association <- cbind(t1_ladder$tip.label, t1_ladder$tip.label)
+
+filtered_metadata <- fread("./05-results/methanomethylophilus_metadata.tsv") %>%
+  rename(Label = Bin) %>%
+  rename(Bin = prepublication_bin) %>%
+  filter(primary_cluster == "3192") %>%
+  mutate(Industrialization = if_else(Industrialization == "", "Reference", Industrialization)) %>%
+  mutate(Industrialization = ifelse(str_detect(sample_host, "Homo sapiens neanderthalensis"), "Neanderthal", Industrialization)) %>%
+  mutate(Industrialization = str_replace_all(Industrialization, "Non_industrial", "Modern non-industrial"),
+         Industrialization = str_replace_all(Industrialization, "Industrial", "Modern industrial"),
+         Industrialization = str_replace_all(Industrialization, "Ancient", "Ancient Human")) 
+  
+
+#Metadata colors
+tip_order <- data.frame(Label = association[,2])
+matched_meta <- merge(tip_order, filtered_metadata, by = "Label", all.x = TRUE, sort = FALSE)
+
+#Re-sort to match original tip_order exactly (merge can scramble rows)
+matched_meta <- matched_meta[match(tip_order$Label, matched_meta$Label), ]
+
+
+#Define colors for metadata
+unique_continent <- unique(matched_meta$Continent)
+unique_host <- unique(matched_meta$Industrialization)
+
+host_colors <- c("Ancient Human" = "#FFD5AF",
+                       "Neanderthal" = "#FEEDA0",
+                       "Modern non-industrial" = "#BCE1FF",
+                       "Modern industrial" = "#EFB6D6",
+                       "Non-human primate" = "#b2815e",
+                       "Reference" = "lightgrey")
+
+continent_colors <- c("Africa" = "#CC79A7",
+                      "Asia" = "#97CE2F",
+                      "Caribbean" = "#F09163",
+                      "Europe" = "#9E9AC8",
+                      "North America" = "#1ec1a7",
+                      "Oceania" = "#098BD9",
+                      "Reference" = "lightgrey")
+
+#Assign a color to every tip based on its metadata
+line_cols_host <- host_colors[matched_meta$Industrialization]
+line_cols_continent <- continent_colors[matched_meta$Continent]
+
+t1_fixed <- compute.brlen(t1_ladder, 1)
+t2_fixed <- compute.brlen(t2_ladder, 1)
+
+
+ape::cophyloplot(
+  t1_fixed,
+  t2_fixed,
+  assoc = association,
+  show.tip.label = T,
+  use.edge.length = FALSE, # This is key: it forces branches to the edge
+  space = 250, # Adjust this to move trees even closer
+  gap =25,
+  length.line = 0,
+  col = line_cols_host,
+  lwd = 1.5)
+
+
+ape::cophyloplot(
+  t1_fixed,
+  t2_fixed,
+  assoc = association,
+  show.tip.label = T,
+  use.edge.length = FALSE, # This is key: it forces branches to the edge
+  space = 250, # Adjust this to move trees even closer
+  gap = 25,
+  length.line = 0,
+  col = line_cols_continent,
+  lwd = 1.5)
+
+
+
+```
+
+```{r}
+#run in console to save tanglegram
+svg(file = "",
+    width = 12,
+    height = 8)
+
+ape::cophyloplot(
+  t1_fixed,
+  t2_fixed,
+  assoc = association,
+  show.tip.label = T,
+  use.edge.length = FALSE, # This is key: it forces branches to the edge
+  space = 250, # Adjust this to move trees even closer
+  gap =25,
+  length.line = 0,
+  col = line_cols_continent,
+  lwd = 1.5)
+
+dev.off()
+
+```
+
+
+# With out group
+## RAxML with an out group (chimp - ERS3774417.bin.r.1)
+```{r}
+methanomethylophilus_c3192_raxml_w_out <- ape::read.tree("./05-results/methanomethylophilus_c3192_w_outgroup_scc.raxml.support")
+
+metadata_w_chimp <- metadata %>%
+  full_join(., complete_metadata %>%
+              filter(Label == "ERS3774417.bin.r.1")) %>%
+  mutate(Industrialization = if_else(Industrialization == "", "Reference", Industrialization)) %>%
+  mutate(Industrialization = ifelse(str_detect(sample_host, "Homo sapiens neanderthalensis"), "Neanderthal", Industrialization)) %>%
+  mutate(Industrialization = str_replace_all(Industrialization, "Non_industrial", "Modern non-industrial"),
+         Industrialization = str_replace_all(Industrialization, "Industrial", "Modern industrial"),
+         Industrialization = str_replace_all(Industrialization, "Ancient", "Ancient Human")) 
+
+fix_labels <- metadata_w_chimp %>%
+  select(Label, Bin) %>%
+  mutate(Bin = ifelse(str_detect(Bin, "CMC"), Bin, Label))
+
+
+methanomethylophilus_c3192_raxml_w_out$tip.label <- methanomethylophilus_c3192_raxml_w_out$tip.label %>%
+  as.data.frame() %>%
+  dplyr::rename(Bin = 1) %>%
+  mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
+                        str_replace_all(Bin, "-metaspades_00", ".bin.r.") %>%
+                        str_replace_all("-metaspades_0", ".bin.r.") %>%
+                        str_replace_all("-metaspades", ".bin.r.") %>%
+                        str_replace_all("-megahit_00", ".bin.r.") %>%
+                        str_replace_all("-megahit_0", ".bin.r.") %>%
+                        str_replace_all("-megahit_", ".bin.r.") %>%
+                        str_replace_all("_", ""))) %>%
+  left_join(fix_labels, by = "Bin") %>%
+  select(Label) %>%
+  pull(Label)
+
+methanomethylophilus_c3192_raxml_w_out <- root(methanomethylophilus_c3192_raxml_w_out, outgroup = "ERS3774417.bin.r.1")
+
+#methanomethylophilus_c3192_raxml_w_out_midpoint <- phangorn::midpoint(methanomethylophilus_c3192_raxml_w_out)
+
+#methanomethylophilus_c3192_raxml_w_out_midpoint_dropped <- drop.tip(methanomethylophilus_c3192_raxml_w_out_midpoint, "ERS3774417.bin.r.1")
+
+methanomethylophilus_c3192_raxml_w_out_midpoint_dropped_tree <- ggtree(methanomethylophilus_c3192_raxml_w_out_midpoint_dropped, ladderize = T)
+
+methanomethylophilus_c3192_raxml_w_out_midpoint_dropped_tree
+
+```
+
+
+
+## CASTER with an out group (chimp - ERS3774417.bin.r.1)
+```{r}
+methanomethylophilus_c3192_caster_w_out <- ape::read.tree("./05-results/methanomethylophilus_c3192_w_outgroup.caster.nwk")
+
+methanomethylophilus_c3192_caster_w_out$tip.label <- methanomethylophilus_c3192_caster_w_out$tip.label %>%
+  as.data.frame() %>%
+  dplyr::rename(Bin = 1) %>%
+  mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
+                        str_replace_all(Bin, "-metaspades_00", ".bin.r.") %>%
+                        str_replace_all("-metaspades_0", ".bin.r.") %>%
+                        str_replace_all("-metaspades", ".bin.r.") %>%
+                        str_replace_all("-megahit_00", ".bin.r.") %>%
+                        str_replace_all("-megahit_0", ".bin.r.") %>%
+                        str_replace_all("-megahit_", ".bin.r.") %>%
+                        str_replace_all("_", ""))) %>%
+  left_join(fix_labels, by = "Bin") %>%
+  select(Label) %>%
+  pull(Label)
+
+methanomethylophilus_c3192_caster_w_out <- root(methanomethylophilus_c3192_caster_w_out, outgroup = "ERS3774417.bin.r.1")
+
+methanomethylophilus_c3192_caster_w_out_tree <- ggtree(methanomethylophilus_c3192_caster_w_out, ladderize = T)
+
+
+methanomethylophilus_c3192_caster_w_out_tree
+
+```
+
+
+## Tanglegram
+```{r}
+#Ladderize the trees
+t1_ladder <- ladderize(methanomethylophilus_c3192_raxml_w_out) #RAxML tree
+t2_ladder <- ladderize(methanomethylophilus_c3192_caster_w_out) #CASTER tree
+
+association <- cbind(t1_ladder$tip.label, t1_ladder$tip.label)
+
+
+#Metadata colors
+tip_order <- data.frame(Label = association[,2])
+matched_meta <- merge(tip_order, metadata_w_chimp, by = "Label", all.x = TRUE, sort = FALSE)
+
+#Re-sort to match original tip_order exactly (merge can scramble rows)
+matched_meta <- matched_meta[match(tip_order$Label, matched_meta$Label), ]
+
+
+#Define colors for metadata
+unique_continent <- unique(matched_meta$Continent)
+unique_host <- unique(matched_meta$Industrialization)
+
+host_colors <- c("Ancient Human" = "#FFD5AF",
+                       "Neanderthal" = "#FEEDA0",
+                       "Modern non-industrial" = "#BCE1FF",
+                       "Modern industrial" = "#EFB6D6",
+                       "Non-human primate" = "#b2815e",
+                       "Reference" = "lightgrey")
+
+continent_colors <- c("Africa" = "#CC79A7",
+                      "Asia" = "#97CE2F",
+                      "Caribbean" = "#F09163",
+                      "Europe" = "#9E9AC8",
+                      "North America" = "#1ec1a7",
+                      "Oceania" = "#098BD9",
+                      "Reference" = "lightgrey")
+
+#Assign a color to every tip based on its metadata
+line_cols_host <- host_colors[matched_meta$Industrialization]
+line_cols_continent <- continent_colors[matched_meta$Continent]
+
+t1_fixed <- compute.brlen(t1_ladder, 1)
+t2_fixed <- compute.brlen(t2_ladder, 1)
+
+
+ape::cophyloplot(
+  t1_fixed,
+  t2_fixed,
+  assoc = association,
+  show.tip.label = T,
+  use.edge.length = FALSE, # This is key: it forces branches to the edge
+  space = 250, # Adjust this to move trees even closer
+  gap =25,
+  length.line = 0,
+  col = line_cols_host,
+  lwd = 1.5)
+
+
+ape::cophyloplot(
+  t1_fixed,
+  t2_fixed,
+  assoc = association,
+  show.tip.label = T,
+  use.edge.length = FALSE, # This is key: it forces branches to the edge
+  space = 250, # Adjust this to move trees even closer
+  gap = 25,
+  length.line = 0,
+  col = line_cols_continent,
+  lwd = 1.5)
+
+
+
+```
+
+```{r}
+#run in console to save tanglegram
+svg(file = "",
+    width = 12,
+    height = 8)
+
+ape::cophyloplot(
+  t1_fixed,
+  t2_fixed,
+  assoc = association,
+  show.tip.label = T,
+  use.edge.length = FALSE, # This is key: it forces branches to the edge
+  space = 250, # Adjust this to move trees even closer
+  gap =25,
+  length.line = 0,
+  col = line_cols_continent,
+  lwd = 1.5)
+
+dev.off()
+
+```
+
+
+
+

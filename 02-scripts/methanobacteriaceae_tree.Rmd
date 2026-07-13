@@ -1,0 +1,67 @@
+---
+---
+title: "Methanobacteriaceae species references and cluster reps trees (SI Figure 41)"
+author: "Keri Burge"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output:
+    github_document:
+        fig_width: 8
+        fig_height: 6
+        toc: true
+---
+
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(ape)
+library(ggtree)
+library(tidyverse)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath("../"))
+```
+
+#Visualize tree
+
+```{r}
+metadata <- fread("./05-results/methanobacteriaceae_tree_metadata.tsv")
+
+methanobrevibacter_reclassified_genera_colors <- c("Methanocatella" = "#aa3377", 
+                                                   "Methanarmilla" = "#66ccee", 
+                                                   "Methanoflexus" = "#238833", 
+                                                   "Methanacia" = "#4477aa", 
+                                                   "Methanobaculum" = "#ee6778", 
+                                                   "Methanobinarius" = "#ccbb45", 
+                                                   "Methanobrevibacter" = "orange",
+                                                   "Methanobrevibacter_A" = "orange",
+                                                   "1187" = "black",
+                                                   "1188" = "black",
+                                                   "1189" = "black",
+                                                   "1190" = "black")
+
+tre_methanobacteriaceae <- ape::read.tree("./05-results/phylophlan_aln_methanobacteriaceae_SI_41.raxml.support")
+
+tre_methanobacteriaceae <- root(tre_methanobacteriaceae, outgroup = "GCF_000024185.1_ASM2418v1_genomic")
+tre_methanobacteriaceae_midpoint <- phangorn::midpoint(tre_methanobacteriaceae)
+
+
+methanobacteriaceae_midpoint_tree <- ggtree(tre_methanobacteriaceae, ladderize = T)
+
+methanobacteriaceae_tree <- methanobacteriaceae_midpoint_tree %<+% metadata + 
+  geom_tippoint(aes(color = gtdb_genus, shape = Host), size = 4) +
+  geom_tiplab(aes(label = gtdb_species), size = 2.5, hjust = -0.1) +
+  geom_treescale(x = 0, y = 2, width = 0.1, fontsize = 2) +
+  geom_nodelab(aes(label = ifelse(as.numeric(label) > 50, label, "")), size = 2, hjust = -0.1) +
+  scale_color_manual(values = methanobrevibacter_reclassified_genera_colors, name = "Genera") 
+
+methanobacteriaceae_tree 
+
+```
+
+
+
+

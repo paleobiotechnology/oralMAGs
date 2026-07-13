@@ -123,14 +123,14 @@ methanobrevibacter_c1187_mad_root %>%
 #Find the root
 methanobrevibacter_c1187_mad_root <- mad(tre_methanobrevibacter_c1187_scc, 'full')
 
-#ERS3774460-megahit_001
+#ERS6205401-megahit_003
 ```
 
 
 ```{r}
 methanobrevibacter_c1187_mad_root <- ape::read.tree("./05-results/methanobrevibacter_c1187_mad_root.nwk")
 
-methanobrevibacter_c1187_mad_rootr <- root(methanobrevibacter_c1187_mad_root, outgroup = "ERS3774460-megahit_001")
+methanobrevibacter_c1187_mad_rootr <- root(methanobrevibacter_c1187_mad_root, outgroup = "ERS6205401-megahit_003")
 
 methanobrevibacter_c1187_mad_root$tip.label <- methanobrevibacter_c1187_mad_root$tip.label %>%
   as.data.frame() %>%
@@ -161,11 +161,10 @@ methanobrevibacter_tree_c1187_age <- methanobrevibacter_tree_c1187 %<+% metadata
   geom_treescale(x = 0, y = 5, width = 0.005, fontsize = 4) +
   geom_nodelab(aes(label = ifelse(as.numeric(label) > 50, label, "")), size = 2, hjust = -0.1) +
   guides(shape = guide_legend(override.aes = list(size = 3))) +
-  geom_tiplab(size = 1.75, hjust = -0.1)
+  geom_tiplab(aes(label = Label), size = 1.75, hjust = -0.1)
 
 methanobrevibacter_tree_c1187_age
 
-#ggsave("./05-results/methanobrevibacter_c3_MAD.pdf", plot = methanobrevibacter_tree_c3_age, device = "pdf", scale = 1, width = 6, height = 8, units = c("in"), dpi = 300) 
 ```
 
 
@@ -658,6 +657,8 @@ methanobrevibacter_full_tree_c1187 <- mag_source_heatmap %>% insert_left(methano
 
 methanobrevibacter_full_tree_c1187
 
+
+==
 ```
 
 

@@ -41,9 +41,9 @@ Files that are used as input for generating figures:
 - `vanish_blossum_table.tsv` - Differential abundance table for VANISH/BloSSUM analysis
 - `vb_species_plot_order.tsv` - VANISH/BloSSUM species ordered for plotting
 
-### `Archaea`: results and tables for *Methanobrevibacter*_A and *Methanomethylophilus* analyses 
+### `Archaea`: results and tables for *Methanocatella* and *Methanomethylophilus* analyses 
 
-*Methanobrevibacter*_A:
+*Methanocatella*:
 
 - `methanobrevibacter_metadata.tsv`: *Methanobrevibacter*_A MAGs metadata table
 - `methanobrevibacter_contig_list.tsv`: List of contigs assigned to the genus *Methanobrevibacter*_A used to extract Pydamage results
@@ -64,28 +64,28 @@ Files that are used as input for generating figures:
 - `methanobrevibacter_cas_IIIA_nodes_structures.csv`: Table grouping *Methanobrevibacter*_A Cas IIIA operons into structural subtypes 
 - `methanobrevibacter_casIIIA_MUSCLE_matrix.csv`: Percent identity matrix of *Methanobrevibacter*_A Cas IIIA MUSCLE (protein) alignment 
 
-Ca. *Methanobrevibacter*_A *prisca* (pr_cl_1187):
+*Methanocatella* *massiliense* (pr_cl_1187):
 - `methanobrevibacter_c1187_scc.raxml.support`: Ca. *M. prisca* (pr_cl_1187) non-recombinant single copy core gene tree with bootstraps 
 - `methanobrevibacter_c1187_mad_root.nwk`: MAD-rooted Ca. *M. prisca* (pr_cl_1187) non-recombinant single copy core gene tree newick file
 - `fastBAPS_methanobrevibacter_cluster1187_snp_counts_and_clusters.tsv`: Ca. *M. prisca* (pr_cl_1187) MAGs fastBAPS cluster identifications and SNP counts
 - `methanobrevibacter_c1187_non_recomb_scc_gene_list.tsv`: List of Ca. *M. prisca* (pr_cl_1187) non-recombinant single copy core genes 
 - `methanobrevibacter_c1187_panaroo_gene_presence_absence.Rtab`: Ca. *M. prisca* (pr_cl_1187) Panaroo gene presence/absence table
 
-*Methanobrevibacter*_A *oralis* (pr_cl_1188):
+*Methanocatella* *oralis* (pr_cl_1188):
 - `methanobrevibacter_c1188_scc.raxml.support`: *M. oralis* (pr_cl_1188) non-recombinant single copy core gene tree with bootstraps 
 - `methanobrevibacter_c1188_mad_root.nwk`: MAD-rooted *M. oralis* (pr_cl_1188) non-recombinant single copy core gene tree newick file
 - `fastBAPS_methanobrevibacter_cluster1188_snp_counts_and_clusters.tsv`: *M. oralis* (pr_cl_1188) MAGs fastBAPS cluster identifications and SNP counts
 - `methanobrevibacter_C1188_non_recomb_scc_gene_list.tsv`: List of *M. oralis* (pr_cl_1188) non-recombinant single copy core genes 
 - `methanobrevibacter_c1188_panaroo_gene_presence_absence.Rtab`: *M. oralis* (pr_cl_1188) Panaroo gene presence/absence table
 
-Ca. *Methanobrevibacter*_A *senecta* (pr_cl_1189):
+Ca. *Methanocatella* *senecta* (pr_cl_1189):
 - `methanobrevibacter_c1189_scc.raxml.support`: Ca. *M. senecta* (pr_cl_1189) non-recombinant single copy core gene tree with bootstraps 
 - `methanobrevibacter_c1189_mad_root.nwk`: MAD-rooted Ca. *M. senecta* (pr_cl_1189) non-recombinant single copy core gene tree newick file
 - `fastBAPS_methanobrevibacter_cluster1189_snp_counts_and_clusters.tsv`: Ca. *M. senecta* (pr_cl_1189) MAGs fastBAPS cluster identifications and SNP counts
 - `methanobrevibacter_c1189_non_recomb_scc_gene_list.tsv`: List of Ca. *M. senecta* (pr_cl_1189) non-recombinant single copy core genes 
 - `methanobrevibacter_c1189_panaroo_gene_presence_absence.Rtab`: Ca. *M. senecta* (pr_cl_1189) Panaroo gene presence/absence table
 
-Ca. *Methanobrevibacter*_A *cohabitans* (pr_cl_1190):
+Ca. *Methanocatella* *cohabitans* (pr_cl_1190):
 - `methanobrevibacter_c1190_scc.raxml.support`: Ca. *M. cohabitans* (pr_cl_1190) non-recombinant single copy core gene tree with bootstraps 
 - `methanobrevibacter_c1190_mad_root.nwk`: MAD-rooted Ca. *M. cohabitans* (pr_cl_1190) non-recombinant single copy core gene tree newick file
 - `fastBAPS_methanobrevibacter_cluster1190_snp_counts_and_clusters.tsv`: Ca. *M. cohabitans* (pr_cl_1190) MAGs fastBAPS cluster identifications and SNP counts
@@ -93,9 +93,8 @@ Ca. *Methanobrevibacter*_A *cohabitans* (pr_cl_1190):
 - `methanobrevibacter_c1190_panaroo_gene_presence_absence.Rtab`: Ca. *M. cohabitans* (pr_cl_1190) Panaroo gene presence/absence table
 
 *Methanobacteriaceae*:
-- `Methanobacteriaceae_reference_genome_list.tsv`: List of NCBI genomes and *Methanobrevibacter*_A MAGs used in *Methanobacteriaceae* tree 
-- `Methanobacteriaceae_reference_genome_accessions.tsv`: NCBI *Methanobacteriaceae* reference genomes with NCBI and GTDB designations 
-- `methanobacteriaceae_phylophlan_aln_tree_of_life.raxml.support`: *Methanobacteriaceae* PhyloPhlAn tree with bootstraps
+- `methanobacteriaceae_tree_metadata.tsv`: NCBI genomes and *Methanocatella* MAGs used in *Methanobacteriaceae* tree 
+- `phylophlan_aln_methanobacteriaceae_SI_41.raxml.support`: *Methanobacteriaceae* PhyloPhlAn tree with bootstraps
 
 *Methanomethylophilus*:
 
