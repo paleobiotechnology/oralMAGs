@@ -126,5 +126,5 @@ Ca. *Methanomethylophilus fidelis* (pr_cl_3192):
 - `methanomethylophilus_c3192_w_outgroup.caster.nwk`: Ca. *M. fidelis* (pr_cl_3192) non-recombinant single copy core gene tree CASTER-site newick file with *M*. pr_cl_3194 as the outgroup
 
 *nimI*:
--`nimI_GTR.raxml.support`: nimI nucleotide alignment RAxML with bootstraps
--`nimI_muscle.raxml.support`: nimI protein alignment RAxML with bootstraps
+- `nimI_GTR.raxml.support`: nimI nucleotide alignment RAxML with bootstraps
+- `nimI_muscle.raxml.support`: nimI protein alignment RAxML with bootstraps
