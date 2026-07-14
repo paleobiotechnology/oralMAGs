@@ -75,7 +75,6 @@ mtr_mcr_colors <- c("Present" = "#5b7c1c",
 ```
 
 ## Methanocatella
-(Methanocatella used in the script, but refers to the newly classified genus Methanocatella)
 ```{r, metadata}
 metadata_methanocatella <- fread("./05-results/methanocatella_metadata.tsv") %>%
   mutate(age_categories = ifelse(Age_BP < 100, "modern",
