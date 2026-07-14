@@ -33,3 +33,5 @@ The files starting with the prefix `ENVS` are conda environments used in combina
 - `mad.R`: Minimal Ancestor Deviation (MAD) rooting R script file used for single copy core gene tree rooting
 - `methanocatella_c1190_tree_comparison.Rmd`: generate tanglegrams to compare RAxML and CASTER-site Ca. *Methanocatella cohabitans* (pr_cl_1190) trees both with and without an outgroup (*M. oralis*) (supplemental figure 40.1)
 - `methanomethylophilus_c3192_tree_comparisons.Rmd`: generate tanglegrams to compare RAxML and CASTER-site Ca. *Methanomethylophilus fidelis* (pr_cl_3192) trees both with and without an outgroup (*M.* pr_cl_3194) (supplemental figure 34.1)
+- `nimI_trees.Rmd`: generate nimI gene phylogenies (supplemental figure 45)
+- `methanocatella_ANI_heat_map_and_boxplot.Rmd`" generate *Methanocatella* ANI heat maps and boxplot to compare species similarity (supplemental figure 36)
