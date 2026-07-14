@@ -62,7 +62,8 @@ Files that are used as input for generating figures:
 - `cas_IIIA_percent_identity_matrix.csv`: Percent identity matrix for ten references containing Cas subtype IIIA operons
 - `methanocatella_casIIIA_MAFFT_matrix.csv`: Percent identity matrix of *Methanocatella* Cas IIIA MAFFT (nucleotide) alignment 
 - `methanocatella_cas_IIIA_nodes_structures.csv`: Table grouping *Methanocatella* Cas IIIA operons into structural subtypes 
-- `methanocatella_casIIIA_MUSCLE_matrix.csv`: Percent identity matrix of *Methanocatella* Cas IIIA MUSCLE (protein) alignment 
+- `methanocatella_casIIIA_MUSCLE_matrix.csv`: Percent identity matrix of *Methanocatella* Cas IIIA MUSCLE (protein) alignment
+- `methanocatella_dRep_ANI_Mdb.csv`: Similarity between all *Methanocatella* MAGs (dRep output)
 
 *Methanocatella* *massiliense* (pr_cl_1187):
 - `methanocatella_c1187_scc.raxml.support`: *M. massiliense* (pr_cl_1187) non-recombinant single copy core gene tree with bootstraps 
@@ -123,3 +124,7 @@ Ca. *Methanomethylophilus fidelis* (pr_cl_3192):
 - `methanomethylophilus_c3192_no_outgroup.caster.nwk`: Ca. *M. fidelis* (pr_cl_3192) non-recombinant single copy core gene tree CASTER-site newick file with no outgroup
 - `methanomethylophilus_c3192_w_outgroup_scc.raxml.support`: Ca. *M. fidelis* (pr_cl_3192) non-recombinant single copy core gene tree RAxML file with *M*. pr_cl_3194 as the outgroup
 - `methanomethylophilus_c3192_w_outgroup.caster.nwk`: Ca. *M. fidelis* (pr_cl_3192) non-recombinant single copy core gene tree CASTER-site newick file with *M*. pr_cl_3194 as the outgroup
+
+*nimI*:
+-`nimI_GTR.raxml.support`: nimI nucleotide alignment RAxML with bootstraps
+-`nimI_muscle.raxml.support`: nimI protein alignment RAxML with bootstraps
