@@ -1,0 +1,430 @@
+---
+title: "Figure 4 - Archaea trees (panels F and G)"
+author: "Keri Burge"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output:
+    github_document:
+        fig_width: 8
+        fig_height: 6
+        toc: true
+---
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(janitor)
+library(ape)
+library(tidyverse)
+library(ggtree)
+library(ggstar)
+library(ggnewscale)
+library(patchwork)
+library(aplot)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+Set the working directory of the notebook to the parent directory of the 
+notebook itself.  
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath("../.."))
+```
+
+
+#Archaea
+```{r, colors}
+continent_colors <- c("Africa" = "#CC79A7",
+                      "Asia" = "#97CE2F",
+                      "Caribbean" = "#F09163",
+                      "Europe" = "#9E9AC8",
+                      "North America" = "#1ec1a7",
+                      "Oceania" = "#098BD9",
+                      "Reference" = "lightgrey")
+
+
+mag_source_colors <- c("Ancient Human" = "#ffeeaaff",
+                       "Neanderthal" = "#ff0000ff",
+                       "Modern" = "#efb6d6ff",
+                       "Non-human primate" = "#999999ff",
+                       "Reference" = "lightgrey")
+
+cas_subtypes <- c("I-B" = "#ffa6b5",
+                       "I-C" = "#ff4d6b",
+                       "I-E" = "#93dcb5",
+                       "II-A" = "#f1ab38",
+                       "II-D" = "black",
+                       "III-A" = "#4590fe",
+                       "IV-B" = "#8D5D4B",
+                       "V-A" = "#58846d",
+                       "III-A/II-A" = "#746bb0")
+
+methanogensis_operons <- c("Complete" = "black",
+                           "Partial" = "#bebebe", 
+                           "Absent" = "white")
+
+tip_colors <- c("pre-14000" = "#35264c",
+                "post-14000" = "#3487a6", 
+                "modern" = "#ade3c0")
+
+mcr_colors <- c("Present" = "#807DBA",
+                "Missing" = "#d9d8ea")
+
+mtr_mcr_colors <- c("Present" = "#5b7c1c",
+                "Missing" = "#e0f0c1")
+
+```
+
+## Methanocatella
+(Methanocatella used in the script, but refers to the newly classified genus Methanocatella)
+```{r, metadata}
+metadata_methanocatella <- fread("./05-results/methanocatella_metadata.tsv") %>%
+  mutate(age_categories = ifelse(Age_BP < 100, "modern",
+                                 ifelse(Age_BP >= 100 & Age_BP <= 14000, "post-14000", "pre-14000"))) %>%
+  mutate(age_categories = ifelse(sample_host == "Reference", "modern", age_categories)) %>%
+  mutate(age_categories = ifelse(Industrialization == "Non-human primate", "modern", age_categories))
+
+```
+
+
+```{r, tree}
+# read in the tree
+tre_methanocatella <- ape::read.tree("./05-results/phylophlan_aln_methanocatella_full_tree.raxml.support")
+
+# adjust tip labels
+fix_labels <- fread("./05-results/methanocatella_metadata.tsv") %>%
+  rename(Label = Bin) %>%
+  rename(Bin = prepublication_bin) %>%
+  relocate(Bin, .before = Label) %>%
+  select(Label, Bin) %>%
+  mutate(Bin = ifelse(str_detect(Bin, "CMC|ERSX0004033"), Bin, Label))
+
+tre_methanocatella$tip.label <- tre_methanocatella$tip.label %>%
+  as.data.frame() %>%
+  dplyr::rename(Bin = 1) %>%
+  mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
+                        str_replace_all(Bin, "-metaspades_00", ".bin.r.") %>%
+                        str_replace_all("-metaspades_0", ".bin.r.") %>%
+                        str_replace_all("-metaspades", ".bin.r.") %>%
+                        str_replace_all("-megahit_00", ".bin.r.") %>%
+                        str_replace_all("-megahit_0", ".bin.r.") %>%
+                        str_replace_all("-megahit_", ".bin.r.") %>%
+                        str_replace_all("_", ""))) %>%
+  left_join(., fix_labels) %>%
+  select(Label) %>%
+  pull()
+
+# root the tree in M. ruminantium
+tre_methanocatella <- root(tre_methanocatella, outgroup = "GCA_016294135.1_ASM1629413v1_genomic")
+
+# create tree
+methanocatella_tree <- ggtree(tre_methanocatella, ladderize = T)
+
+methanocatella_tree_bootstraps <- methanocatella_tree %<+% metadata_methanocatella + 
+  scale_size_continuous(limits = c(0,3)) +
+  theme(legend.position="right") + 
+  geom_treescale(x = 0, y = 4, width = 1.0, fontsize = 4) +
+  geom_nodelab(aes(label = ifelse(as.numeric(label) > 50, label, "")), size = 2, hjust = -0.1) +
+  guides(shape = guide_legend(override.aes = list(size = 3)))
+
+
+methanocatella_tree_bootstraps
+```
+
+
+Add metadata bars
+```{r, age}
+age_heatmap_methanocatella <- ggplot(metadata_methanocatella, aes(x = "age_categories", y = Bin, fill = age_categories)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual(values = tip_colors, name = "Age")
+
+```
+
+
+```{r, continent}
+continent_heatmap_methanocatella <- ggplot(metadata_methanocatella, aes(x = "Continent", y = Bin, fill = Continent)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual(values = continent_colors, name = "Continent")
+
+```
+
+
+```{r, mag_source}
+mag_source_heatmap_methanocatella <- metadata_methanocatella %>%
+  mutate(Industrialization = if_else(Industrialization == "", "Reference", Industrialization)) %>%
+  mutate(Industrialization = ifelse(str_detect(sample_host, "Homo sapiens neanderthalensis"), "Neanderthal", Industrialization)) %>%
+  mutate(Industrialization = str_replace_all(Industrialization, "Non_industrial", "Modern"),
+         Industrialization = str_replace_all(Industrialization, "Industrial", "Modern"),
+         Industrialization = str_replace_all(Industrialization, "Ancient", "Ancient Human")) %>%
+  ggplot(., aes(x = "Industrialization", y = Bin, fill = Industrialization)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual(values = mag_source_colors, name = "MAG Source")
+
+```
+
+
+```{r, cas_subtypes}
+methanocatella_cas_colors <- c("III-A" = "#4590fe",
+                                "I-B" = "#E794C1",
+                                "IV-B" = "#8D5D4B",
+                                "II-D" = "black",
+                                "None" = "#f0f0f0")
+
+methanocatella_cas <- metadata_methanocatella %>%
+  select(Bin, Cas_subtype_1, Cas_subtype_2) %>%
+  pivot_longer(cols = c(Cas_subtype_1, Cas_subtype_2), names_to = "category", values_to = "cas_subtype") 
+
+heatmap_crispr_methanocatella <- ggplot(methanocatella_cas, aes(x = category, y = Bin, fill = cas_subtype)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  scale_fill_manual(values = c(methanocatella_cas_colors, "#f0f0f0"), na.value = "#f0f0f0")
+
+```
+
+
+```{r, mcr_operon}
+#MCR operon - "mcrB_1", "mcrD_1", "mcrG_1", "mcrA_1"
+
+mcr_heatmap_methanocatella <- ggplot(metadata_methanocatella, aes(x = "completeness_mcr", y = Bin, fill = completeness_mcr)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual(values = mcr_colors, name = "MCR operon")
+
+```
+
+
+```{r, mtr_mcr_operon}
+#MTR/MCR operon - "mcrB_2", "mcrD_2", "mcrC", "mcrG_2", "mcrA_2", "mtrE", "mtrD", "mtrC", "mtrB", "mtrA_1", "mtrF", "mtrG", "mtrH_2"
+
+mtr_mcr_heatmap_methanocatella <- ggplot(metadata_methanocatella, aes(x = "completeness_mtr_mcr", y = Bin, fill = completeness_mtr_mcr)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual(values = mtr_mcr_colors, name = "MTR/MCR operon")
+
+```
+
+Combine tree and metadata bars
+Further editing was performed with Inkscape v.1.2.2 to clean up the figure
+```{r, combine_tree_and_metadata}
+methanocatella_figure_4 <- age_heatmap_methanocatella %>% 
+  insert_left(methanocatella_tree_bootstraps, width = 5) %>% 
+  insert_right(mag_source_heatmap_methanocatella, width = 1) %>% 
+  insert_right(continent_heatmap_methanocatella, width = 1) %>%
+  insert_right(heatmap_crispr_methanocatella, width = 1) %>%
+  insert_right(mtr_mcr_heatmap_methanocatella, width = 1) %>%
+  insert_right(mcr_heatmap_methanocatella, width = 1)
+
+methanocatella_figure_4
+
+```
+
+
+## Methanomethylophilus
+```{r, metadata}
+metadata_methanomethylophilus <- fread("./05-results/methanomethylophilus_metadata.tsv") %>%
+  filter(!str_detect(Bin, "GCA_006954385.1_ASM695438v1_genomic")) %>%
+  mutate(age_categories = ifelse(Age_BP < 100, "modern",
+                                 ifelse(Age_BP >= 100 & Age_BP <= 14000, "post-14000", "pre-14000"))) %>%
+  mutate(age_categories = ifelse(sample_host == "Reference", "modern", age_categories)) %>%
+  mutate(age_categories = ifelse(Industrialization == "Non-human primate", "modern", age_categories))
+```
+
+
+```{r, tree}
+# read in the tree
+tre_methanomethylophilus <- ape::read.tree("./05-results/phylophlan_aln_methanomethylophilus_full_tree.raxml.support")
+
+#adjust tip labels
+tre_methanomethylophilus$tip.label <- tre_methanomethylophilus$tip.label %>%
+  as.data.frame() %>%
+  dplyr::rename(prepublication_bin = 1) %>%
+  mutate(prepublication_bin = if_else(str_detect(prepublication_bin, "GC|refbinned"), prepublication_bin, 
+                        str_replace_all(prepublication_bin, "-metaspades_00", ".bin.r.") %>%
+                        str_replace_all("-metaspades_0", ".bin.r.") %>%
+                        str_replace_all("-metaspades", ".bin.r.") %>%
+                        str_replace_all("-megahit_00", ".bin.r.") %>%
+                        str_replace_all("-megahit_0", ".bin.r.") %>%
+                        str_replace_all("-megahit_", ".bin.r.") %>%
+                        str_replace_all("_", ""))) %>%
+  full_join(., metadata_methanomethylophilus %>%
+              dplyr::select(Bin, prepublication_bin)) %>%
+  dplyr::select(Bin) %>%
+  pull(Bin)
+
+## Root tree by midpoint rooting with Methanomethylophilus alvi
+tre_methanomethylophilus <- root(tre_methanomethylophilus, outgroup = "GCF_003711245.1_ASM371124v1_genomic")
+
+# create tree
+methanomethylophilus_tree <- ggtree(tre_methanomethylophilus, ladderize = T)
+
+methanomethylophilus_tree_bootstraps <- methanomethylophilus_tree %<+% metadata_methanomethylophilus + 
+  scale_size_continuous(limits = c(0,3)) +
+  theme(legend.position="right") + 
+  geom_treescale(x = 0, y = 4, width = 0.2, fontsize = 4) +
+  geom_nodelab(aes(label = ifelse(as.numeric(label) > 50, label, "")), size = 2, hjust = -0.1) +
+  guides(shape = guide_legend(override.aes = list(size = 3)))
+
+```
+
+
+Add metadata bars
+```{r, age}
+age_heatmap_methanomethylophilus <- ggplot(metadata_methanomethylophilus, aes(x = "age_categories", y = Bin, fill = age_categories)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual(values = tip_colors, name = "Age")
+
+```
+
+
+```{r, continent}
+continent_heatmap_methanomethylophilus <- ggplot(metadata_methanomethylophilus, aes(x = "Continent", y = Bin, fill = Continent)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual(values = continent_colors, name = "Continent")
+
+```
+
+
+```{r, mag_source}
+mag_source_heatmap_methanomethylophilus <- metadata_methanomethylophilus %>%
+  mutate(Industrialization = if_else(Industrialization == "", "Reference", Industrialization)) %>%
+  mutate(Industrialization = ifelse(str_detect(sample_host, "Homo sapiens neanderthalensis"), "Neanderthal", Industrialization)) %>%
+  mutate(Industrialization = str_replace_all(Industrialization, "Non_industrial", "Modern"),
+         Industrialization = str_replace_all(Industrialization, "Industrial", "Modern"),
+         Industrialization = str_replace_all(Industrialization, "Ancient", "Ancient Human")) %>%
+  ggplot(., aes(x = "Industrialization", y = Bin, fill = Industrialization)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual(values = mag_source_colors, name = "MAG Source")
+
+```
+
+
+```{r, cas_subtype}
+methanomethylophilus_cas_colors <- c("I-C" = "#ff4d6b",
+                                      "I-E" = "#93dcb5",
+                                      "II-A" = "#f1ab38",
+                                      "V-A" = "#58846d",
+                                      "None" = "#f0f0f0")
+
+methanomethylophilus_cas <- metadata_methanomethylophilus %>%
+  select(Bin, Cas_subtype) 
+
+cas_heatmap_methanomethylophilus <- ggplot(methanomethylophilus_cas, aes(x = "category", y = Bin, fill = Cas_subtype)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  scale_fill_manual(values = c(methanomethylophilus_cas_colors, "#f0f0f0"), na.value = "#f0f0f0")
+
+
+```
+
+
+```{r, mcr_operon}
+methanomethylophilus_mcr <- ggplot(metadata_methanomethylophilus, aes(x = "completeness_mcr", y = Bin, fill = completeness_mcr)) +
+  geom_tile() +
+  theme_void() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual(values = mcr_colors, name = "MCR Operon")
+
+
+```
+
+Combine tree and metadata bars
+Further editing was performed with Inkscape v.1.2.2 to clean up the figure
+```{r, combine_tree_and_metadata}
+methanomethylophilus_figure_4 <- age_heatmap_methanomethylophilus %>% 
+  insert_left(methanomethylophilus_tree_bootstraps, width = 5)%>% 
+  insert_right(mag_source_heatmap_methanomethylophilus, width = 1) %>%
+  insert_right(continent_heatmap_methanomethylophilus, width = 1) %>% 
+  insert_right(cas_heatmap_methanomethylophilus, width = 1) %>%
+  insert_right(methanomethylophilus_mcr, width = 1)
+
+methanomethylophilus_figure_4
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

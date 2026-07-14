@@ -1,8 +1,12 @@
 ---
 title: "Archaea MAGs Summary Figures - Extended data figure 8"
 author: "Keri Burge"
-date: "2025-07-29"
-output: html_document
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output:
+    github_document:
+        fig_width: 8
+        fig_height: 6
+        toc: true
 ---
 
 ```{r load_libraries, echo = F, message = F}
@@ -73,7 +77,6 @@ number_mags_plot <- stats %>%
 
 number_mags_plot
 
-#ggsave("./05-results/archaea_number_mags_by_host_and_quality.pdf", plot = number_mags_plot, device = "pdf", scale = 1, width = 10, height = 4, units = c("in"), dpi = 300) 
 
 #Individuals plots 
 quality_colors <- c("High" = "#ff3e38",
@@ -104,7 +107,6 @@ number_mags_plot_methanocatella <- stats %>%
 
 number_mags_plot_methanocatella
 
-#ggsave("./05-results/methanocatella_number_mags_by_host_and_quality_w_CSC.pdf", plot = number_mags_plot_methanocatella, device = "pdf", scale = 1, width = 8, height = 4, units = c("in"), dpi = 300) 
 
 number_mags_plot_methanomethylophilus <- stats %>%
   dplyr::select(Bin, Genera, Host, pass.GUNC, checkM.completeness, checkM.contamination) %>%
@@ -132,7 +134,6 @@ number_mags_plot_methanomethylophilus <- stats %>%
 
 number_mags_plot_methanomethylophilus
 
-#ggsave("./05-results/methanomethylophilus_number_mags_by_host_and_quality_w_CSC.pdf", plot = number_mags_plot_methanomethylophilus, device = "pdf", scale = 1, width = 8, height = 4, units = c("in"), dpi = 300)
 ```
 # B. Number of contigs per MAG
 Species across the top and genera rows
@@ -379,7 +380,6 @@ checkM_v_length
 checkM2_v_length <- stats %>%
   inner_join(combined_metadata) %>%
   mutate(as.character = "primary_cluster") %>%
-  #mutate(primary_cluster = factor(primary_cluster, levels = c("1", "2", "3", "4"))) %>%
   mutate(Genera = factor(Genera, levels = c("Methanomethylophilus", "Methanocatella"))) %>%
   mutate(mag_source = Industrialization) %>%
   mutate(mag_source = str_replace_all(mag_source, "Non_industrial", "CMC"),
