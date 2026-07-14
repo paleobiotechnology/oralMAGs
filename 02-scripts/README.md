@@ -21,7 +21,7 @@ The files starting with the prefix `ENVS` are conda environments used in combina
 - `aDNA-BAMPlotter_2kb_intervals.py`: scipt modified from https://github.com/MeriamGuellil/aDNA-BAMPlotter to visualize genome mapping across across 2kb base pair intervals (extended data figure 9)
 - `extended_data_8_archaea_mags_summary_figure.Rmd`: visualize methanogenic archaea MAG assembly metrics (extended data figure 8)
 - `methanocatella_tree_and_metadata.Rmd`: visulize *Methanocatella* full genus tree and metadata (supplemental figure 35)
-- `methanocatella_cluster1187_tree_and_metadata.Rmd`: visualize Ca. *Methanocatella* *prisca* (pr_cl_1187) single copy core gene tree and metadata (supplemental figure 39)
+- `methanocatella_cluster1187_tree_and_metadata.Rmd`: visualize *Methanocatella* *massiliense* (pr_cl_1187) single copy core gene tree and metadata (supplemental figure 39)
 - `methanocatella_cluster1188_tree_and_metadata.Rmd`: visualize *Methanocatella* *oralis* (pr_cl_1188) single copy core gene tree and metadata (supplemental figure 37)
 - `methanocatella_cluster1189_tree_and_metadata.Rmd`: visualize Ca. *Methanocatella* *senecta* (pr_cl_1189) single copy core gene tree and metadata (supplemental figure 38)
 - `methanocatella_cluster1190_tree_and_metadata.Rmd`: visualize Ca. *Methanocatella* *cohabitans* (pr_cl_1190) single copy core gene tree and metadata (supplemental figure 40)
