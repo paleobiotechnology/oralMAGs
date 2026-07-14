@@ -1,5 +1,5 @@
 ---
-title: "Methanobrevibacter oralis (pr_cl_1188) Tree and Metadata"
+title: "Methanocatella massiliense (pr_cl_1187) Tree and Metadata"
 author: "Keri Burge"
 date: "`r format(Sys.time(), '%b %d, %Y')`"
 output:
@@ -64,17 +64,11 @@ mag_source_colors <- c("Ancient Human" = "#FFD5AF",
                        "Non-human primate" = "#b2815e",
                        "Reference" = "lightgrey")
 
-#crispr_colors <- c("I-B" = "#7DCCFF",
-#                   "III-A" = "#6A51A3",
-#                   "IV -B" = "#148F77",
-#                   "II-D" = "#704236")
-
 crispr_colors <- c("III-A" = "#4590fe",
              "I-B" = "#E794C1",
              "IV-B" = "#8D5D4B",
              "II-D" = "black",
              "None" = "#f0f0f0")
-
 
 cazyme_colors <- c("Cell wall processing" = "#BCBDDC")
 
@@ -99,8 +93,8 @@ fastBAPS_clusters_colors <- c("1" = "#9ECAE1",
 
 # Metadata
 ```{r}
-metadata <- fread("./05-results/methanobrevibacter_metadata.tsv") %>%
-  filter(primary_cluster == 1188) %>%
+metadata <- fread("./05-results/methanocatella_metadata.tsv") %>%
+  filter(primary_cluster == 1187) %>%
   rename(Label = Bin) %>%
   rename(Bin = prepublication_bin) %>%
   relocate(Bin, .before = Label)
@@ -116,29 +110,29 @@ source("02-scripts/mad.R")
 ```
 
 ```{r}
-tre_methanobrevibacter_c1188_scc <- ape::read.tree("./05-results/methanobrevibacter_c1188_scc.raxml.support")
+tre_methanocatella_c1187_scc <- ape::read.tree("05-results/methanocatella_c1187_scc.raxml.support")
 
-methanobrevibacter_c1188_mad_root <- mad(tre_methanobrevibacter_c1188_scc, 'newick')
+methanocatella_c1187_mad_root <- mad(tre_methanocatella_c1187_scc, 'newick')
 
-methanobrevibacter_c1188_mad_root %>%
+methanocatella_c1187_mad_root %>%
   as.list() %>%
-  fwrite(., "./05-results/methanobrevibacter_c1188_mad_root.nwk", quote = F)
+  fwrite(., "./05-results/methanocatella_c1187_mad_root.nwk", quote = F)
 ```
 
 ```{r}
-# Find the root
-methanobrevibacter_c1188_mad_root <- mad(tre_methanobrevibacter_c1188_scc, 'full')
+#Find the root
+methanocatella_c1187_mad_root <- mad(tre_methanocatella_c1187_scc, 'full')
 
-#ERS11702757-megahit_001 is the root
+#ERS6205401-megahit_003
 ```
 
 
 ```{r}
-methanobrevibacter_c1188_mad_root <- ape::read.tree("./05-results/methanobrevibacter_c1188_scc.raxml.support")
+methanocatella_c1187_mad_root <- ape::read.tree("./05-results/methanocatella_c1187_mad_root.nwk")
 
-methanobrevibacter_c1188_mad_root <- root(methanobrevibacter_c1188_mad_root, outgroup = "ERS11702757-megahit_001")
+methanocatella_c1187_mad_rootr <- root(methanocatella_c1187_mad_root, outgroup = "ERS6205401-megahit_003")
 
-methanobrevibacter_c1188_mad_root$tip.label <- methanobrevibacter_c1188_mad_root$tip.label %>%
+methanocatella_c1187_mad_root$tip.label <- methanocatella_c1187_mad_root$tip.label %>%
   as.data.frame() %>%
   dplyr::rename(Bin = 1) %>%
   mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
@@ -153,11 +147,11 @@ methanobrevibacter_c1188_mad_root$tip.label <- methanobrevibacter_c1188_mad_root
 
 
 # create tree
-methanobrevibacter_tree_c1188 <- ggtree(methanobrevibacter_c1188_mad_root, ladderize = T)
+methanocatella_tree_c1187 <- ggtree(methanocatella_c1187_mad_root, ladderize = T)
 
 host_shapes <- c("Homo sapiens" = 16, "Homo sapiens neanderthalensis"  = 15, "Pan troglodytes schweinfurthii" = 17, "Reference" = 12, "Papio hamadryas" = 18)
 
-methanobrevibacter_tree_c1188_age <- methanobrevibacter_tree_c1188 %<+% metadata + 
+methanocatella_tree_c1187_age <- methanocatella_tree_c1187 %<+% metadata + 
   geom_tippoint(aes(color = log_age, shape = sample_host), size = 5) +
   scale_size_continuous(limits = c(0,3)) +
   theme(legend.position="right") + 
@@ -167,16 +161,17 @@ methanobrevibacter_tree_c1188_age <- methanobrevibacter_tree_c1188 %<+% metadata
   geom_treescale(x = 0, y = 5, width = 0.005, fontsize = 4) +
   geom_nodelab(aes(label = ifelse(as.numeric(label) > 50, label, "")), size = 2, hjust = -0.1) +
   guides(shape = guide_legend(override.aes = list(size = 3))) +
-  geom_tiplab(size = 2, hjust = -0.1)
+  geom_tiplab(aes(label = Label), size = 1.75, hjust = -0.1)
 
-methanobrevibacter_tree_c1188_age
+methanocatella_tree_c1187_age
 
 ```
+
 
 ## Species cluster, MAG source, Continent
 ```{r}
 #fastBAPS cluster
-fastBAPS <- fread("05-results/fastBAPS_methanobrevibacter_cluster1188_snp_counts_and_clusters.tsv") %>%
+fastBAPS <- fread("05-results/fastBAPS_methanocatella_cluster1187_snp_counts_and_clusters.tsv") %>%
   mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
                         str_replace_all(Bin, "-metaspades_00", ".bin.r.") %>%
                         str_replace_all("-metaspades_0", ".bin.r.") %>%
@@ -244,7 +239,7 @@ heatmap_age <- ggplot(metadata, aes(x = "log_age", y = Bin, fill = log_age)) +
         axis.title.y=element_blank(),
         axis.text.y=element_blank(),
         axis.ticks.y=element_blank()) +
-  scale_fill_viridis_c(option = "mako", name = "Age (BP) (log10)", direction = -1, limits = c(0.845098, 5.008600))
+  scale_fill_viridis_c(option = "mako", name = "Age (BP) (log10)", direction = -1, limits = c(0.845097, 5.008601))
 
 heatmap_age
 ```
@@ -362,10 +357,10 @@ total_SNPs
 
 ### Gene Count
 ```{r}
-scc_gene_list <- fread("05-results/methanobrevibacter_C1188_non_recomb_scc_gene_list.tsv") %>%
+scc_gene_list <- fread("05-results/methanocatella_c1187_non_recomb_scc_gene_list.tsv") %>%
   pull()
 
-panaroo <- fread("05-results/methanobrevibacter_c1188_panaroo_gene_presence_absence.Rtab") %>%
+panaroo <- fread("05-results/methanocatella_c1187_panaroo_gene_presence_absence.Rtab") %>%
   filter(Gene %in% scc_gene_list) %>%
   pivot_longer(-Gene, values_to = "counts", names_to = "Bin") %>%
   pivot_wider(names_from = "Gene", values_from = "counts") %>%
@@ -401,26 +396,13 @@ gene_count
 ```{r}
 crispr_priority <- c("III-A" = 1, "I-B" = 2, "IV -B" = 3, "II-D" = 4)
 
-#crispr_colors <- c("I-B" = "#7DCCFF",
-#                   "III-A" = "#6A51A3",
-#                   "IV-B" = "#148F77",
-#                   "II-D" = "#704236")
-
-#new_crispr_colors <- c("I-B" = "#72bcad",
-#                       "II-D" = "#bee6ff",
-#                       "III-A" = "#6A51A3",
-#                       "IV-B" = "#8f5575")
-
-new_crispr_colors <- c("III-A" = "#4590fe",
+crispr_colors <- c("III-A" = "#4590fe",
              "I-B" = "#E794C1",
              "IV-B" = "#8D5D4B",
              "II-D" = "black",
              "None" = "#f0f0f0")
 
-oralis <- fread("05-results/methanobrevibacter_oralis_cctyper_cas_table.tsv") 
-
-methanobrevibacter_cas <- fread("05-results/methanobrevibacter_cctyper_cas_table.tsv") %>%
-  full_join(., oralis) %>%
+methanocatella_cas <- fread("05-results/methanocatella_cctyper_cas_table.tsv") %>%
   rename(source = MAG_source, Bin = sampleID) %>%
   inner_join(., metadata %>%
                select(Bin)) %>%
@@ -428,11 +410,11 @@ methanobrevibacter_cas <- fread("05-results/methanobrevibacter_cctyper_cas_table
   dplyr::select(Bin, Best_type) %>%
   distinct()
 
-methanobrevibacter_cas_ranked <- methanobrevibacter_cas %>%
+methanocatella_cas_ranked <- methanocatella_cas %>%
   mutate(priority = crispr_priority[Best_type]) %>%
   arrange(Bin, priority)
 
-crispr_pairs <- methanobrevibacter_cas_ranked %>%
+crispr_pairs <- methanocatella_cas_ranked %>%
   group_by(Bin) %>%
   summarise(
     types = list(Best_type),
@@ -449,11 +431,12 @@ crispr_pairs <- methanobrevibacter_cas_ranked %>%
   mutate(crispr1 = ifelse(is.na(crispr1), "None", crispr1)) %>%
   mutate(crispr2 = ifelse(is.na(crispr2), "None", crispr2)) 
 
-methanobrevibacter_cas_input <- crispr_pairs %>%
+
+methanocatella_cas_input <- crispr_pairs %>%
   pivot_longer(cols = c(crispr1, crispr2), names_to = "category", values_to = "crispr_metadata")
 
 
-heatmap_crispr <- ggplot(methanobrevibacter_cas_input, aes(x = category, y = Bin, fill = crispr_metadata)) +
+heatmap_crispr <- ggplot(methanocatella_cas_input, aes(x = category, y = Bin, fill = crispr_metadata)) +
   geom_tile() +
   theme_void() +
   theme(axis.title.x = element_blank(),
@@ -462,8 +445,8 @@ heatmap_crispr <- ggplot(methanobrevibacter_cas_input, aes(x = category, y = Bin
         axis.title.y = element_blank(),
         axis.text.y = element_blank(),
         axis.ticks.y = element_blank()) +
-  scale_fill_manual(
-    values = c(new_crispr_colors, "#f0f0f0"), 
+   scale_fill_manual(
+    values = c(crispr_colors, "#f0f0f0"), 
     na.value = "#f0f0f0" 
   )
 
@@ -475,14 +458,13 @@ heatmap_crispr
 
 ## CAZyme
 ```{r}
-cazymes_methanobrevibacter <-fread("05-results/methanobrevibacter_dbcan3_cazyme_table.tsv")
-cazymes_oralis <-fread("05-results/dbcan3_cazyme_table_methanobrevibacter_oralis.tsv")
+cazymes_methanocatella <-fread("05-results/methanocatella_dbcan3_cazyme_table.tsv")
 
-cazymes_methanobrevibacter <- cazymes_methanobrevibacter %>%
-  full_join(., cazymes_oralis) %>%
+
+cazymes_methanocatella <- cazymes_methanocatella %>%
   inner_join(., metadata, by = "Bin")
 
-cazymes_methanobrevibacter_table <- cazymes_methanobrevibacter %>%
+cazymes_methanocatella_table <- cazymes_methanocatella %>%
 mutate(HMMER = str_replace_all(HMMER, "\\([0-9]+-[0-9]+\\)",""),
          HMMER = str_replace_all(HMMER, "_[0-9]+","")) %>%
   mutate(dbCAN_sub = str_replace_all(dbCAN_sub, "_e[0-9]+","")) %>%
@@ -491,15 +473,15 @@ mutate(HMMER = str_replace_all(HMMER, "\\([0-9]+-[0-9]+\\)",""),
   dplyr::select(Bin, HMMER) %>%
   unique() 
 
-cazyme_categories <- fread("05-results/cazyme_functional_categories.tsv")
+cazyme_categories <- fread("./00-documentation/cazyme_functional_categories.tsv")
 
-cazymes_methanobrevibacter_table2 <- cazymes_methanobrevibacter_table %>%
+cazymes_methanocatella_table2 <- cazymes_methanocatella_table %>%
   unique() %>%
   full_join(., cazyme_categories) %>%
   dplyr::select(Bin, HMMER, functional_category)
 
 
-heatmap_cazyme <- cazymes_methanobrevibacter_table2 %>%
+heatmap_cazyme <- cazymes_methanocatella_table2 %>%
   mutate(functional_category = str_replace_all(functional_category, "Peptidoglycan/cell wall processing", "Cell wall processing")) %>%
   filter(!HMMER == "CE4") %>%
   filter(!HMMER == "GH13") %>%
@@ -534,14 +516,14 @@ heatmap_cazyme
 
 ## nimI (presence/absence)
 ```{r}
-nimI <- fread("05-results/methanobrevibacter_card_table.tsv") %>%
+nimI <- fread("05-results/methanocatella_card_table.tsv") %>%
   dplyr::select(Bin, Best_Hit_ARO) %>%
   filter(str_detect(Best_Hit_ARO, "nimI")) %>%
   unique() %>%
   mutate(nimI = "Present") %>%
   full_join(., metadata) %>%
   mutate(nimI = if_else(is.na(nimI), "Absent", nimI)) %>%
-  filter(primary_cluster == "1188")
+  filter(primary_cluster == "1187")
 
 heatmap_nimI <- ggplot(nimI, aes(x = "nimI", y = Bin, fill = nimI)) +
   geom_tile() +
@@ -562,7 +544,7 @@ heatmap_nimI
 
 ## Prophage
 ```{r}
-methanobrevibacter_prophages <- fread("05-results/methanobrevibacter_prophages.tsv") %>%
+methanocatella_prophages <- fread("05-results/methanocatella_prophages.tsv") %>%
   filter(!str_detect(checkv_quality, "Low-quality")) %>%
   dplyr::select(Bin) %>%
   unique() %>%
@@ -575,7 +557,7 @@ methanobrevibacter_prophages <- fread("05-results/methanobrevibacter_prophages.t
 prophage_colors <- c("Present" = "#f6865e",
               "Absent" = "#FBD9D2")
 
-prophage_heatmap <- ggplot(methanobrevibacter_prophages, aes(x = "Prophage", y = Bin, fill = Prophage)) +
+prophage_heatmap <- ggplot(methanocatella_prophages, aes(x = "Prophage", y = Bin, fill = Prophage)) +
   geom_tile() +
   theme_void() +
   theme(axis.title.x=element_blank(),
@@ -594,7 +576,7 @@ prophage_heatmap
 ## Methanogenesis
 
 ```{r}
-methanogenesis_pres_abs <- fread("05-results/methanobrevibacter_methanogenesis_genes_presence_absence.tsv")
+methanogenesis_pres_abs <- fread("05-results/methanocatella_methanogenesis_genes_presence_absence.tsv")
 
 gene_counts <- methanogenesis_pres_abs %>%
   dplyr::select(-Gene) %>%
@@ -627,12 +609,13 @@ gene_counts_bar_plot <- gene_counts %>%
       axis.text.x = element_text(size = 5),
       plot.background = element_rect(fill = "white", color = NA)
     )
-  
+
+
 ```
 
-##Panaroo
+## Panaroo
 ```{r}
-heatmap_panaroo_data <- fread("05-results/methanobrevibacter_c1188_panaroo_gene_presence_absence.Rtab") %>%
+heatmap_panaroo_data <- fread("./05-results/methanocatella_c1187_panaroo_gene_presence_absence.Rtab") %>%
   pivot_longer(!Gene, names_to = "Bin", values_to = "Gene presence/absence") %>%
   pivot_wider(names_from = "Gene", values_from = "Gene presence/absence") %>%
     mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
@@ -646,7 +629,7 @@ heatmap_panaroo_data <- fread("05-results/methanobrevibacter_c1188_panaroo_gene_
   pivot_longer(!Bin, names_to = "gene", values_to = "Gene presence/absence")
 
 #rank the genes by abundance for clustering on the heatmap
-gene_abundance <- fread("05-results/methanobrevibacter_c1188_panaroo_gene_presence_absence.Rtab") %>%
+gene_abundance <- fread("./05-results/methanocatella_c1187_panaroo_gene_presence_absence.Rtab") %>%
   adorn_totals(where = "col") %>%
   dplyr::select(Gene, Total) %>%
   arrange(desc(Total)) %>%
@@ -668,12 +651,15 @@ heatmap_panaroo
 ```
 
 
-
 ## Combine 
 ```{r}
-methanobrevibacter_full_tree_C1188 <- mag_source_heatmap %>% insert_left(methanobrevibacter_tree_c1188_age, width = 6) %>% insert_right(heatmap_age, width = 1) %>% insert_right(continent_heatmap) %>% insert_right(latitude, width = 1) %>% insert_right(longitude, width = 1) %>% insert_right(species_clusters_heatmap) %>% insert_right(completeness, width = 1) %>% insert_right(contigs, width = 1) %>% insert_right(n50, width = 1) %>% insert_right(total_SNPs, width = 1) %>% insert_right(gene_count, width = 1) %>% insert_right(heatmap_crispr, width = 1) %>% insert_right(prophage_heatmap, width = 1) %>% insert_right(heatmap_nimI, width = 1) %>% insert_right(heatmap_cazyme, width = 1) %>% insert_right(gene_counts_bar_plot, width = 1) %>% insert_right(heatmap_panaroo, width = 1)
+methanocatella_full_tree_c1187 <- mag_source_heatmap %>% insert_left(methanocatella_tree_c1187_age, width = 6) %>% insert_right(heatmap_age, width = 1) %>% insert_right(continent_heatmap) %>% insert_right(latitude, width = 1) %>% insert_right(longitude, width = 1) %>% insert_right(species_clusters_heatmap) %>% insert_right(completeness, width = 1) %>% insert_right(contigs, width = 1) %>% insert_right(n50, width = 1) %>% insert_right(total_SNPs, width = 1) %>% insert_right(gene_count, width = 1) %>% insert_right(heatmap_crispr, width = 1) %>% insert_right(prophage_heatmap, width = 1) %>% insert_right(heatmap_nimI, width = 1) %>% insert_right(heatmap_cazyme, width = 1) %>% insert_right(gene_counts_bar_plot, width = 1) %>% insert_right(heatmap_panaroo, width = 1)
 
-methanobrevibacter_full_tree_C1188
+methanocatella_full_tree_c1187
 
+
+==
 ```
+
+
 

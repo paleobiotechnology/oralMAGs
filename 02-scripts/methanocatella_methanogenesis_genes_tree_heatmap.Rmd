@@ -1,5 +1,5 @@
 ---
-title: "Methanobrevibacter methanogenesis genes tree and heatmap"
+title: "Methanocatella methanogenesis genes tree and heatmap"
 author: "Keri Burge"
 date: "`r format(Sys.time(), '%b %d, %Y')`"
 output:
@@ -16,7 +16,7 @@ library(janitor)
 library(ape)
 library(ggtree)
 library(aplot)
-library(viridis
+library(viridis)
 library(tidyverse)
 opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
 ```
@@ -31,10 +31,9 @@ knitr::opts_knit$set(root.dir = normalizePath(".."))
 
 # Metadata
 ```{r}
-metadata <- fread("./05-results/methanobrevibacter_metadata.tsv") %>%
+metadata <- fread("./05-results/methanocatella_metadata.tsv") %>%
   rename(Label = Bin) %>%
-  rename(Bin = prepublication_bin) %>%
-  relocate(Bin, .before = Label)
+  rename(Bin = prepublication_bin) 
 
 ```
 
@@ -55,9 +54,9 @@ methanogenesis_genes_panaroo <- fread("./05-results/methanogenesis_locus_tags_an
                separate(Description, into = "Description", sep = ",", extra = "drop")) %>%
   unique()
 
-methanobrevibacter_methanogenesis_genes_presence_absence <- fread("05-results/methanobrevibacter_methanogenesis_genes_presence_absence.tsv")
+methanocatella_methanogenesis_genes_presence_absence <- fread("05-results/methanocatella_methanogenesis_genes_presence_absence.tsv")
 
-methanogenesis_gene_counts <- methanobrevibacter_methanogenesis_genes_presence_absence %>%
+methanogenesis_gene_counts <- methanocatella_methanogenesis_genes_presence_absence %>%
   pivot_longer(cols = -Gene, names_to = "Bin", values_to = "presence") %>%
   mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
                         str_replace_all(Bin, "-metaspades_00", ".bin.r.") %>%
@@ -72,7 +71,9 @@ methanogenesis_gene_counts <- methanobrevibacter_methanogenesis_genes_presence_a
   inner_join(metadata %>% select(Bin, primary_cluster)) %>%
   inner_join(., methanogenesis_genes_panaroo %>%
                select(Name, Description) %>%
-               rename(Gene = Name))
+               rename(Gene = Name)) %>%
+  left_join(., metadata %>%
+              select(Label, Bin))
 
 gene_levels <- c("cofC", "cofD", "cofG", "cofH", #F420 biosynthesis
                  "mcrB_2", "mcrD_2", "mcrC", "mcrG_2", "mcrA_2", #operon
@@ -87,7 +88,7 @@ methanogenesis_colors <- c("Methanogenesis" = "#A3E4D7",
 
 methanogenesis_heatmap <- methanogenesis_gene_counts %>%
   mutate(Gene = factor(Gene, levels = gene_levels)) %>%
-  ggplot(aes(x = Gene, y = Bin, fill = Description)) +
+  ggplot(aes(x = Gene, y = Label, fill = Description)) +
   geom_tile(color = "white") +
   scale_fill_manual(values = methanogenesis_colors) +
   theme_minimal() +
@@ -107,13 +108,19 @@ methanogenesis_heatmap
 #Add tree
 ```{r}
 # read in the tree
-tre_methanobrevibacter <- ape::read.tree("./05-results/phylophlan_aln_methanobrevibacter_full_tree.raxml.support")
+tre_methanocatella <- ape::read.tree("./05-results/phylophlan_aln_methanocatella_full_tree.raxml.support")
+
+fix_labels <- fread("05-results/methanocatella_metadata.tsv") %>%
+  rename(Label = Bin) %>%
+  rename(Bin = prepublication_bin) %>%
+  relocate(Bin, .before = Label) %>%
+  select(Label, Bin) %>%
+  mutate(Bin = ifelse(str_detect(Bin, "CMC|ERSX0004033"), Bin, Label))
 
 # adjust tip labels
-tre_methanobrevibacter$tip.label <- tre_methanobrevibacter$tip.label %>%
+tre_methanocatella$tip.label <- tre_methanocatella$tip.label %>%
   as.data.frame() %>%
   dplyr::rename(Bin = 1) %>%
-  #separate(Bin, into = "Bin", sep = "-", extra = "drop") %>%
   mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
                         str_replace_all(Bin, "-metaspades_00", ".bin.r.") %>%
                         str_replace_all("-metaspades_0", ".bin.r.") %>%
@@ -122,17 +129,19 @@ tre_methanobrevibacter$tip.label <- tre_methanobrevibacter$tip.label %>%
                         str_replace_all("-megahit_0", ".bin.r.") %>%
                         str_replace_all("-megahit_", ".bin.r.") %>%
                         str_replace_all("_", ""))) %>%
-  pull(Bin)
+  left_join(., fix_labels) %>%
+  select(Label) %>%
+  pull()
 
 # root the tree in M. ruminantium
-tre_methanobrevibacter <- root(tre_methanobrevibacter, outgroup = "GCA_016294135.1_ASM1629413v1_genomic")
+tre_methanocatella <- root(tre_methanocatella, outgroup = "GCA_016294135.1_ASM1629413v1_genomic")
 
 # create tree
-methanobrevibacter_tree <- ggtree(tre_methanobrevibacter, ladderize = T)
+methanocatella_tree <- ggtree(tre_methanocatella, ladderize = T)
 
 host_shapes <- c("Homo sapiens" = 16, "Homo sapiens neanderthalensis"  = 15, "Pan troglodytes schweinfurthii" = 17, "Reference" = 12, "Papio hamadryas" = 18)
 
-methanobrevibacter_tree_age_w_no_bootstraps <- methanobrevibacter_tree %<+% metadata + 
+methanocatella_tree_age_w_no_bootstraps <- methanocatella_tree %<+% metadata + 
   geom_tippoint(aes(color = log_age, shape = sample_host), size = 2) +
   scale_size_continuous(limits = c(0,3)) +
   theme(legend.position="right") + 
@@ -141,16 +150,16 @@ methanobrevibacter_tree_age_w_no_bootstraps <- methanobrevibacter_tree %<+% meta
   geom_treescale(x = 0, y = 4, width = 0.5, fontsize = 4) +
   #geom_nodelab(aes(label = ifelse(as.numeric(label) > 50, label, "")), size = 2, hjust = -0.1) +
   guides(shape = guide_legend(override.aes = list(size = 3))) +
-  geom_tiplab(aes(label = Label), size = 1.5, hjust = -0.1)
+  geom_tiplab(aes(label = label), size = 1.5, hjust = -0.1)
 
-methanobrevibacter_tree_age_w_no_bootstraps
+methanocatella_tree_age_w_no_bootstraps
 ```
 
 # combine
 ```{r}
-methanobrevibacter_tree_w_methanogenesis_heatmap <- methanogenesis_heatmap %>% insert_left(methanobrevibacter_tree_age_w_no_bootstraps, width = 2) 
+methanocatella_tree_w_methanogenesis_heatmap <- methanogenesis_heatmap %>% insert_left(methanocatella_tree_age_w_no_bootstraps, width = 2) 
 
-methanobrevibacter_tree_w_methanogenesis_heatmap
+methanocatella_tree_w_methanogenesis_heatmap
 
 ```
 

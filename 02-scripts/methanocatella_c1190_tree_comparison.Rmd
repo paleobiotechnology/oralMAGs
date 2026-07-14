@@ -1,5 +1,5 @@
 ---
-title: "methanobrevibacter_c1190_tree_comparison"
+title: "methanocatella_c1190_tree_comparison"
 author: "Keri Burge"
 date: "`r Sys.Date()`"
 output: html_document
@@ -57,7 +57,7 @@ host_shapes <- c("Homo sapiens" = 16, "Homo sapiens neanderthalensis"  = 15, "Pa
 
 Metadata
 ```{r}
-metadata <- fread("./05-results/methanobrevibacter_metadata.tsv") %>%
+metadata <- fread("./05-results/methanocatella_metadata.tsv") %>%
   #filter(primary_cluster == 1188) %>%
   rename(Label = Bin) %>%
   rename(Bin = prepublication_bin) %>%
@@ -73,9 +73,9 @@ metadata <- fread("./05-results/methanobrevibacter_metadata.tsv") %>%
 #No out group
 ##RAxML no out group
 ```{r}
-tre_methanobrevibacter_c1190_no_outgroup <- ape::read.tree("./05-results/methanobrevibacter_c1190_scc.raxml.support")
+tre_methanocatella_c1190_no_outgroup <- ape::read.tree("./05-results/methanocatella_c1190_scc.raxml.support")
 
-tre_methanobrevibacter_c1190_no_outgroup$tip.label <- tre_methanobrevibacter_c1190_no_outgroup$tip.label %>%
+tre_methanocatella_c1190_no_outgroup$tip.label <- tre_methanocatella_c1190_no_outgroup$tip.label %>%
   as.data.frame() %>%
   dplyr::rename(Bin = 1) %>%
   mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
@@ -90,39 +90,24 @@ tre_methanobrevibacter_c1190_no_outgroup$tip.label <- tre_methanobrevibacter_c11
   select(Label) %>%
   pull(Label)
 
-filtered_metadata <- tre_methanobrevibacter_c1190_no_outgroup$tip.label %>%
+filtered_metadata <- tre_methanocatella_c1190_no_outgroup$tip.label %>%
   as.data.frame() %>%
   dplyr::rename(Label = 1) %>%
   inner_join(., metadata, by = "Label")
 
 #Root from MAD rooting - ERSX0005001-megahit_029
 
-tre_methanobrevibacter_c1190_no_outgroup <- root(tre_methanobrevibacter_c1190_no_outgroup, outgroup = "ERS26854150.bin.r.29")
+tre_methanocatella_c1190_no_outgroup <- root(tre_methanocatella_c1190_no_outgroup, outgroup = "ERS26854150.bin.r.29")
 
-methanobrevibacter_c1190_no_outgroup <- ggtree(tre_methanobrevibacter_c1190_no_outgroup, ladderize = T)
-
-methanobrevibacter_c1190_raxml_no_outgroup_tree <- methanobrevibacter_c1190_no_outgroup %<+% filtered_metadata + 
-  geom_tippoint(aes(color = log_age, shape = sample_host), size = 5) +
-  scale_size_continuous(limits = c(0,3)) +
-  theme(legend.position="right") + 
-  #scale_color_viridis_c(option = "inferno", name = "Age (BP) (log10)", begin = 0.2, end = 1) +
-  scale_color_viridis_c(option = "mako", name = "Age (BP) (log10)", direction = -1, limits = c(0.845098, 5.008600)) +
-  scale_shape_manual(values = host_shapes, name = "Sample Host") +
-  geom_treescale(x = 0, y = 5, width = 0.005, fontsize = 4) +
-  geom_nodelab(aes(label = ifelse(as.numeric(label) > 50, label, "")), size = 2, hjust = -0.1) +
-  guides(shape = guide_legend(override.aes = list(size = 3))) +
-  geom_tiplab(size = 2, hjust = -0.1)
-
-methanobrevibacter_c1190_raxml_no_outgroup_tree
 ```
 
 
 ##CASTER no out group
 ```{r}
-methanobrevibacter_c1190_caster_no_outgroup <- ape::read.tree("./05-results/methanobrevibacter_c1190_no_outgroup.caster.nwk")
+methanocatella_c1190_caster_no_outgroup <- ape::read.tree("./05-results/methanocatella_c1190_no_outgroup.caster.nwk")
 
 
-methanobrevibacter_c1190_caster_no_outgroup$tip.label <- methanobrevibacter_c1190_caster_no_outgroup$tip.label %>%
+methanocatella_c1190_caster_no_outgroup$tip.label <- methanocatella_c1190_caster_no_outgroup$tip.label %>%
   as.data.frame() %>%
   dplyr::rename(Bin = 1) %>%
   mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
@@ -138,24 +123,8 @@ methanobrevibacter_c1190_caster_no_outgroup$tip.label <- methanobrevibacter_c119
   pull(Label)
 
 
-methanobrevibacter_c1190_caster_no_outgroup <- root(methanobrevibacter_c1190_caster_no_outgroup, outgroup = "ERS26854150.bin.r.29")
+methanocatella_c1190_caster_no_outgroup <- root(methanocatella_c1190_caster_no_outgroup, outgroup = "ERS26854150.bin.r.29")
 
-methanobrevibacter_c1190_caster_tree <- ggtree(methanobrevibacter_c1190_caster_no_outgroup, ladderize = T)
-
-
-methanobrevibacter_c1190_caster_no_outgroup <- methanobrevibacter_c1190_caster_tree %<+% filtered_metadata + 
-  geom_tippoint(aes(color = log_age, shape = sample_host), size = 5) +
-  scale_size_continuous(limits = c(0,3)) +
-  theme(legend.position="right") + 
-  #scale_color_viridis_c(option = "inferno", name = "Age (BP) (log10)", begin = 0.2, end = 1) +
-  scale_color_viridis_c(option = "mako", name = "Age (BP) (log10)", direction = -1, limits = c(0.845098, 5.008600)) +
-  scale_shape_manual(values = host_shapes, name = "Sample Host") +
-  geom_treescale(x = 0, y = 5, width = 0.005, fontsize = 4) +
-  geom_nodelab(aes(label = ifelse(as.numeric(label) > 50, label, "")), size = 2, hjust = -0.1) +
-  guides(shape = guide_legend(override.aes = list(size = 3))) +
-  geom_tiplab(size = 2, hjust = -0.1)
-
-methanobrevibacter_c1190_caster_no_outgroup
 
 
 ```
@@ -164,8 +133,8 @@ methanobrevibacter_c1190_caster_no_outgroup
 ##Tanglegram
 ```{r}
 #Ladderize the trees
-t1_ladder <- ladderize(tre_methanobrevibacter_c1190_no_outgroup) #RAxML tree
-t2_ladder <- ladderize(methanobrevibacter_c1190_caster_no_outgroup) #CASTER tree
+t1_ladder <- ladderize(tre_methanocatella_c1190_no_outgroup) #RAxML tree
+t2_ladder <- ladderize(methanocatella_c1190_caster_no_outgroup) #CASTER tree
 
 association <- cbind(t1_ladder$tip.label, t1_ladder$tip.label)
 
@@ -252,9 +221,9 @@ dev.off()
 #Out group
 ##RAxML with out group
 ```{r}
-tre_methanobrevibacter_c1190_w_outgroup <- ape::read.tree("./05-results/methanobrevibacter_c1190_w_outgroup_scc.raxml.support")
+tre_methanocatella_c1190_w_outgroup <- ape::read.tree("./05-results/methanocatella_c1190_w_outgroup_scc.raxml.support")
 
-tre_methanobrevibacter_c1190_w_outgroup$tip.label <- tre_methanobrevibacter_c1190_w_outgroup$tip.label %>%
+tre_methanocatella_c1190_w_outgroup$tip.label <- tre_methanocatella_c1190_w_outgroup$tip.label %>%
   as.data.frame() %>%
   dplyr::rename(Bin = 1) %>%
   mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
@@ -269,42 +238,23 @@ tre_methanobrevibacter_c1190_w_outgroup$tip.label <- tre_methanobrevibacter_c119
   select(Label) %>%
   pull(Label)
 
-filtered_metadata <- tre_methanobrevibacter_c1190_w_outgroup$tip.label %>%
+filtered_metadata <- tre_methanocatella_c1190_w_outgroup$tip.label %>%
   as.data.frame() %>%
   dplyr::rename(Label = 1) %>%
   inner_join(., metadata, by = "Label")
 
 #Root with M. oralis
-tre_methanobrevibacter_c1190_w_out <- root(tre_methanobrevibacter_c1190_w_outgroup, outgroup = "GCF_001639275.1_ASM163927v1_genomic")
+tre_methanocatella_c1190_w_out <- root(tre_methanocatella_c1190_w_outgroup, outgroup = "GCF_001639275.1_ASM163927v1_genomic")
 
-#tre_methanobrevibacter_c1190_w_outgroup_midpoint <- phangorn::midpoint(tre_methanobrevibacter_c1190_w_outgroup)
-
-#tre_methanobrevibacter_c1190_w_outgroup_midpoint_dropped <- drop.tip(tre_methanobrevibacter_c1190_w_outgroup_midpoint, "GCF_001639275.1_ASM163927v1_genomic")
-
-methanobrevibacter_c1190_w_outgroup_midpoint_dropped_tree <- ggtree(tre_methanobrevibacter_c1190_w_outgroup_midpoint_dropped, ladderize = T)
-
-methanobrevibacter_c1190_raxml_w_outgroup_tree <- methanobrevibacter_c1190_w_outgroup_midpoint_dropped_tree %<+% filtered_metadata + 
-  geom_tippoint(aes(color = log_age, shape = sample_host), size = 5) +
-  scale_size_continuous(limits = c(0,3)) +
-  theme(legend.position="right") + 
-  #scale_color_viridis_c(option = "inferno", name = "Age (BP) (log10)", begin = 0.2, end = 1) +
-  scale_color_viridis_c(option = "mako", name = "Age (BP) (log10)", direction = -1, limits = c(0.845098, 5.008600)) +
-  scale_shape_manual(values = host_shapes, name = "Sample Host") +
-  geom_treescale(x = 0, y = 5, width = 0.005, fontsize = 4) +
-  geom_nodelab(aes(label = ifelse(as.numeric(label) > 50, label, "")), size = 2, hjust = -0.1) +
-  guides(shape = guide_legend(override.aes = list(size = 3))) +
-  geom_tiplab(size = 2, hjust = -0.1)
-
-methanobrevibacter_c1190_raxml_w_outgroup_tree
 ```
 
 
 ##CASTER with out group
 ```{r}
-methanobrevibacter_c1190_caster_w_outgroup <- ape::read.tree("./05-results/methanobrevibacter_c1190_w_outgroup.caster.nwk")
+methanocatella_c1190_caster_w_outgroup <- ape::read.tree("./05-results/methanocatella_c1190_w_outgroup.caster.nwk")
 
 
-methanobrevibacter_c1190_caster_w_outgroup$tip.label <- methanobrevibacter_c1190_caster_w_outgroup$tip.label %>%
+methanocatella_c1190_caster_w_outgroup$tip.label <- methanocatella_c1190_caster_w_outgroup$tip.label %>%
   as.data.frame() %>%
   dplyr::rename(Bin = 1) %>%
   mutate(Bin = if_else(str_detect(Bin, "GC|refbinned"), Bin, 
@@ -320,24 +270,7 @@ methanobrevibacter_c1190_caster_w_outgroup$tip.label <- methanobrevibacter_c1190
   pull(Label)
 
 
-methanobrevibacter_c1190_caster_w_outgroup <- root(methanobrevibacter_c1190_caster_w_outgroup, outgroup = "GCF_001639275.1_ASM163927v1_genomic")
-
-methanobrevibacter_c1190_caster_tree <- ggtree(methanobrevibacter_c1190_caster_w_outgroup, ladderize = T)
-
-
-methanobrevibacter_c1190_caster_w_outgroup <- methanobrevibacter_c1190_caster_tree %<+% filtered_metadata + 
-  geom_tippoint(aes(color = log_age, shape = sample_host), size = 5) +
-  scale_size_continuous(limits = c(0,3)) +
-  theme(legend.position="right") + 
-  #scale_color_viridis_c(option = "inferno", name = "Age (BP) (log10)", begin = 0.2, end = 1) +
-  scale_color_viridis_c(option = "mako", name = "Age (BP) (log10)", direction = -1, limits = c(0.845098, 5.008600)) +
-  scale_shape_manual(values = host_shapes, name = "Sample Host") +
-  geom_treescale(x = 0, y = 5, width = 0.005, fontsize = 4) +
-  geom_nodelab(aes(label = ifelse(as.numeric(label) > 50, label, "")), size = 2, hjust = -0.1) +
-  guides(shape = guide_legend(override.aes = list(size = 3))) +
-  geom_tiplab(size = 2, hjust = -0.1)
-
-methanobrevibacter_c1190_caster_w_outgroup
+methanocatella_c1190_caster_w_outgroup <- root(methanocatella_c1190_caster_w_outgroup, outgroup = "GCF_001639275.1_ASM163927v1_genomic")
 
 
 ```
@@ -346,8 +279,8 @@ methanobrevibacter_c1190_caster_w_outgroup
 ##Tanglegram
 ```{r}
 #Ladderize the trees
-t1_ladder <- ladderize(tre_methanobrevibacter_c1190_w_out) #RAxML tree
-t2_ladder <- ladderize(methanobrevibacter_c1190_caster_w_outgroup) #CASTER tree
+t1_ladder <- ladderize(tre_methanocatella_c1190_w_out) #RAxML tree
+t2_ladder <- ladderize(methanocatella_c1190_caster_w_outgroup) #CASTER tree
 
 association <- cbind(t1_ladder$tip.label, t1_ladder$tip.label)
 
