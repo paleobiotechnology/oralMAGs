@@ -18,7 +18,6 @@ The files starting with the prefix `ENVS` are conda environments used in combina
 
 ### `Archaea`: scripts for *Methanocatella* and *Methanomethylophilus* analyses and figures
 
-- `aDNA-BAMPlotter_2kb_intervals.py`: scipt modified from https://github.com/MeriamGuellil/aDNA-BAMPlotter to visualize genome mapping across across 2kb base pair intervals (extended data figure 9)
 - `methanomethylophilus_tree_and_metadata.Rmd`: visulize *Methanomethylophilus* full genus tree and metadatia (supplemental figure 33)
 - `methanomethylophilus_cluster3192_tree.Rmd`: visualize Ca. *Methanomethylophilus fidelis* (pr_cl_3192) single copy core gene tree and metadata (supplemental figure 34)
 - - `methanomethylophilus_c3192_tree_comparisons.Rmd`: generate tanglegrams to compare RAxML and CASTER-site Ca. *Methanomethylophilus fidelis* (pr_cl_3192) trees both with and without an outgroup (*M.* pr_cl_3194) (supplemental figure 34.1)
