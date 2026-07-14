@@ -1,0 +1,603 @@
+---
+title: "Figure 1 (minus the map)"
+author: "Irina Velsko"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output:
+    github_document:
+        fig_width: 8
+        fig_height: 6
+        toc: true
+---
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(janitor)
+library(ComplexHeatmap)
+library(tidyverse)
+library(ggridges)
+library(patchwork)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+Set the working directory of the notebook to the parent directory of the 
+notebook itself.  
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath("../../.."))
+```
+
+```{r}
+os_colors <- c("Calculus - Ancient" = "#EF7C12",
+               "Calculus - Industrial" = "#F4B95A",
+               "Plaque - Industrial" = "#FC6882",
+               "Plaque - Non-industrial" = "#C70E7B",
+               "Buccal mucosa - Industrial" = "#8FDA04",
+               "Buccal mucosa - Non-industrial" = "#009F3F",
+               "Saliva - Industrial" = "#54BCD1",
+               "Saliva - Non-industrial" = "#007BC3",
+               "RefSeq" = "gray80",
+               "Tongue - Industrial" = "#78d9ca",
+               # "Tongue - Non-industrial" = "#189a85",
+               "Hard palate - Industrial" = "#cab2d6",
+               # "Hard_palate - Non-industrial" = "#6a3d9a",
+               "Keratinized gingiva - Industrial" = "#F7E690",
+               # "Keratinized gingiva - Non-ndustrial" = "#F5D000",
+               "PQ" = "#FC6882", "AC" = "#EF7C12", "MC" = "#F4B95A",
+               "BM" = "#8FDA04","SL" = "#54BCD1","TN" = "#78d9ca","KG" = "#F7E690","HP" = "#cab2d6",
+               "Other mammal calculus - Ancient" = "brown")
+
+
+Continent_colors <- c("Oceania" = "#098BD9", 
+                  "Europe" = "#7472af", 
+                  "Africa" = "#cc79a7", 
+                  "Caribbean" = "#f6865e", 
+                  "Asia" = "#86c73a",
+                  "South America" = "gray50",
+                  "North America" = "#1ec1a7")
+
+```
+
+```{r}
+
+# read in the cluster info file
+cluster_info <- fread("./00-documentation/cluster_info_all_metadata_26_07_2024.tsv") %>%
+  mutate(Oral_site = str_replace_all(Oral_site, "anc_calc$", "AC"),
+         Oral_site = str_replace_all(Oral_site, "anc_calculus", "AC"),
+         Oral_site = str_replace_all(Oral_site, "mod_calculus", "MC"),
+         Oral_site = str_remove_all(Oral_site, "sub"),
+         Oral_site = str_remove_all(Oral_site, "sup"))
+
+taxonomy <- fread("./00-documentation/mod_anc_refined_mag_taxonomy_26_07_2024.tsv")
+
+# Zhu2022 accession table
+zhuextra <- fread("./00-documentation/zhu2022_accessions.csv") %>%
+  mutate(site = str_replace_all(site, "saliva","SL"),
+         site = str_replace_all(site, "tongue","TN")) %>%
+  filter(str_detect(MAG_accession, "GWH"))
+
+```
+
+```{r anc_envt_bins}
+# read in ancient environmental bins file for filtering
+ancient_envt_bins <- fread("./00-documentation/ancient_envt_bins_26_07_2024.tsv")
+
+```
+
+
+## Ancient calculus time frame
+```{r continent_table}
+
+sample_continent_info <- cluster_info %>%
+  select(sample_host, Continent, Secondary_sample_accession, Oral_site, Age_BP) %>% 
+  mutate(sample_host = ifelse(str_detect(sample_host, "Rangifer|Ursus"),"Other mammal",
+                              ifelse(str_detect(sample_host, "neanderthalensis"),"Neanderthal",
+                                     ifelse(str_detect(sample_host, "Pan|Papio|Gorilla|Alouatta"),"Non-human primate", "Human")))) %>%
+  filter(str_detect(sample_host,"Human|Neanderthal")) %>%
+  mutate(Continent =  ifelse(Continent == "Australia", "Oceania",
+                             ifelse(Continent == "Caribbean","South America", Continent))) %>%
+  unique() %>%
+  # only ancient calculus
+  filter(Oral_site == "AC") %>%
+  # Now add latitude and longitude to be able to plot on a map
+  full_join(., fread("./00-documentation/continent_coordinates.tsv"), by = "Continent")
+
+
+```
+
+```{r calculus_ridges}
+
+ac_age_ridge <- sample_continent_info  %>%
+  filter(Continent != "Unknown",
+         !is.na(Age_BP)) %>%
+  mutate(Continent = str_replace_all(Continent, "Caribbean","South America"),
+         Continent = fct_relevel(Continent,"South America","North America","Oceania","Asia","Africa","Europe")) %>%
+  # filter(Continent == "South America")
+  ggplot(., aes(x = Age_BP, y = Continent, fill = Oral_site)) +
+          geom_density_ridges(bandwidth = 100, jittered_points = T, position = position_points_jitter(width = 0.05, height = 0), 
+                      point_shape = '|', point_size = 2, point_alpha = 1, alpha = 1.0,  scale = 0.9) + # rel_min_height = 0.01 scale = 0.9
+          scale_x_reverse(breaks=scales::pretty_breaks(n=10)) + # breaks=scales::pretty_breaks(n=10)
+          scale_y_discrete(position = "right") +
+          ggbreak::scale_x_cut(c(34000,42000), which = c(1,2,3), scales = c(0.5,0.2,5)) +
+          theme_classic(base_size = 14) +
+          scale_fill_manual(values = c("#EF7C12")) +
+          guides(fill="none") +
+          xlab("Age (BP)")
+
+
+# ggsave("./06-publication/main_figures/Figure_1/ac_samples_ridges.pdf", plot = ac_age_ridge, device = "pdf",
+#        scale = 1, width = 10, height = 5, units = c("in"), dpi = 300)
+
+```
+
+# Data Pie Charts
+```{r}
+
+cluster_type_table <- fread("./00-documentation/cluster_type_table.tsv")
+
+cluster_info %>%
+  left_join(., taxonomy) %>%
+  left_join(., cluster_type_table, by = "primary_cluster") %>%
+  select(Oral_site, primary_cluster, cluster_type, HOMD, classification) %>%
+  mutate(Oral_site = str_remove_all(Oral_site, "sub"),
+         Oral_site = str_remove_all(Oral_site, "sup"),
+         Oral_site = ifelse(str_detect(Oral_site, "mod"),"MC",
+                            ifelse(str_detect(Oral_site, "anc_"),"AC",Oral_site))) %>%
+  # filter(str_detect(cluster_type, "H|N"),
+  #        cluster_type != "N-U"
+  #        ) %>%
+  # select(primary_cluster, cluster_type) %>% # 
+  unique() 
+
+  # group_by(cluster_type) %>%
+  # count() %>%
+  # ungroup()
+
+```
+
+
+```{r pie_metagenomes_assembled}
+
+
+# Number of metagenomes assembled in-house (anc/mod calc, CMC, Clemente, Lassalle, Pedro)
+assembled_metagenomes <- cluster_info %>%
+  filter(str_detect(MAG_source, "Ancient|Velsko2019|FellowsYates|CMC|Lassalle|Pedro|Clemente")) %>%
+  mutate(Oral_site = ifelse(!str_detect(sample_host, "Homo"), "Other mammal calculus", Oral_site)) %>%
+  select(Secondary_sample_accession, Industrialization, Oral_site) %>%
+  unique() %>%
+  # make oral site designation consistent
+  mutate(Oral_site = str_remove_all(Oral_site, "sub"),
+         Oral_site = str_remove_all(Oral_site, "sup"),
+         Oral_site = ifelse(str_detect(Oral_site, "C"),"Calculus",
+                            ifelse(Oral_site == "PQ","Plaque",
+                                   ifelse(Oral_site == "BM", "Buccal mucosa",
+                                          ifelse(Oral_site == "SL", "Saliva",Oral_site)))),
+         Industrialization = str_replace_all(Industrialization, "_","-")) %>%
+  unite(oral_site, Oral_site:Industrialization, sep = " - ") %>%
+  group_by(oral_site) %>%
+  count(name = "metagenomes") %>%
+  ungroup() %>%
+  # this is correct for MC and PQni, but not the rest. Samples didn't always produce MAGs
+  mutate(metagenomes = ifelse(str_detect(oral_site, "Buccal"),14,
+                              ifelse(str_detect(oral_site, "Saliva"),90,metagenomes))) %>%
+  mutate(oral_site = fct_relevel(oral_site, "Calculus - Ancient","Other mammal calculus - Ancient","Calculus - Industrial","Plaque - Non-industrial","Buccal mucosa - Non-industrial","Saliva - Non-industrial")) %>%
+  arrange(oral_site) %>%
+  ggplot(., aes(x = "", y = metagenomes, fill = oral_site)) +
+    coord_polar("y",start = 0) +
+    geom_bar(aes(fill = oral_site), stat = "identity", linewidth = 0.2, color = "white") + # , linetype = "dashed"
+    geom_text(aes(x = 1.1, label = metagenomes), position = position_stack(vjust = 0.5), size = 5) + # , position=position_dodge(width=0.9), vjust=-0.5,
+    scale_fill_manual(values = os_colors) +
+    theme_void(base_size = 12)
+
+assembled_metagenomes
+
+# ggsave("06-publication/main_figures/Figure_1/pie_assembled_metagenomes.pdf", plot = assembled_metagenomes, device = "pdf",
+#        scale = 1, width = 5, height = 4, units = c("in"), dpi = 300)
+
+# get counts of humans, non-human primates, other mammals
+cluster_info %>%
+  filter(MAG_source == "Ancient") %>%
+  select(Secondary_sample_accession, sample_host) %>%
+  unique() %>%
+  mutate(Host = ifelse(sample_host == "Homo sapiens","Human",
+                       ifelse(str_detect(sample_host, "neanderthal"), "Neanderthal",
+                              ifelse(str_detect(sample_host, "Pan|Gorilla|Papio|Alouatta"),"Non-human primate","Other mammal")))) %>%
+  group_by(Host) %>%
+  count(name = "metagenomes") %>%
+  ungroup()
+
+```
+
+
+```{r pie_public_mags}
+
+excluded_mags <- fread("./00-documentation/qual_fail_or_non_oral_list_mag_source.tsv", header = F, col.names = c("Bin","MAG_source")) %>%
+  mutate(Included = "No") %>%
+  filter(str_detect(MAG_source, "passoli|zhu|mgnify|homd")) %>%
+  mutate(MAG_source = str_replace_all(MAG_source,"zhu","Zhu2022"))
+# all mgnify and pasolli MAGs passed filtering and were included
+
+# Number of publicly available MAGs included
+# This is all MAGs, even those excluded by quality filtering
+public_mags <- cluster_info %>%
+  filter(str_detect(MAG_source, "MGNify|Passoli|Zhu")) %>%
+  select(Bin, MAG_source, Oral_site, Industrialization) %>%
+  unique() %>%
+  bind_rows(., excluded_mags %>%
+              filter(MAG_source == "ZHU2022") %>%
+              left_join(., zhuextra %>%
+                          rename(Bin = MAG_accession,
+                                 Oral_site = site)) %>%
+              select(Bin, MAG_source, Oral_site) %>%
+              mutate(Industrialization = "Industrial")) %>%
+  # make oral site designation consistent
+  mutate(Oral_site = str_remove_all(Oral_site, "sub"),
+         Oral_site = str_remove_all(Oral_site, "sup"),
+         Oral_site = ifelse(str_detect(Oral_site, "TN"),"Tongue",
+                            ifelse(Oral_site == "PQ","Plaque",
+                                   ifelse(Oral_site == "BM", "Buccal mucosa",
+                                          ifelse(Oral_site == "SL", "Saliva",
+                                                 ifelse(Oral_site == "KG", "Keratinized gingiva",
+                                                        ifelse(Oral_site == "HP","Hard palate",Oral_site)))))),
+         Industrialization = str_replace_all(Industrialization, "_","-")) %>%
+  unite(oral_site, Oral_site:Industrialization, sep = " - ") %>%
+  group_by(oral_site) %>%
+  count(name = "bins") %>%
+  ungroup() %>%
+  # keratinized gingiva - 67 MAGs; Hard palate - 9 MAGs
+  mutate(oral_site = fct_relevel(oral_site, "Plaque - Industrial","Buccal mucosa - Industrial","Saliva - Non-industrial","Saliva - Industrial","Tongue - Industrial","Keratinized gingiva - Industrial","Hard palate - Industrial")) %>%
+  arrange(oral_site) %>%
+  ggplot(., aes(x = "", y = bins, fill = oral_site)) +
+    coord_polar("y",start = 0) +
+    geom_bar(aes(fill = oral_site), stat = "identity", linewidth = 0.2, color = "white") + # , linetype = "dashed"
+    geom_text(aes(x = 1.1, label = bins), position = position_stack(vjust = 0.5), size = 5) + # , position=position_dodge(width=0.9), vjust=-0.5,
+    scale_fill_manual(values = os_colors) +
+    theme_void(base_size = 12)
+
+public_mags
+
+# ggsave("06-publication/main_figures/Figure_1/pie_public_mags.pdf", plot = public_mags, device = "pdf",
+#        scale = 1, width = 5, height = 4, units = c("in"), dpi = 300)
+
+```
+
+```{r pie_homd}
+
+pie_homd <- cluster_info %>%
+  filter(str_detect(MAG_source, "HOMD")) %>%
+  select(Bin) %>%
+  unique() %>%
+  mutate(Oral_site = "Resident oral") %>%
+  bind_rows(., excluded_mags %>%
+              filter(MAG_source == "homd") %>%
+              select(Bin, MAG_source) %>%
+              mutate(Oral_site = "Transient oral")) %>%
+  group_by(Oral_site) %>%
+  count(name = "Genomes") %>%
+  ungroup() %>%
+  ggplot(., aes(x = "", y = Genomes, fill = Oral_site)) +
+    coord_polar("y",start = 0) +
+    geom_bar(aes(fill = Oral_site), stat = "identity", linewidth = 0.2, color = "white") + # , linetype = "dashed"
+    geom_text(aes(x = 1.1, label = Genomes), position = position_stack(vjust = 0.5), size = 5) + # , position=position_dodge(width=0.9), vjust=-0.5,
+    scale_fill_manual(values = c("gray80","gray40")) +
+    theme_void(base_size = 12)
+
+pie_homd
+
+# ggsave("06-publication/main_figures/Figure_1/pie_homd.pdf", plot = pie_homd, device = "pdf",
+#        scale = 1, width = 5, height = 4, units = c("in"), dpi = 300)
+
+```
+
+```{r pie_quality_mags}
+
+
+# Number of MAGs included that passed quality filtering
+quality_mags <- cluster_info %>%
+  # anti_join(., ancient_envt_clusters) %>%
+  mutate(Oral_site = ifelse(!str_detect(sample_host, "Homo"), "Other mammal calculus", Oral_site)) %>%
+  select(Bin, Industrialization, Oral_site) %>%
+  unique() %>%
+  # make oral site designation consistent
+  mutate(Oral_site = str_remove_all(Oral_site, "sub"),
+         Oral_site = str_remove_all(Oral_site, "sup"),
+         Oral_site = ifelse(str_detect(Oral_site, "TN"),"Tongue",
+                            ifelse(Oral_site == "PQ","Plaque",
+                                   ifelse(Oral_site == "BM", "Buccal mucosa",
+                                          ifelse(Oral_site == "SL", "Saliva",
+                                                 ifelse(Oral_site == "KG", "Keratinized gingiva",
+                                                        ifelse(Oral_site == "HP","Hard palate",
+                                                               ifelse(str_detect(Oral_site, "C"),"Calculus",Oral_site))))))),
+         Industrialization = str_replace_all(Industrialization, "_","-")) %>%
+  unite(oral_site, Oral_site:Industrialization, sep = " - ") %>%
+  group_by(oral_site) %>%
+  count(name = "bins") %>%
+  ungroup() %>%
+  # adorn_totals()
+  # keratinized gingiva - 67 MAGs; Hard palate - 9 MAGs; Buccal mucosa - Non-industrial 4 MAGs
+  mutate(oral_site = ifelse(str_detect(oral_site, "Ref"),"RefSeq",oral_site)) %>%
+  mutate(oral_site = fct_relevel(oral_site, "Calculus - Ancient", "Other mammal calculus - Ancient","Calculus - Industrial","Plaque - Non-industrial","Plaque - Industrial","Buccal mucosa - Non-industrial","Buccal mucosa - Industrial","Saliva - Non-industrial","Saliva - Industrial","Tongue - Industrial","Keratinized gingiva - Industrial","Hard palate - Industrial","RefSeq")) %>%
+  arrange(oral_site) %>%
+  ggplot(., aes(x = "", y = bins, fill = oral_site)) +
+    coord_polar("y",start = 0) +
+    geom_bar(aes(fill = oral_site), stat = "identity", linewidth = 0.2, color = "white") + # , linetype = "dashed"
+    geom_text(aes(x = 1.1, label = bins), position = position_stack(vjust = 0.5), size = 5) + # , position=position_dodge(width=0.9), vjust=-0.5,
+    scale_fill_manual(values = os_colors) +
+    theme_void(base_size = 12)
+
+quality_mags
+
+# ggsave("06-publication/main_figures/Figure_1/pie_quality_mags.pdf", plot = quality_mags, device = "pdf",
+#        scale = 1, width = 5, height = 4, units = c("in"), dpi = 300)
+
+```
+
+```{r pie_sp_clusters}
+
+
+# Number of MAGs included that passed quality filtering
+host_source <- cluster_info %>%
+  select(primary_cluster) %>%
+  unique() %>%
+  left_join(., cluster_type_table) %>%
+  # make source designation consistent
+  # start by changing the H-U w/HOMD to non-human (b/c these are likely contaminants based on the taxonomy)
+  mutate(cluster_source = ifelse(cluster_type == "H-U" & HOMD == "HOMD", "Other mammal",
+                               ifelse(str_detect(cluster_type, "H|N"),"Human",
+                                      ifelse(str_detect(cluster_type, "Env"),"Environmental",
+                                             ifelse(str_detect(cluster_type, "B|G|P|A") & !str_detect(cluster_type, "H|N"), "Non-human primate", "Other mammal"))))) %>%
+  
+  group_by(cluster_source) %>%
+  count(name = "clusters") %>%
+  ungroup() %>%
+  mutate(cluster_source = fct_relevel(cluster_source, "Human","Non-human","Environmental")) %>%
+  arrange(cluster_source) %>%
+  ggplot(., aes(x = "", y = clusters, fill = cluster_source)) +
+    coord_polar("y",start = 0) +
+    geom_bar(aes(fill = cluster_source), stat = "identity", linewidth = 0.2, color = "white") + # , linetype = "dashed"
+    geom_text(aes(x = 1.1, label = clusters), position = position_stack(vjust = 0.5), size = 5) + # , position=position_dodge(width=0.9), vjust=-0.5,
+    scale_fill_manual(values = c("#8dd3c7", "#bebada", "#bb9457", "pink")) +
+    theme_void(base_size = 12)
+host_source
+
+# ggsave("06-publication/main_figures/Figure_1/pie_host_source.pdf", plot = host_source, device = "pdf",
+#        scale = 1, width = 5, height = 4, units = c("in"), dpi = 300)
+
+```
+
+```{r pie_sp_clusters_93}
+
+info_93 <- fread("04-analysis/dRep/all_mags/dRep_50_ani93_all_mod_anc_mags_out_26_07_2024/data_tables/Cdb.csv") %>%
+  rename(Bin = genome,
+         pr_93 = primary_cluster) %>%
+  mutate(Bin = str_remove_all(Bin, ".fasta"),
+         Bin = str_remove_all(Bin, ".genome"),
+         Bin = str_remove_all(Bin, ".fna"),
+         Bin = str_remove_all(Bin, ".fa")) %>%
+  select(Bin, pr_93)
+
+cluster_type_table_93 <- fread("./00-documentation/cluster_type_table_93.tsv")
+
+# there are 6 clusters with HOMD and Ursus and no other hosts
+cluster_type_table_93 %>%
+  filter(cluster_type == "H-U" & HOMD == "HOMD") %>%
+  select(pr_93) %>%
+  left_join(., cluster_info %>%
+              full_join(., info_93, by = "Bin") %>%
+              select(pr_93, Bin, sample_host)) %>%
+  select(pr_93, sample_host) %>%
+  unique()
+
+host_source_93 <- info_93 %>%
+  select(pr_93) %>%
+  unique() %>%
+  left_join(., cluster_type_table_93) %>%
+  # make source designation consistent
+  # start by changing the H-U w/HOMD to non-human (b/c these are likely contaminants based on the taxonomy)
+  mutate(cluster_source = ifelse(cluster_type == "H-U" & HOMD == "HOMD", "Other mammal",
+                               ifelse(str_detect(cluster_type, "H|N"),"Human",
+                                      ifelse(str_detect(cluster_type, "Env"),"Environmental",
+                                             ifelse(str_detect(cluster_type, "B|G|P|A") & !str_detect(cluster_type, "H|N"), "Non-human primate", "Other mammal"))))) %>%
+  
+  group_by(cluster_source) %>%
+  count(name = "clusters") %>%
+  ungroup() %>%
+  mutate(cluster_source = fct_relevel(cluster_source, "Human","Non-human primate","Environmental", "Other mammal")) %>%
+  arrange(cluster_source) %>%
+  ggplot(., aes(x = "", y = clusters, fill = cluster_source)) +
+    coord_polar("y",start = 0) +
+    geom_bar(aes(fill = cluster_source), stat = "identity", linewidth = 0.2, color = "white") + # , linetype = "dashed"
+    geom_text(aes(x = 1.1, label = clusters), position = position_stack(vjust = 0.5), size = 5) + # , position=position_dodge(width=0.9), vjust=-0.5,
+    scale_fill_manual(values = c("#8dd3c7", "#bebada", "#bb9457", "pink")) +
+    theme_void(base_size = 12)
+
+host_source_93
+
+# ggsave("06-publication/main_figures/Figure_1/pie_host_source_93.pdf", plot = host_source_93, device = "pdf",
+#        scale = 1, width = 5, height = 4, units = c("in"), dpi = 300)
+
+
+```
+
+```{r pie_sp_clusters_human}
+
+
+# Number of species clusters found in humans that are novel or known
+novel_known <- cluster_info %>%
+  select(primary_cluster) %>%
+  unique() %>%
+  left_join(., cluster_type_table) %>%
+  # make source designation consistent
+  # start by changing the H-U w/HOMD to non-human (b/c these are likely contaminants based on the taxonomy)
+  mutate(cluster_source = ifelse(cluster_type == "H-U" & HOMD == "HOMD", "Non-human",
+                               ifelse(str_detect(cluster_type, "H|N"),"Human",
+                                      ifelse(str_detect(cluster_type, "Env"),"Environmental","Non-human")))) %>%
+  filter(cluster_source == "Human") %>%
+  group_by(HOMD) %>%
+  count(name = "clusters") %>%
+  ungroup() %>%
+  mutate(status = ifelse(HOMD == "HOMD","Known","Novel")) %>%
+  mutate(status = fct_relevel(status, "Known","Novel")) %>%
+  arrange(status) %>%
+  ggplot(., aes(x = "", y = clusters, fill = status)) +
+    coord_polar("y",start = 0) +
+    geom_bar(aes(fill = status), stat = "identity", linewidth = 0.2, color = "white") + # , linetype = "dashed"
+    geom_text(aes(x = 1.1, label = clusters), position = position_stack(vjust = 0.5), size = 5) + # , position=position_dodge(width=0.9), vjust=-0.5,
+    scale_fill_manual(values = c("#c6e9e3", "#70a89f")) +
+    theme_void(base_size = 12)
+
+novel_known
+
+# ggsave("06-publication/main_figures/Figure_1/pie_novel_known.pdf", plot = novel_known, device = "pdf",
+#        scale = 1, width = 5, height = 4, units = c("in"), dpi = 300)
+
+```
+
+```{r pie_sp_clusters_human_93}
+
+
+# Number of species clusters found in humans that are novel or known
+novel_known_93 <- info_93 %>%
+  select(pr_93) %>%
+  unique() %>%
+  left_join(., cluster_type_table_93) %>%
+  # make source designation consistent
+  # start by changing the H-U w/HOMD to non-human (b/c these are likely contaminants based on the taxonomy)
+  mutate(cluster_source = ifelse(cluster_type == "H-U" & HOMD == "HOMD", "Non-human",
+                               ifelse(str_detect(cluster_type, "H|N"),"Human",
+                                      ifelse(str_detect(cluster_type, "Env"),"Environmental","Non-human")))) %>%
+  filter(cluster_source == "Human") %>%
+  group_by(HOMD) %>%
+  count(name = "clusters") %>%
+  ungroup() %>%
+  mutate(status = ifelse(HOMD == "HOMD","Known","Novel")) %>%
+  mutate(status = fct_relevel(status, "Known","Novel")) %>%
+  arrange(status) %>%
+  ggplot(., aes(x = "", y = clusters, fill = status)) +
+    coord_polar("y",start = 0) +
+    geom_bar(aes(fill = status), stat = "identity", linewidth = 0.2, color = "white") + # , linetype = "dashed"
+    geom_text(aes(x = 1.1, label = clusters), position = position_stack(vjust = 0.5), size = 5) + # , position=position_dodge(width=0.9), vjust=-0.5,
+    scale_fill_manual(values = c("#c6e9e3", "#70a89f")) +
+    theme_void(base_size = 12)
+
+novel_known_93
+
+# ggsave("06-publication/main_figures/Figure_1/pie_novel_known_93.pdf", plot = novel_known_93, device = "pdf",
+#        scale = 1, width = 5, height = 4, units = c("in"), dpi = 300)
+
+```
+
+
+
+## PyDamage plots
+
+```{r}
+pydamage_table_n <- fread("./05-results/neanderthal_pydamage_table.tsv")
+pydamage_table <- fread("./05-results/human_pydamage_table.tsv") # note that this is gzipped in the github page and adjust the file name (.gz) if needed
+
+```
+
+
+```{r}
+
+neanderthal_pydamage_table <- pydamage_table_n %>%
+  select(-pass_pydamage, -predicted_accuracy, -damage_model_p, -pvalue, -qvalue, -nb_reads_aligned, -coverage, -reflen) %>%
+  pivot_longer(!SampleID:Contig, names_to = "Base", values_to = "Damage") %>%
+  group_by(SampleID, Base) %>%
+  summarize(mean_damage = mean(Damage)) %>%
+  ungroup() %>%
+  mutate(Base = str_remove_all(Base, "CtoT-"),
+         Base = as.numeric(Base)) %>%
+  left_join(., cluster_info %>%
+              select(Secondary_sample_accession, Age_BP, Country) %>%
+              rename(SampleID = Secondary_sample_accession), by = "SampleID") %>%
+  arrange(SampleID, Base) %>%
+  left_join(., fread("./00-documentation/mag_sample_to_eager_label.tsv") %>%
+              rename(SampleID = Secondary_sample_accession)) 
+
+human_pydamage_table <- pydamage_table %>%
+  select(-pass_pydamage, -predicted_accuracy, -damage_model_p, -pvalue, -qvalue, -nb_reads_aligned, -coverage, -reflen) %>%
+  pivot_longer(!SampleID:Contig, names_to = "Base", values_to = "Damage") %>%
+  group_by(SampleID, Base) %>%
+  summarize(mean_damage = mean(Damage)) %>%
+  ungroup() %>%
+  mutate(Base = str_remove_all(Base, "CtoT-"),
+         Base = as.numeric(Base)) %>%
+  left_join(., cluster_info %>%
+              select(Secondary_sample_accession, Age_BP, Country) %>%
+              rename(SampleID = Secondary_sample_accession), by = "SampleID") %>%
+  arrange(SampleID, Base) %>%
+  unique()%>%
+  left_join(., fread("./00-documentation/mag_sample_to_eager_label.tsv") %>%
+              rename(SampleID = Secondary_sample_accession))
+
+```
+
+```{r}
+
+nh_plot <- neanderthal_pydamage_table %>%
+  # remove poorly preserved samples
+  filter(!str_detect(Eager_label, "FUM003|SPM002|ZAF001")) %>%
+  filter(Base <= 15) %>%
+  select(SampleID, Base, mean_damage, Age_BP) %>%
+  mutate(Host = "Neanderthal") %>%
+  bind_rows(., human_pydamage_table %>%
+            # remove G12 with it's odd damage pattern
+            filter(!str_detect(SampleID, "SRS473746|ERSX0003003")) %>%
+            filter(Base <= 15) %>%
+  select(SampleID, Base, mean_damage, Age_BP) %>%
+            mutate(Host = "Human")) %>%
+  mutate(logage = log10(Age_BP),
+         Host = fct_relevel(Host, "Neanderthal","Human")) %>%
+  arrange(Host) %>%
+  ggplot(., aes(x = Base, y = mean_damage, group = SampleID)) + # , group = Country
+         geom_line(aes(color = logage, linetype = Host), linewidth=0.8) + #  
+         # geom_point() +
+         theme_minimal(base_size = 12) +
+         theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5, size = 12)) +
+         theme(axis.text.y = element_text(size = 12)) +
+         # scale_color_manual(values = enzyme_colors, name = "Library treatment") +
+         scale_color_viridis_c(option = "G", direction = -1, name = "Age (BP)") +
+         scale_linetype_manual(values = c("solid","solid","dotted","dotdash")) +
+         # theme(panel.grid.minor = element_blank()) +
+         scale_y_continuous(breaks=scales::pretty_breaks(n=5)) +
+         scale_x_continuous(breaks=scales::pretty_breaks(n=10)) +
+         # ylim(0,0.4) +
+         ylab("5' C->T frequency") +
+         xlab("Base") +
+         labs(color = "Age (BP)") +
+         facet_wrap(~Host)
+
+nh_plot
+
+# ggsave("06-publication/main_figures/Figure_1/damage_plots.pdf", plot = nh_plot, device = "pdf",
+#        scale = 1, width = 8, height = 2.5, units = c("in"), dpi = 300)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
