@@ -1,0 +1,1592 @@
+---
+title: "Figure 2"
+author: "Irina Velsko"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output:
+    github_document:
+        fig_width: 8
+        fig_height: 6
+        toc: true
+---
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(janitor)
+library(ComplexHeatmap)
+library(mixOmics)
+library(tidyverse)
+library(patchwork)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+Set the working directory of the notebook to the parent directory of the 
+notebook itself.  
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath("../../.."))
+```
+
+```{r}
+os_colors <- c("Calculus - Ancient" = "#EF7C12",
+               "Calculus - Industrial" = "#F4B95A",
+               "Plaque - Industrial" = "#FC6882",
+               "Plaque - Non-industrial" = "#C70E7B",
+               "Buccal mucosa - Industrial" = "#8FDA04",
+               "Buccal mucosa - Non-industrial" = "#009F3F",
+               "Saliva - Industrial" = "#54BCD1",
+               "Saliva - Non-industrial" = "#007BC3",
+               "RefSeq" = "gray80",
+               "Tongue - Industrial" = "#78d9ca",
+               # "Tongue - Non-industrial" = "#189a85",
+               "Hard palate - Industrial" = "#cab2d6",
+               # "Hard_palate - Non-industrial" = "#6a3d9a",
+               "Keratinized gingiva - Industrial" = "#F7E690",
+               # "Keratinized gingiva - Non-ndustrial" = "#F5D000",
+               "PQ" = "#FC6882", "AC" = "#EF7C12", "MC" = "#F4B95A",
+               "BM" = "#8FDA04","SL" = "#54BCD1","TN" = "#78d9ca","KG" = "#F7E690","HP" = "#cab2d6")
+
+
+Continent_colors <- c("Oceania" = "#098BD9", 
+                  "Europe" = "#7472af", 
+                  "Africa" = "#cc79a7", 
+                  "Caribbean" = "#f6865e", 
+                  "Asia" = "#86c73a",
+                  "South America" = "gray50",
+                  "North America" = "#1ec1a7")
+
+db_colors = c("HOMD" =  "#cab2d6",
+              "HOMD_MAGs" = "#6a3d9a",
+              "GTDB"  = "#f4eff6")
+
+```
+
+```{r}
+
+# read in the taxonomy  table
+taxonomy <- fread("./00-documentation/mod_anc_refined_mag_taxonomy_26_07_2024.tsv")
+
+# read in the cluster info file
+cluster_info <- fread("./00-documentation/cluster_info_all_metadata_26_07_2024.tsv") %>%
+  mutate(Oral_site = str_replace_all(Oral_site, "anc_calc$", "AC"),
+         Oral_site = str_replace_all(Oral_site, "anc_calculus", "AC"),
+         Oral_site = str_replace_all(Oral_site, "mod_calculus", "MC"),
+         Oral_site = str_remove_all(Oral_site, "sub"),
+         Oral_site = str_remove_all(Oral_site, "sup"))
+
+#  read in  the ancient environmental bins list
+ancient_envt_bins <- fread("./00-documentation/ancient_envt_bins_26_07_2024.tsv")
+ancient_envt_clusters <- fread("./00-documentation/ancient_envt_clusters_26_07_2024.tsv")
+
+```
+
+
+## Bubble figure
+```{r}
+
+# clusters with RefSeq genomes (these are only humans)
+clusters_w_refseq <- cluster_info %>%
+  filter(str_detect(Bin, "SEQF")) %>%
+  select(primary_cluster) %>%
+  unique() %>%
+  # now remove the 6 clusters that are found only in HOMD and Ursus. We're counting those as non-human
+  filter(!str_detect(primary_cluster, "2506|2760|3464|3484|3485|3489"))
+
+# read in file with info on which hosts have which species clusters
+cluster_type <- fread("00-documentation/cluster_type_table.tsv")
+
+# only species clusters that are found in Homo and NHP (remove environmental and 
+# any found exclusively in Ursus and/or Rangifer)
+# Note that there are 6 primary clusters that have MAGs from HOMD and Ursus but 
+# no other humans (or primates)
+# This removes those 6 (and that's ok b/c if they're not found in any other 
+# human sample type, they're not likely resident oral taxa)
+
+clusters_homo_not_ur <- cluster_info %>%
+  # remove environmental bins
+  anti_join(., ancient_envt_bins, by  = "Bin") %>%
+  select(primary_cluster, sample_host) %>%
+  # make neanderthals humans, combine other hosts at the genus level
+  mutate(sample_host = ifelse(str_detect(sample_host, "Homo"),"Homo",
+                              ifelse(str_detect(sample_host, "Gorilla"),"Gorilla",
+                                     ifelse(str_detect(sample_host, "Pan"),"Pan",
+                                            ifelse(str_detect(sample_host, "Papio"),"Papio", sample_host))))) %>%
+  mutate(sample_host = ifelse(str_detect(sample_host, "Alouatta"),"Alouatta",
+                              ifelse(str_detect(sample_host, "Ursus"),"Ursus",
+                                     ifelse(str_detect(sample_host, "Rangifer"),"Rangifer", sample_host)))) %>%
+  unique() %>%
+  mutate(present = 1) %>%
+  pivot_wider(names_from = "sample_host", values_from = "present", values_fill = 0) %>%
+  # make a colum that says if the cluster is present only in Homo, or also in other hosts
+  select(primary_cluster, Homo, Pan, Gorilla, Papio, Alouatta, Ursus, Rangifer) %>%
+  rowwise() %>% 
+  mutate(non_homo = sum(c_across(Pan:Rangifer)),
+         nhp = sum(c_across(Pan:Alouatta)),
+         other = sum(c_across(Ursus:Rangifer))
+         ) %>%
+  ungroup() %>%
+  mutate(homo_only = ifelse(Homo == 1 & non_homo ==  0, "Yes","No"),
+         homo_nhp = ifelse(Homo == 1 & nhp >=1 & other == 0, "Yes","No"),
+         other = ifelse(str_detect(primary_cluster, "1175|1179|1212|1269|2502|3522"),0,other)) %>%
+  filter(Homo == 1 & other == 0) %>%
+  select(primary_cluster)
+  
+clusters_homo_not_ur %>%
+  mutate(intable = "h_not_u") %>%
+  full_join(., cluster_type, by = "primary_cluster") %>%
+  filter(is.na(intable),
+         str_detect(cluster_type, "H|N"))
+
+
+# Human clusters without RefSeq 
+clusters_human_non_refseq <- cluster_info %>%
+  # and now select only the clusters that are found in Homo and not Rangifer (it's ok if they're in NHPs) # Ursus or 
+  inner_join(., clusters_homo_not_ur, by  = "primary_cluster") %>%
+  # remove HOMD RefSeq genomes
+  anti_join(., clusters_w_refseq, by  = "primary_cluster") %>%
+  # remove ancient environmental clusters (none are removed, all gone already)
+  anti_join(., ancient_envt_clusters, by  = "primary_cluster") %>%
+  select(primary_cluster) %>%
+  unique()
+
+```
+
+```{r}
+
+class_table <- cluster_info %>%
+  select(Bin, primary_cluster) %>%
+  # get only HOMD genomes
+  filter(str_detect(Bin, "SEQF")) %>%
+  left_join(., taxonomy, by = "Bin") %>%
+  separate_wider_delim(classification, delim = ";", too_few = "align_end", names = c("Domain","phylum","cl","Order","Family","Genus","Species")) %>%
+  select(-Bin, -Order, -Family, -Genus,-Species) %>%
+  unique() %>%
+  unite(Class, Domain:cl, sep = ";") %>%
+  group_by(Class) %>%
+  count(name = "HOMDRS") %>%
+  ungroup() %>%
+  # How many species (primary clusters) in each class in MAGs+HOMD?
+  full_join(., cluster_info %>%
+            select(Bin, primary_cluster) %>%
+            # remove environtmental contamination bins
+            anti_join(., ancient_envt_bins, by = "Bin") %>%
+            left_join(., taxonomy, by = "Bin") %>%
+            separate_wider_delim(classification, delim = ";", too_few = "align_end", names = c("Domain","phylum","cl","Order","Family","Genus","Species")) %>%
+            select(-Bin, -Order, -Family, -Genus,-Species) %>%
+            unique() %>%
+            unite(Class, Domain:cl, sep = ";") %>%
+            group_by(Class) %>%
+            count(name = "MAGs_HOMDRS") %>%
+            ungroup(), by = "Class") %>%
+  arrange(Class) %>%
+  mutate(Class = str_replace_all(Class, "^","Root;"))
+
+# taxonomy table
+cl_tax_data <- class_table %>%
+  rename(taxonomy = 1) %>%
+  mutate(Phy = taxonomy) %>%
+  separate(Phy, into = c("Root","Domain","Phylum","Class"), sep = ";") %>%
+  mutate(OTU_ID = Class,
+         OTU_ID = str_replace_all(OTU_ID, "c__","")) %>%
+  select(OTU_ID, taxonomy, Domain, Phylum, Class)
+
+# combine taxonomy and OTU table
+cl_otu_data <- class_table %>%
+            rename(taxonomy = Class) %>%
+  full_join(., cl_tax_data, by = "taxonomy") %>%
+  # convert NAs to 0s
+  mutate(HOMDRS = ifelse(is.na(HOMDRS),0,HOMDRS))
+
+```
+
+
+```{r}
+
+cl_otu_rs_homo_data <- cluster_info %>%
+  select(Bin, primary_cluster) %>%
+  # get only clusters with HOMD genomes
+  inner_join(., clusters_w_refseq, by = "primary_cluster") %>%
+  # remove all MAGs in these clusters
+  filter(str_detect(Bin, "SEQF")) %>%
+  # select(primary_cluster) %>% unique()
+  left_join(., taxonomy, by = "Bin") %>%
+  # get the taxonomy at the Class level
+  separate_wider_delim(classification, delim = ";", too_few = "align_end", names = c("Domain","phylum","cl","Order","Family","Genus","Species")) %>%
+  select(-Bin, -Order, -Family, -Genus,-Species) %>%
+  unique() %>%
+  unite(Class, Domain:cl, sep = ";") %>%
+  # count the number of species clusters in each Class
+  group_by(Class) %>%
+  count(name = "HOMDRS") %>%
+  ungroup() %>%
+  # How many species (primary clusters) in each class in MAGs+HOMD?
+  full_join(., cluster_info %>%
+            select(Bin, primary_cluster) %>%
+            # remove environtmental contamination bins
+            anti_join(., ancient_envt_clusters, by = "primary_cluster") %>%
+            # get only RefSeq and Human clusters without RefSeq
+            inner_join(., clusters_human_non_refseq  %>%
+                         bind_rows(., clusters_w_refseq) %>%
+                         unique()) %>%
+            left_join(., taxonomy, by = "Bin") %>%
+            separate_wider_delim(classification, delim = ";", too_few = "align_end", names = c("Domain","phylum","cl","Order","Family","Genus","Species")) %>%
+            select(-Bin, -Order, -Family, -Genus,-Species) %>%
+            unique() %>%
+            unite(Class, Domain:cl, sep = ";") %>%
+            group_by(Class) %>%
+            count(name = "MAGs_HOMDRS") %>%
+            ungroup(), by = "Class") %>%
+  arrange(Class) %>%
+  mutate(Class = str_replace_all(Class, "^","Root;")) %>%
+  rename(taxonomy = Class) %>%
+  full_join(., cl_tax_data, by = "taxonomy") %>%
+  # convert NAs to 0s
+  mutate(HOMDRS = ifelse(is.na(HOMDRS),0,HOMDRS))
+
+```
+
+```{r}
+
+# set class order
+cl_order <- cl_otu_data %>%
+  arrange(taxonomy) %>%
+  mutate(Class = str_replace_all(Class, "c__","")) %>%
+  pull(Class)
+
+```
+
+
+```{r}
+
+cl_name_pct <- cluster_info %>%
+  select(Bin, primary_cluster) %>%
+  # remove environmental contamination bins
+  anti_join(., ancient_envt_bins, by = "Bin") %>%
+  # get only RefSeq and Human clusters without RefSeq
+  inner_join(., clusters_human_non_refseq  %>%
+     bind_rows(., clusters_w_refseq) %>%
+     unique()) %>%
+  left_join(., taxonomy, by = "Bin") %>%
+  separate_wider_delim(classification, delim = ";", too_few = "align_end", names = c("Domain","Phylum","Class","Order","Family","Genus","Species")) %>%
+  select(-Bin, -Domain, -Phylum, -Order, -Family, -Genus) %>%
+  unique() %>%
+  # make a column that indicates whether the species has a name
+  mutate(has_name = ifelse(Species == "s__", "no", "named")) %>%
+  # now for all primary clusters with MAGs that both have and don't have names, treat them as if they have a name
+  arrange(primary_cluster, has_name) %>%
+  group_by(primary_cluster) %>%
+  slice_head(n = 1) %>%
+  ungroup() %>%
+  group_by(Class, has_name) %>%
+  count(name = "number_species") %>%
+  ungroup() %>%
+  pivot_wider(names_from = "has_name", values_from = "number_species", values_fill = 0) %>%
+  mutate(total_species = named + no) %>%
+  mutate(Class = str_replace_all(Class, "c__",""),
+         Class = fct_relevel(Class, cl_order)) %>%
+  arrange(Class) %>%
+  # now add the proportion of unnamed species
+  mutate(percent_no_name = no / total_species * 100)
+
+```
+
+
+```{r}
+
+cl_otu_data_plot  <- cl_otu_rs_homo_data %>%
+  mutate(Class = str_replace_all(Class, "c__","")) %>%
+  mutate(Percent_inc = (MAGs_HOMDRS - HOMDRS)  / HOMDRS  * 100) %>%
+  unite(tax, Domain:Class, sep = ";") %>%
+  select(tax, OTU_ID, Percent_inc, HOMDRS, MAGs_HOMDRS) %>%
+  pivot_longer(!tax:Percent_inc, names_to = "Source", values_to = "Counts") %>%
+  mutate(OTU_ID = fct_relevel(OTU_ID, cl_order),
+         Counts = ifelse(Counts == 0, NA, Counts)) %>%
+  arrange(OTU_ID) %>%
+  full_join(., cl_name_pct %>%
+               rename(OTU_ID = Class) %>%
+               select(OTU_ID, percent_no_name)) %>%
+  # now make percent_no_name 0 for HOMDRS entries
+  mutate(percent_no_name = ifelse(Source == "HOMDRS", 0, percent_no_name)) %>%
+  ggplot(., aes(Source, OTU_ID, fill = percent_no_name, size = Counts)) +
+    # geom_tile() +
+    geom_point(shape = 21, stroke = 0.3) +
+    geom_text(aes(label = Counts), size = 4.5, nudge_x = 0.1, nudge_y = 0) +
+    scale_size(range = c(.5, 12), name="No. species clusters") +
+    scale_fill_viridis_c(option = "A", name = "% of clusters with no name", na.value = "gray90", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100), labels = c("10", "20", "30","40","50","60","70","80","90","100")) +
+    # scale_fill_gradient(low = "gray20", high = "#77e6cf", name = "% of species clusters with no name") + # D6D6D6 B8F2E6 331068FF
+    theme_minimal(base_size = 16) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5),
+          plot.margin = margin(0, 0, 0, 0, "pt"),
+          axis.title.y = element_blank(),
+          legend.position = "left") +
+    scale_y_discrete(limits=rev) +
+    theme(strip.text.x.top = element_text(angle = 0, hjust = 0.5, size = 10)) +
+  ggtitle("Species clusters per class")
+
+cl_otu_data_plot
+
+```
+
+```{r}
+
+cl_strain_counts <- cluster_info %>%
+  select(Bin, primary_cluster, secondary_cluster) %>%
+  # get only clusters with HOMD genomes
+  inner_join(., clusters_w_refseq, by = "primary_cluster") %>%
+  # remove all MAGs in these clusters
+  filter(str_detect(Bin, "SEQF")) %>%
+  # select(primary_cluster) %>% unique()
+  left_join(., taxonomy, by = "Bin") %>%
+  # get the taxonomy at the Class level
+  separate_wider_delim(classification, delim = ";", too_few = "align_end", names = c("Domain","Phylum","cl","Order","Family","Genus","Species")) %>%
+  select(-Bin, -Order, -Family, -Genus,-Species) %>%
+  unique() %>%
+  unite(Class, Domain:cl, sep = ";") %>%
+  # count the number of strains in each Class
+  select(Class, secondary_cluster)  %>%
+  unique() %>%
+  group_by(Class) %>%
+  count(name = "HOMDRS_strains") %>%
+  ungroup() %>%
+  # How many species (primary clusters) in each class in MAGs+HOMD?
+  full_join(., cluster_info %>%
+            select(Bin, primary_cluster, secondary_cluster) %>%
+            # remove environtmental contamination bins
+            anti_join(., ancient_envt_bins, by = "Bin") %>%
+            # get only RefSeq and Human clusters without RefSeq
+            inner_join(., clusters_human_non_refseq  %>%
+                         bind_rows(., clusters_w_refseq) %>%
+                         unique()) %>%
+            left_join(., taxonomy, by = "Bin") %>%
+            separate_wider_delim(classification, delim = ";", too_few = "align_end", names = c("Domain","Phylum","cl","Order","Family","Genus","Species")) %>%
+            select(-Bin, -Order, -Family, -Genus,-Species) %>%
+            unique() %>%
+            unite(Class, Domain:cl, sep = ";") %>%
+            # count the number of strains in each Class
+            select(Class, secondary_cluster)  %>%
+            unique() %>%
+            group_by(Class) %>%
+            count(name = "MAGs_HOMDRS_strains") %>%
+            ungroup(), by = "Class") %>%
+  rename(taxonomy  = Class) %>%
+  arrange(taxonomy) %>%
+  # convert NAs to 0s
+  mutate(HOMDRS_strains = ifelse(is.na(HOMDRS_strains),0,HOMDRS_strains),
+         taxonomy = str_replace_all(taxonomy, "c__",""))
+
+```
+
+```{r}
+
+strain_plot <- cl_strain_counts %>%
+  select(-HOMDRS_strains)  %>%
+  separate(taxonomy, into  = c("ph","d","Class"),  sep = ";") %>%
+  select(-ph, -d)  %>%
+  mutate(Class = fct_relevel(Class, cl_order)) %>%
+  arrange(Class) %>%
+  mutate(Strains = "MAGs_HOMDRS") %>%
+  ggplot(., aes(Strains, Class)) +
+    geom_text(aes(label = MAGs_HOMDRS_strains), size = 3, nudge_x = 0, nudge_y = 0) +
+    scale_size(range = c(.5, 12), name="No. species clusters") +
+    scale_fill_viridis_c(option = "A", name = "% of clusters with no name", na.value = "gray90", breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100), labels = c("10", "20", "30","40","50","60","70","80","90","100")) +
+    # scale_fill_gradient(low = "gray20", high = "#77e6cf", name = "% of species clusters with no name") + # D6D6D6 B8F2E6 331068FF
+    theme_minimal(base_size = 10) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5),
+          plot.margin = margin(0, 0, 0, 0, "pt"),
+          axis.title.y = element_blank(),
+          legend.position = "left") +
+    theme(axis.text.y  = element_blank()) +
+    scale_y_discrete(limits=rev) +
+    theme(strip.text.x.top = element_text(angle = 0, hjust = 0.5, size = 10))
+
+```
+
+```{r}
+
+class_counts_plot <- cl_otu_data_plot + strain_plot  +
+  plot_layout(widths = c(2,1)) +
+  plot_layout(guides = 'collect')
+
+class_counts_plot
+
+# ggsave("06-publication/main_figures/Figure_2/class_counts_plot_26_07_2024.pdf", plot = class_counts_plot, device = "pdf",
+#        scale = 1, width = 12, height = 8, units = c("in"), dpi = 300)
+
+
+```
+
+# Tree of life
+```{r}
+
+# This tree was visualized in itol (https://itol.embl.de/)
+# 05-results/3904_tol_RAxML_bestTree.input_refined.tre
+
+# using the following color files (note colors were later changed in the final figure)
+# 00-documentation/itol_nothomd_colors.txt, 00-documentation/itol_homd_colors.txt
+
+```
+
+
+## Classification stats
+```{r}
+
+lib_metadata <- fread("./00-documentation/library_sample_eager_metadata.tsv") %>%
+  mutate(Secondary_sample_accession = ifelse(Study == "RIII" | Study == "Velsko2024",Other_sample_codes, Secondary_sample_accession))
+
+# read in poor samples determined by cuperdec
+poor_samples <- fread("./00-documentation/poor_samples_humans.tsv")
+
+```
+
+
+```{r}
+
+# read in the kraken2 CI 15% read classification table
+kraken2_stats <- fread("./05-results/kraken2_classification_counts_homd.tsv", header = F, col.names = c("filepath","Classified","Unclassified"), sep = "\t") %>%
+  bind_rows(., fread("./05-results/kraken2_classification_counts_homd_mags.tsv", header = F, col.names = c("filepath","Classified","Unclassified"), sep = "\t")) %>%
+  bind_rows(., fread("./05-results/kraken2_classification_counts_gtdb207.tsv", header = F, col.names = c("filepath","Classified","Unclassified"), sep = "\t")) %>%
+  separate_wider_delim(filepath, delim = "/", names = c("Database","Eager_label")) %>%
+  bind_rows(., fread("./05-results/kraken2_classification_counts_homd_hpd_csc.tsv", header = F, col.names = c("Eager_label","Classified","Unclassified"), sep = "\t") %>%
+              mutate(Database = "homd") %>%
+              select(Database, everything())) %>%
+  bind_rows(., fread("./05-results/kraken2_classification_counts_homd_mags_csc_hpd.tsv", header = F, col.names = c("Eager_label","Classified","Unclassified"), sep = "\t") %>%
+              mutate(Database = "homd_mags") %>%
+              select(Database, everything())) %>%
+  bind_rows(., fread("./05-results/kraken2_homd_vc23_saliva_read_classification_stats.tsv", header = F, col.names = c("Eager_label","Classified","Unclassified"), sep = "\t") %>%
+              mutate(Database = "homd") %>%
+              select(Database, everything())) %>%
+  bind_rows(., fread("./05-results/kraken2_homd_mags_vc23_saliva_read_classification_stats.tsv", header = F, col.names = c("Eager_label","Classified","Unclassified"), sep = "\t") %>%
+              mutate(Database = "homd_mags") %>%
+              select(Database, everything())) %>%
+  bind_rows(., fread("./05-results/kraken2_gtdb207_vc23_saliva_read_classification_stats.tsv", header = F, col.names = c("Eager_label","Classified","Unclassified"), sep = "\t") %>%
+              mutate(Database = "gtdb207") %>%
+              select(Database, everything())) %>%
+  mutate(Eager_label = str_remove_all(Eager_label, ".kraken2.homd_ci15.output.tsv"),
+         Eager_label = str_remove_all(Eager_label, ".kraken2.homd_mags_ci15.output.tsv"),
+         Eager_label = str_remove_all(Eager_label, ".kraken2.gtdb207_ci15.output.tsv")) %>%
+  # mutate(Eager_label = ifelse(str_detect(Eager_label, "CMC0|CDM0"),str_replace_all(Eager_label, ".SG1",""),Eager_label))
+  mutate(Eager_label = str_trim(Eager_label, side = "both"),
+         Eager_label = str_replace_all(Eager_label, ".SG1",""),
+         Eager_label = str_replace_all(Eager_label, "calc","")) %>%
+  # remove poorly-preserved samples
+  anti_join(., poor_samples, by = "Eager_label")  %>%
+  mutate(Total_reads = Classified + Unclassified,
+         Percent_cl = Classified / (Classified + Unclassified) * 100) %>%
+  mutate(Database = str_replace_all(Database, "gtdb207","GTDB"),
+         Database = str_replace_all(Database, "homd_mags","HOMD_MAGs"),
+         Database = str_replace_all(Database, "homd","HOMD")) %>%
+  arrange(Database, Eager_label)
+
+os_classified <- kraken2_stats %>%
+  left_join(., lib_metadata %>% select(Secondary_sample_accession, Eager_label, Study, Full, Sample_type), by = "Eager_label") %>%
+  select(-Sample_type) %>%
+  distinct() %>%
+  # rename(Library_ID = Eager_label) %>%
+  # fwrite(., "./05-results/kraken2_ci15_classification_stats.tsv", quote = F, sep = "\t")
+  mutate(Full = fct_relevel(Full, "Calculus - Ancient", "Calculus - Industrial","Plaque - Non-industrial","Plaque - Industrial","Buccal mucosa - Non-industrial","Buccal mucosa - Industrial","Saliva - Non-industrial","Saliva - Industrial")) %>%
+  # check for any samples w/o metadata
+  # filter(is.na(Full)) 
+  ggplot(., aes(x = Full, y = Percent_cl, fill = Database)) +
+         geom_boxplot(outlier.shape = NA) +
+         geom_point(alpha = 0.1, size = 0.5, position = position_jitterdodge(jitter.width = 0.1)) +
+         scale_fill_manual(values = db_colors) +
+         theme_minimal(base_size = 10) +
+         geom_hline(yintercept = 90, linetype = "dotted") +
+         theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+         # theme(axis.text.x = element_blank()) +
+         ylab("Classified reads (%)")
+
+os_classified
+
+# ggsave("./06-publication/main_figures/Figure_2/kraken_ci15_classification_stats_os.pdf", plot = os_classified, device = "pdf",
+#        scale = 1, width = 8, height = 5, units = c("in"), dpi = 300)
+
+```
+
+
+
+## Species curves
+```{r}
+# metadata file for oral site info
+lib_metadata <- fread("./00-documentation/library_sample_eager_metadata.tsv") %>%
+  mutate(Secondary_sample_accession = ifelse(Study == "RIII" | Study == "Velsko2024",Other_sample_codes, Secondary_sample_accession),
+         Eager_label = ifelse(str_detect(Eager_label, "CMC"), str_trunc(Eager_label, width = 8, side = "right", ellipsis = ""), Eager_label))
+
+# read in poor samples determined by cuperdec
+poor_samples <- fread("./00-documentation/poor_samples_humans.tsv")
+
+```
+
+```{r}
+# read in the list of environmental species clusters
+ancient_envt_clusters <- fread("./00-documentation/ancient_envt_clusters_26_07_2024.tsv")
+
+# read in the table used for taxdump to make the kraken2 database, that has the primary cluster and the species name
+taxdump_file_sp <- fread("00-documentation/cluster_taxonomy_for_taxdump_26_07_2024.tsv") %>%
+  select(id, species) %>%
+  mutate(id = str_remove_all(id, "pr_cl_"),
+        id = as.numeric(id))
+
+taxdump_file <- fread("00-documentation/cluster_taxonomy_for_taxdump_26_07_2024.tsv")
+
+
+# now get the species names of the ancient environmental species clusters
+anc_envt_species <- ancient_envt_clusters %>%
+  left_join(., taxdump_file_sp %>%
+              rename(primary_cluster = id,
+                     Species = species), by = "primary_cluster") %>%
+  select(Species)
+
+# read in the species table
+homd_mags_sp <- fread("./05-results/kraken2_ci15_all_oral_samples.homd_mags_11_2025_species.tsv") %>%
+  anti_join(., anc_envt_species, by = "Species") %>%
+  select(-matches("CMC")) %>%
+  full_join(., fread("./05-results/cmc_deep_kraken2_ci_15_homd_mags_07_2024_species.tsv")) %>%
+  rename_if(str_detect(names(.), "CMC"), ~ str_remove_all(., ".deep.homd_mags")) %>%
+  full_join(., fread("./05-results/kraken2_ci15_vc23_saliva.homd_mags_species.tsv")) %>%
+  replace(is.na(.), 0)
+
+```
+
+```{r}
+cmc_deep_samples <- homd_mags_sp %>%
+               pivot_longer(!Species, names_to = "Eager_label",values_to = "Counts") %>%
+               filter(str_detect(Eager_label, "CMC")) %>%
+               select(Eager_label) %>%
+               unique()
+
+
+# make a list of samples for each oral site
+PQi <- lib_metadata %>%
+  filter(Full == "Plaque - Industrial") %>%
+  select(Eager_label) %>%
+  unique() %>%
+  pull(Eager_label)
+PQni <- lib_metadata %>%
+  filter(Full == "Plaque - Non-industrial") %>%
+  select(Eager_label) %>%
+  unique() %>%
+  filter(!str_detect(Eager_label, "EXB|LIB")) %>%
+  # only use deep sequence data
+  inner_join(., cmc_deep_samples) %>%
+  pull(Eager_label)
+CAi <- lib_metadata %>%
+  filter(Full == "Calculus - Industrial") %>%
+  select(Eager_label) %>%
+  unique() %>%
+  pull(Eager_label)
+CAni <- lib_metadata %>%
+  filter(Full == "Calculus - Ancient") %>%
+  select(Eager_label) %>%
+  unique() %>%
+  pull(Eager_label)
+SLi <- lib_metadata %>%
+  filter(Full == "Saliva - Industrial") %>%
+  select(Eager_label) %>%
+  unique() %>%
+  pull(Eager_label)
+SLni <- lib_metadata %>%
+  filter(Full == "Saliva - Non-industrial") %>%
+  select(Eager_label) %>%
+  unique() %>%
+  pull(Eager_label)
+BMi <- lib_metadata %>%
+  filter(Full == "Buccal mucosa - Industrial") %>%
+  select(Eager_label) %>%
+  unique() %>%
+  pull(Eager_label)
+BMni <- lib_metadata %>%
+  filter(Full == "Buccal mucosa - Non-industrial") %>%
+  select(Eager_label) %>%
+  unique() %>%
+  pull(Eager_label)
+
+```
+
+```{r}
+
+# samples with too few reads to be included
+too_low <- lib_metadata %>%
+  select(Eager_label, No_reads_no_human) %>%
+  unique() %>%
+  filter(No_reads_no_human < 1000000) %>%
+  pull(Eager_label) 
+
+```
+
+
+
+```{r}
+
+hm_cm_prev <- homd_mags_sp %>%
+  select(-matches(too_low)) %>%
+  select(matches(c("Species",CAi))) %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  mutate(Counts = ifelse(Counts > 500, 1, 0)) %>%
+  pivot_wider(names_from = "Eager_label", values_from = "Counts") %>%
+  adorn_totals(where = "col") %>%
+  as_tibble() %>%
+  filter(Total > 0) %>%
+  select(-Total) 
+
+hm_ca_prev <- homd_mags_sp %>%
+  select(-matches(too_low)) %>%
+  select(matches(c("Species",CAni))) %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  mutate(Counts = ifelse(Counts > 500, 1, 0)) %>%
+  pivot_wider(names_from = "Eager_label", values_from = "Counts") %>%
+  adorn_totals(where = "col") %>%
+  as_tibble() %>%
+  filter(Total > 0) %>%
+  select(-Total) 
+
+hm_pqi_prev <- homd_mags_sp %>%
+  select(-matches(too_low)) %>%
+  select(matches(c("Species",PQi))) %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  mutate(Counts = ifelse(Counts > 500, 1, 0)) %>%
+  pivot_wider(names_from = "Eager_label", values_from = "Counts") %>%
+  adorn_totals(where = "col") %>%
+  as_tibble() %>%
+  filter(Total > 0) %>%
+  select(-Total) 
+
+hm_pqni_prev <- homd_mags_sp %>%
+  select(-matches(too_low)) %>%
+  select(matches(c("Species",PQni))) %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  mutate(Counts = ifelse(Counts > 500, 1, 0)) %>%
+  pivot_wider(names_from = "Eager_label", values_from = "Counts") %>%
+  adorn_totals(where = "col") %>%
+  as_tibble() %>%
+  filter(Total > 0) %>%
+  select(-Total) 
+
+hm_sli_prev <- homd_mags_sp %>%
+  select(-matches(too_low)) %>%
+  select(matches(c("Species",SLi))) %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  mutate(Counts = ifelse(Counts > 500, 1, 0)) %>%
+  pivot_wider(names_from = "Eager_label", values_from = "Counts") %>%
+  adorn_totals(where = "col") %>%
+  as_tibble() %>%
+  filter(Total > 0) %>%
+  select(-Total) 
+
+hm_slni_prev <- homd_mags_sp %>%
+  select(-matches(too_low)) %>%
+  select(matches(c("Species",SLni))) %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  mutate(Counts = ifelse(Counts > 500, 1, 0)) %>%
+  pivot_wider(names_from = "Eager_label", values_from = "Counts") %>%
+  adorn_totals(where = "col") %>%
+  as_tibble() %>%
+  filter(Total > 0) %>%
+  select(-Total) 
+
+hm_bmi_prev <- homd_mags_sp %>%
+  select(-matches(too_low)) %>%
+  select(matches(c("Species",BMi))) %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  mutate(Counts = ifelse(Counts > 500, 1, 0)) %>%
+  pivot_wider(names_from = "Eager_label", values_from = "Counts") %>%
+  adorn_totals(where = "col") %>%
+  as_tibble() %>%
+  filter(Total > 0) %>%
+  select(-Total) 
+
+hm_bmni_prev <- homd_mags_sp %>%
+  select(-matches(too_low)) %>%
+  select(matches(c("Species",BMni))) %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  mutate(Counts = ifelse(Counts > 500, 1, 0)) %>%
+  pivot_wider(names_from = "Eager_label", values_from = "Counts") %>%
+  adorn_totals(where = "col") %>%
+  as_tibble() %>%
+  filter(Total > 0) %>%
+  select(-Total)  
+
+
+
+```
+
+
+```{r}
+set.seed(19760620)
+
+collect_cts <- function(data){
+
+sorder <- data %>%
+  pivot_longer(!Species, names_to = "Sample", values_to = "Present") %>%
+  select(Sample) %>% unique() %>%
+  sample_n(length(Sample)) %>%
+  pull(Sample)
+
+tot_obs <- data %>%
+  pivot_longer(!Species, names_to = "Sample", values_to = "Present") %>%
+  select(Sample, Species, Present) %>%
+  filter(Present == 1) %>%
+  mutate(Sample = fct_relevel(Sample, sorder)) %>%
+  group_by(Sample) %>%
+  count(name = "speices") %>%
+  ungroup() %>%
+  mutate(total_observations = cumsum(speices))
+
+
+data %>%
+  pivot_longer(!Species, names_to = "Sample", values_to = "Present") %>%
+  mutate(Sample = fct_relevel(Sample, sorder)) %>%
+  select(Sample, Species, Present) %>%
+  filter(Present == 1) %>%
+  arrange(Sample, Species) %>%
+  # add a row number for each "observation' (Species)
+  mutate(observation = row_number()) %>%
+  # arrange by the Species and the observation number
+  arrange(Species, observation) %>%
+  # group by the Species
+  group_by(Species) %>%
+  # add a column that indicates whether the row is the first time that otu was sampled
+  mutate(distinct = row_number() == 1) %>%
+  ungroup() %>%
+  # arrange by observation order
+  arrange(observation) %>%
+  # add a column that counts the number of times that the observation was the first time an otu was sampled 
+  # (if you observed a new otu that observation, the count goes up. if you already observed that otu, the count stays the same)
+  mutate(s = cumsum(distinct)) %>%
+  select(observation, s) %>%
+  # now take only the row where all species from each new sample have been added
+  inner_join(., tot_obs %>%
+               select(Sample, total_observations) %>%
+               rename (observation = total_observations), by = "observation") %>%
+  mutate(sSample = row_number()) %>%
+  select(-observation) %>%
+  rename(no_species = s) %>%
+  select(sSample, no_species)
+
+}
+
+
+collect_curves_cm <- map_dfr(1:100, ~collect_cts(hm_cm_prev), .id="iteration")
+collect_curves_ca <- map_dfr(1:100, ~collect_cts(hm_ca_prev), .id="iteration")
+collect_curves_pqi <- map_dfr(1:100, ~collect_cts(hm_pqi_prev), .id="iteration")
+collect_curves_pqni <- map_dfr(1:100, ~collect_cts(hm_pqni_prev), .id="iteration")
+collect_curves_sli <- map_dfr(1:100, ~collect_cts(hm_sli_prev), .id="iteration")
+collect_curves_slni <- map_dfr(1:100, ~collect_cts(hm_slni_prev), .id="iteration")
+collect_curves_bmi <- map_dfr(1:100, ~collect_cts(hm_bmi_prev), .id="iteration")
+collect_curves_bmni <- map_dfr(1:100, ~collect_cts(hm_bmni_prev), .id="iteration")
+
+cm_mean <- collect_curves_cm %>%
+  mutate(Oral_site = "Calculus - Industrial") %>%
+  bind_rows(., collect_curves_ca %>%
+              mutate(Oral_site = "Calculus - Ancient")) %>%
+  bind_rows(., collect_curves_pqi %>%
+              mutate(Oral_site = "Plaque - Industrial")) %>%
+  bind_rows(., collect_curves_pqni %>%
+              mutate(Oral_site = "Plaque - Non-industrial")) %>%
+  bind_rows(., collect_curves_sli %>%
+              mutate(Oral_site = "Saliva - Industrial")) %>%
+  bind_rows(., collect_curves_slni %>%
+              mutate(Oral_site = "Saliva - Non-industrial")) %>%
+  bind_rows(., collect_curves_bmi %>%
+              mutate(Oral_site = "Buccal mucosa - Industrial")) %>%
+  bind_rows(., collect_curves_bmni %>%
+              mutate(Oral_site = "Buccal mucosa - Non-industrial")) %>%
+  group_by(Oral_site, sSample) %>%
+  summarize(mean_sp_ct = mean(no_species),
+            sd_sp_ct = sd(no_species))
+
+```
+
+```{r}
+
+cm_mean_sub50 <- cm_mean %>%
+  filter(sSample %in% c(1, 25, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375, 400, 425, 450, 475, 500, 525, 550, 575, 600, 625))
+
+cm_mean_sub50_100 <- cm_mean %>%
+  filter(sSample %in% c(1, 5, 10, 15, 20,25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100))
+
+curve_plot <- cm_mean %>%
+  ggplot(., aes(x = sSample, y = mean_sp_ct, group = Oral_site)) +
+    geom_line(aes(color = Oral_site), stat = "identity", linewidth = 0.75) + #  , linetype = "dashed"
+    geom_errorbar(data=cm_mean_sub50, aes(ymin = mean_sp_ct-sd_sp_ct, ymax = mean_sp_ct+sd_sp_ct, color = Oral_site), width = 0.2, linewidth = 0.4) +
+    scale_color_manual(values = os_colors) +
+    theme_minimal(base_size = 12) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0),
+          text = element_text(size=12)) +
+    theme(panel.grid.minor = element_blank()) +
+    scale_x_continuous(breaks=scales::pretty_breaks(n=10)) +
+    scale_y_continuous(breaks=scales::pretty_breaks(n=5)) +
+    xlab("No. samples") +
+    ylab("No. species")
+
+curve_plot
+
+
+curve_plot_zoom <- cm_mean %>%
+  filter(sSample < 101) %>% # 101
+  ggplot(., aes(x = sSample, y = mean_sp_ct, group = Oral_site)) +
+    # xlim(0,20) +
+    geom_line(aes(color = Oral_site), stat = "identity", linewidth = 0.75) + #  , linetype = "dashed"
+    geom_errorbar(data=cm_mean_sub50_100, aes(ymin = mean_sp_ct-sd_sp_ct, ymax = mean_sp_ct+sd_sp_ct, color = Oral_site), width = 0.2, linewidth = 0.4, position = position_dodge(width = 0.9)) +
+    scale_color_manual(values = os_colors) +
+    theme_minimal(base_size = 12) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0),
+          text = element_text(size=12)) +
+    theme(panel.grid.minor = element_blank()) +
+    scale_x_continuous(breaks=scales::pretty_breaks(n=10), limits = c(0,100)) +
+    scale_y_continuous(breaks=scales::pretty_breaks(n=5)) +
+    xlab("No. samples") +
+    ylab("No. species")
+curve_plot_zoom
+
+```
+
+```{r}
+
+sa_sp_curves <- curve_plot + curve_plot_zoom +
+  plot_layout(guides = "collect", widths = c(1,0.7))
+
+sa_sp_curves
+
+# ggsave("06-publication/main_figures/Figure_2/samples_species_curves.pdf", plot = sa_sp_curves, device = "pdf",
+#        scale = 1, width = 10, height = 3, units = c("in"), dpi = 300)
+
+```
+
+## PCA
+
+```{r}
+
+lib_metadata <- fread("./00-documentation/library_sample_eager_metadata.tsv")
+# %>%
+#   mutate(Eager_label = ifelse(str_detect(Eager_label, "CMC"), str_trunc(Eager_label, width = 8, side = "right", ellipsis = ""), Eager_label))
+
+
+```
+
+
+```{r}
+
+# read in the table used for taxdump to make the kraken2 database, that has the primary cluster and the species name
+taxdump_file_sp <- fread("00-documentation/cluster_taxonomy_for_taxdump_26_07_2024.tsv") %>%
+  select(id, species) %>%
+  mutate(id = str_remove_all(id, "pr_cl_"),
+        id = as.numeric(id))
+
+taxdump_file <- fread("00-documentation/cluster_taxonomy_for_taxdump_26_07_2024.tsv")
+
+# now get the species names of the ancient environmental species clusters
+anc_envt_species <- ancient_envt_clusters %>%
+  left_join(., taxdump_file_sp %>%
+              rename(primary_cluster = id,
+                     Species = species), by = "primary_cluster") %>%
+  select(Species)
+
+
+# cmc_shallow_only <- lib_metadata %>%
+#   filter(str_detect(Eager_label, "CMC")) %>%
+#   mutate(Eager_label = ifelse(!str_detect(Sample_alias, "deep"), str_trunc(Eager_label, width = 8, side = "right", ellipsis = ""), Eager_label)) %>%
+#   select(Eager_label) %>%
+#   unique() %>%
+#   mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+#   group_by(Eager_label) %>%
+#   count() %>%
+#   ungroup() %>%
+#   filter(n == 1) %>%
+#   pull(Eager_label)
+
+
+cmc_short_to_library <- lib_metadata %>%
+  filter(str_detect(Eager_label, "CMC")) %>%
+  mutate(Eager_label = ifelse(!str_detect(Sample_alias, "deep"), str_trunc(Eager_label, width = 8, side = "right", ellipsis = ""), Eager_label)) %>%
+  select(Eager_label, Sample_alias) %>%
+  unique() %>%
+  filter(Sample_alias != "CMC001.A0201") %>%
+  filter(!str_detect(Sample_alias, ".deep"))
+
+cmc_shallow_only <- lib_metadata %>%
+  filter(str_detect(Eager_label, "CMC")) %>%
+  mutate(Eager_label = ifelse(!str_detect(Sample_alias, "deep"), str_trunc(Eager_label, width = 8, side = "right", ellipsis = ""), Eager_label)) %>%
+  select(Eager_label) %>%
+  unique() %>%
+  mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+  group_by(Eager_label) %>%
+  count() %>%
+  ungroup() %>%
+  filter(n == 1) %>%
+  inner_join(., cmc_short_to_library) %>%
+  pull(Sample_alias)
+
+
+
+homd_mags_sp <- fread("./05-results/kraken2_ci15_all_oral_samples.homd_mags_11_2025_species.tsv") %>%
+  anti_join(., anc_envt_species, by = "Species") %>%
+  # remove all CMC samples
+  select(-matches("CMC")) %>%
+  # add back only the deep sequenced CMC samples
+  full_join(., fread("./05-results/cmc_deep_kraken2_ci_15_homd_mags_07_2024_species.tsv")) %>%
+  rename_if(str_detect(names(.), "CMC"), ~ str_remove_all(., ".deep.homd_mags"))%>%
+  # Now add back the shallow sequenced samples that weren't deep sequenced
+  full_join(., fread("./05-results/kraken2_ci15_all_oral_samples.homd_mags_11_2025_species.tsv") %>%
+            anti_join(., anc_envt_species, by = "Species") %>%
+            select(matches(c(cmc_shallow_only %>% str_c(collapse = "|")))) %>%
+            # rename_if(str_detect(names(.), "CMC"), ~ str_trunc(., width = 8, side = "right", ellipsis = "")) %>%  
+            bind_cols(., fread("./05-results/kraken2_ci15_all_oral_samples.homd_mags_11_2025_species.tsv") %>%
+                      anti_join(., anc_envt_species, by = "Species") %>%
+                      select(Species)) %>%
+            select(Species, everything()), by = "Species") %>%
+  full_join(., fread("./05-results/kraken2_ci15_vc23_saliva.homd_mags_species.tsv")) %>%
+  replace(is.na(.), 0)
+
+# homd_mags_sp %>%
+#   slice_head(n = 1) %>%
+#   pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+#   filter(str_detect(Eager_label, "CMC"))
+
+```
+
+
+```{r}
+
+# filter the table 
+# Start by getting only species that have a min of 500 reads in @least 10% of one oral site
+keep_species <- homd_mags_sp %>% 
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Sample_type) %>%
+              unique(), by = "Eager_label") %>%
+  mutate(Sample_type = ifelse(str_detect(Sample_type, "plaque"),"plaque",Sample_type)) %>% 
+  unique() %>%
+  mutate(Present = ifelse(Counts > 500, 1, 0)) %>%
+  group_by(Sample_type, Species) %>%
+  summarize(Prevelence = sum(Present) / length(Sample_type)) %>%
+  ungroup() %>%
+  filter(Prevelence >= 0.1) %>%
+  select(Species) %>%
+  unique()
+  
+
+# prep the table for input to PCA
+homd_mags_sp_df <- homd_mags_sp %>% 
+  inner_join(.,  keep_species, by = "Species") %>%
+  pivot_longer(!Species, names_to  = "Eager_label", values_to = "Counts") %>%
+  mutate(Counts = Counts + 1) %>%
+  pivot_wider(names_from = "Species", values_from = "Counts") %>%
+  column_to_rownames("Eager_label")
+
+homd_mags_sp.pca <- mixOmics::pca(homd_mags_sp_df, ncomp = 3, logratio = 'CLR')
+plot(homd_mags_sp.pca)
+
+# Select out the PC variates into a new table and add the metadata for plotting
+homd_mags_sp.pca.variates <- as.data.frame(homd_mags_sp.pca$variates$X)
+homd_mags_sp.pca.variates <- homd_mags_sp.pca.variates %>%
+  rownames_to_column("Eager_label")
+
+homd_mags_sp.pca.varmet <- homd_mags_sp.pca.variates %>%
+  left_join(., lib_metadata %>% 
+              select(-Run_accession,-Sample_alias,-Study_accession) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")), by = "Eager_label") %>%
+  distinct() %>%
+  mutate(Full = fct_relevel(Full, "Calculus - Ancient", "Calculus - Industrial","Plaque - Non-industrial","Plaque - Industrial","Buccal mucosa - Non-industrial","Buccal mucosa - Industrial","Saliva - Non-industrial","Saliva - Industrial")) %>%
+  arrange(Eager_label)
+
+```
+
+```{r pca_homd_mags_plot}
+
+homd_mags_sp_plot <- homd_mags_sp.pca.varmet %>%
+  arrange(Full) %>%
+  ggplot(., aes(PC1, PC2, color = Full, shape = Full, size = Full)) +
+    geom_point() +
+    scale_shape_manual(values = c(18,5,16,1,17,2,15,0,13,8,3,4,11)) +
+    # scale_color_manual(values = c("#feb24c","#feb24c","#FF3200","#FF3200","#82CDAA","#82CDAA","#065FA3","#065FA3","#feb24c","#feb24c","#feb24c","#feb24c","#cd82a5")) +
+    scale_color_manual(values = c("#EF7C12","#F4B95A","#C70E7B","#FC6882","#009F3F","#8FDA04","#007BC3","#54BCD1")) +
+    scale_size_manual(values = c(3,2,2,2,2,2,2,2,2,2,2,2,2)) +
+    xlab(paste("PC1 - ", 100*(round(data.frame(homd_mags_sp.pca$prop_expl_var$X[1]), digits = 3)), "%", sep = "")) +
+    ylab(paste("PC2 - ", 100*(round(data.frame(homd_mags_sp.pca$prop_expl_var$X[2]), digits = 3)), "%", sep = "")) +
+    theme_minimal(base_size = 10) +
+    labs(color = "Source", shape = "Source") +
+    theme(legend.title = element_text(size = 10))
+homd_mags_sp_plot
+
+# ggsave("./06-publication/main_figures/Figure_2/homd_mags_oral_pc12.pdf", plot = homd_mags_sp_plot, device = "pdf",
+#        scale = 1, width = 8, height = 4.5, units = c("in"), dpi = 300)
+
+```
+
+
+## Phage taxonomy
+```{r, eval = F}
+# this file has all complete, high-, and medium-quality phage genomes from cmc, ancient calculus, and modern calculus, detected by either genomad or phables
+
+cluster_table <- fread("./05-results/phage_blastn_ani_clusters.tsv", sep = "\t", header = F, col.names = c("cluster_rep","others"))
+
+# Phage taxonomy file from phage_imgvr_taxonomy.Rmd
+phage_taxonomy <- fread("./05-results/genomad_phage_imgvr_taxonomy.tsv") %>%
+  bind_rows(., fread("./05-results/phables_phage_imgvr_taxonomy.tsv"))
+
+# IMG_VR sequence information table
+seq_info <- fread("../../microbiome_sciences/reference_databases/source/IMG_VR_2022_12_19_7/IMGVR_all_Sequence_information.tsv") %>% # this needs to be downloaded from the IMGVR site independently
+  select(vOTU, `Ecosystem classification`, `Host taxonomy prediction`, `Host prediction method`)
+
+# read in the Bin/cluster metadata table
+cluster_info <- fread("00-documentation/cluster_info_all_metadata_26_07_2024.tsv") %>%
+  anti_join(., fread("00-documentation/ancient_envt_bins_26_07_2024.tsv"), by = "Bin") %>%
+# Now remove the doubled MGYG MAGs b/c they have both paired and unpaired data, 264 MAGs
+  mutate(quality = ifelse(completeness >= 90 & contamination <= 5, "High", "Medium")) %>%
+  anti_join(., fread("00-documentation/cluster_info_all_metadata_26_07_2024.tsv") %>%
+            anti_join(., fread("00-documentation/ancient_envt_bins_26_07_2024.tsv"), by = "Bin") %>%
+            group_by(Bin) %>%
+            count() %>%
+            ungroup() %>%
+            filter(n > 1) %>%
+            inner_join(., fread("00-documentation/cluster_info_all_metadata_26_07_2024.tsv") %>%
+                       anti_join(., fread("00-documentation/ancient_envt_bins_26_07_2024.tsv"), by = "Bin"), by = "Bin") %>%
+            filter(Paired == "No") %>%
+            select(-n))
+
+```
+
+
+```{r, eval = F}
+
+cluster_table_info <- cluster_table %>%
+  # only singleton clusters
+  filter(!str_detect(others, ",")) %>%
+  mutate(singleton = "Yes") %>%
+  bind_rows(., cluster_table %>%
+              filter(str_detect(others, ",")) %>%
+              mutate(singleton = "No")) %>%
+  # make a vOTU number
+  mutate(vOTU = print(paste0("vOTU_",1:nrow(.)))) %>%
+  separate_longer_delim(others, delim = ",")  %>%
+  # remove 3 Pacific study blanks
+  filter(!str_detect(others, "ERSX0004037|ERSX0004043|ERSX0004055"))
+
+cluster_table_info_homo <- cluster_table_info %>%
+  mutate(cl_rep = cluster_rep) %>%
+  separate_wider_delim(cl_rep, delim = "|", names = c("clrep_designation","clrep_program","clrep_sample_type","clrep_sampleID")) %>%
+  select(-clrep_program, -clrep_sample_type) %>%
+  select(clrep_sampleID, everything()) %>%
+  # now remove the non-human primate sample clusters
+  left_join(., cluster_info %>%
+              select(Secondary_sample_accession, sample_host) %>%
+              rename(clrep_sampleID = Secondary_sample_accession)) %>%
+  unique() %>%
+  rename(cl_rep_host = sample_host) %>%
+  select(cl_rep_host, everything()) %>%
+  filter(str_detect(cl_rep_host, "Homo")) %>%
+  # now add the host of the other members of these clusters whose rep is from a non-human sample
+  separate_longer_delim(others, delim = ",") %>%
+  mutate(oth = others) %>%
+  separate_wider_delim(oth, delim = "|", names = c("o_designation","o_program","o_sample_type","o_sampleID")) %>%
+    left_join(., cluster_info %>%
+              select(Secondary_sample_accession, sample_host) %>%
+              rename(o_sampleID = Secondary_sample_accession)) %>%
+  unique() %>%
+  rename(o_host = sample_host) %>%
+  select(cl_rep_host, o_host, everything()) %>%
+  filter(str_detect(o_host, "Homo"))
+
+# Are there any clusters that weren't singletons before filtering but are singletons now?
+now_single <- cluster_table_info_homo %>%
+  group_by(cluster_rep, vOTU) %>%
+  count() %>%
+  ungroup() %>%
+  mutate(singleton_post_filter = ifelse(n == 1, "Yes","No")) %>%
+  left_join(., cluster_table_info_homo %>%
+              select(cluster_rep, singleton) %>%
+              unique(), by = "cluster_rep") %>%
+  filter(singleton == "No",
+         singleton_post_filter == "Yes") %>%
+  pull(vOTU)
+
+cluster_table_info_homo <- cluster_table_info_homo %>%
+  mutate(singleton = ifelse(str_detect(vOTU, str_c(now_single, collapse = "|")),"Yes",singleton))
+
+
+
+```
+
+```{r phage_host_plot, eval = F}
+
+# general info to make heat map of phage hosts
+phage_hosts <- cluster_table_info_homo %>%
+  select(-clrep_designation, -clrep_sampleID) %>%
+  separate_wider_delim(cluster_rep, delim = "|", names = c("clrep_designation","clrep_program","clrep_sample_type","clrep_sampleID")) %>%
+  select(o_sample_type, o_sampleID, o_designation, vOTU) %>%
+  rename(vOTU_mine = vOTU) %>%
+  left_join(., phage_taxonomy %>%
+              rename(o_sampleID = Sample,
+                     o_designation = Query), by = c("o_sampleID","o_designation")) %>%
+  right_join(., cluster_table_info_homo %>%
+             select(-clrep_designation, -clrep_sampleID) %>%
+             separate_wider_delim(cluster_rep, delim = "|", names = c("clrep_designation","clrep_program","clrep_sample_type","clrep_sampleID")) %>%
+             select(o_sample_type, o_sampleID, o_designation) %>%
+             left_join(., phage_taxonomy %>%
+                       rename(o_sampleID = Sample,
+                              o_designation = Query), by = c("o_sampleID","o_designation")) %>%
+             select(vOTU) %>%
+             unique() %>%
+             left_join(., seq_info) %>%
+             unique() %>%
+             filter(str_detect(`Ecosystem classification`, "Human|Mammals"),
+                    str_detect(`Ecosystem classification`, "Oral cavity")) %>% 
+             unique() %>%
+             arrange(`Ecosystem classification`)) %>%
+  select(-o_designation, -o_sampleID, -vOTU, -Genus, -Species, -`Ecosystem classification`, -`Host prediction method`) %>%
+  unique() %>%
+  filter(!str_detect(`Host taxonomy prediction`, ";;;;;;"),
+         Class != "c__Arfiviricetes",
+         Class != "c__") %>%
+  separate_wider_delim(`Host taxonomy prediction`, delim = ";", names = c("domain","phylum","class","order","family","genus","species")) %>%
+  select(-order, -family, -genus, -species) %>%
+  unite(Host_class, domain:class, sep = ";") %>%
+  group_by(o_sample_type, Class, Host_class) %>%
+  count() %>%
+  ungroup() %>%
+  pivot_wider(names_from = "Class", values_from = "n", values_fill = NA) %>%
+  pivot_longer(!o_sample_type:Host_class, names_to = "Class", values_to = "counts") %>%
+  pivot_wider(names_from = "o_sample_type", values_from = "counts", values_fill = NA) %>%
+  adorn_percentages(denominator = "col") %>%
+  as_tibble() %>%
+  pivot_longer(!Class:Host_class, names_to = "o_sample_type", values_to = "counts") %>%
+  mutate(counts = counts * 100,
+         Host_class = str_remove_all(Host_class, ";$")) %>%
+  # separate_wider_delim(Host_class, delim = ";", names = c("domain","phylum","class","host_class"), too_few = "align_end") %>%
+  # select(-domain, -phylum, -class) %>%
+  mutate(
+         # host_class = str_remove_all(host_class, "c__"),
+         Class = str_remove_all(Class, "c__")) %>%
+  mutate(Class = fct_relevel(Class, "Caudoviricetes", "Faserviricetes", "Malgrandaviricetes", "Megaviricetes"),
+         o_sample_type = fct_relevel(o_sample_type, "anc_calc","mod_calc","cmc")) %>%
+  ggplot(., aes(Class, Host_class, fill = counts)) +
+    geom_tile(color = "white", lwd = 0.5, linetype = 1) +
+    theme_minimal() +
+    scale_fill_viridis_c(option = "F", direction = -1, na.value = "gray95") + # , breaks = c(0, 50, 100, 150, 200,250,300,350)
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0),
+          text = element_text(size=12)) +
+   # theme(panel.grid.minor = element_blank()) +
+   scale_y_discrete(limits = rev) +
+   labs(fill = "Percent") +
+   facet_wrap(~o_sample_type)
+  
+phage_hosts
+
+# ggsave("06-publication/main_figures/Figure_2/phage_ph_gn_hosts.pdf", plot = phage_hosts, device = "pdf",
+#        scale = 1, width = 7, height =6, units = c("in"), dpi = 300)
+
+```
+
+## CARD - vancyomycin resistance
+
+```{r}
+
+drug_classes_broad <- fread("./05-results/drug_classes.tsv")
+
+card_table <- fread("./05-results/card_rgi_abx_resistance_gene_table.tsv") %>% # this is gzipped in the github page. Change the file extension (.gz) as necessary
+  # remove environmental bins
+  anti_join(., ancient_envt_bins, by = "Bin") %>%
+  mutate(Bin = str_replace_all(Bin, ".genome","")) %>%
+  # filter for only entries where Best Hit bit-score is greater than Pass bit-score
+  mutate(pass_bit = Best_Hit_Bitscore >= Pass_Bitscore) %>%
+  filter(Best_Identities >= 33.33) %>%
+  left_join(., cluster_info %>%
+              select(Bin, Oral_site, Age_BP, Continent, Direction, Industrialization) %>%
+              unique(), by = "Bin") %>%
+  # Now get all the vancomycin resistance genes grouped together b/c they're part of a cluster that functions together (operon?) and not individual genes
+  mutate(`AMR Gene Family` = str_remove_all(`AMR Gene Family`, "van[A-Z]; "),
+         `AMR Gene Family` = str_remove_all(`AMR Gene Family`, "; van[A-Z]*"),
+         `AMR Gene Family` = str_remove_all(`AMR Gene Family`, "; Van ligase")) %>%
+  mutate(Best_Hit_ARO = str_remove_all(Best_Hit_ARO, "van[A-Z] gene in ")) %>%
+  mutate(Best_Hit_ARO = ifelse(str_detect(Best_Hit_ARO, "van[A-Z]$"), str_replace_all(Best_Hit_ARO, "$", " cluster"), Best_Hit_ARO))
+
+```
+
+```{r}
+#  set an order for the classes
+drug_class_order <- card_table %>%
+  left_join(., cluster_info %>%
+              select(Bin, sample_host) %>%
+              unique(), by = "Bin") %>%
+  filter(str_detect(sample_host, "Homo")) %>%
+  # be sure to count vancomycin resistance gene clusters as 1 "gene"
+  select(Bin, Best_Hit_ARO, Oral_site, `Drug Class`) %>%
+  unique() %>%
+  group_by(Oral_site) %>%
+  count(`Drug Class`) %>%
+  ungroup() %>%
+  separate_longer_delim(`Drug Class`, delim = ";") %>%
+  mutate(`Drug Class` = str_trim(`Drug Class`, side = "both")) %>%
+  group_by(Oral_site, `Drug Class`) %>%
+  summarize(Counts = sum(n)) %>%
+  ungroup() %>%
+  filter(Oral_site == "RefSeq") %>%
+  mutate(`Drug Class` = str_replace_all(`Drug Class`, " antibiotic","")) %>%
+  arrange(desc(Counts)) %>%
+  pull(`Drug Class`) 
+```
+
+
+```{r}
+
+mag_drug_classes <- card_table %>%
+  #only human samples
+  inner_join(., cluster_info %>%
+               filter(str_detect(sample_host, "Homo")) %>%
+               select(Bin), by = "Bin") %>%
+  select(Bin, Best_Hit_ARO, `Drug Class`, Oral_site:Industrialization) %>%
+  # be sure to count vancomycin resistance gene clusters as 1 "gene"
+  unique() %>%
+  left_join(., drug_classes_broad, by = "Drug Class") %>%
+  # remove oral sites with no industrial/non-industrial comparison
+  # filter(!str_detect(Oral_site, "TN|KG|HP|RefSeq")) %>%
+  group_by(Oral_site, Industrialization) %>%
+  count(Broad_drug_class) %>%
+  ungroup() %>%
+  # make ancient and modern calculus into "CA" for calculus
+  mutate(Oral_site = str_replace_all(Oral_site, "AC", "CA"),
+         Oral_site = str_replace_all(Oral_site, "MC", "CA"),
+         Industrialization = ifelse(Industrialization == "Ancient","An",
+                                     ifelse(Industrialization == "Industrial","In","N-i"))) %>%
+  group_by(Oral_site, Industrialization) %>%
+  mutate(Percent = n / sum(n) * 100) %>%
+  ungroup() %>%
+  # clean names a bit by removing "antibiotic" from most
+  mutate(Broad_drug_class = str_replace_all(Broad_drug_class, " antibiotic",""),
+         Broad_drug_class = str_replace_all(Broad_drug_class, "Nucleoside","Nucleoside antibiotic"),
+         Broad_drug_class = str_replace_all(Broad_drug_class, "Peptide","Peptide antibiotic")) %>%
+  unite(osi, Oral_site:Industrialization, sep = "_") %>%
+  select(-n) %>%
+  pivot_wider(names_from = "Broad_drug_class", values_from = "Percent", values_fill = NA) %>%
+  pivot_longer(!osi, names_to = "Broad_drug_class", values_to = "Percent") %>%
+  separate_wider_delim(osi, delim = "_", names = c("Oral_site","Industrialization"), too_many = "merge") %>%
+  mutate(Oral_site = fct_relevel(Oral_site, "RefSeq","CA","PQ","BM","SL","TN","KG","HP"),
+         Industrialization = fct_relevel(Industrialization, "An","N-i","I"),
+         Broad_drug_class = fct_relevel(Broad_drug_class, drug_class_order)) %>%
+  arrange(Oral_site, Broad_drug_class) %>%
+  ggplot(., aes(Industrialization, Broad_drug_class, fill = Percent)) +
+         geom_tile() +
+         scale_fill_viridis_c(option = "G",  direction = -1, na.value = "gray95", limits = c(0, 100)) +
+         # scale_fill_gradient2(low =  "#f5fcf7", mid = "#46BEADFF", high = "#38629DFF", midpoint = 40) +
+         scale_y_discrete(limits = rev)  +
+         theme_classic(base_size = 11) +
+         theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0),
+               plot.margin = margin(0, 0, 0, 0, "pt"),
+               axis.title.y = element_blank(),
+               legend.position = "left") +
+    facet_grid(~Oral_site, scales = "free_x", space = 'free')
+
+mag_drug_classes
+
+```
+
+
+```{r vancomycin_gram_stain}
+
+# Is the % of Gram+ MAGs with vancomycin resistance genes higher than the % of Gram- MAGs with vancomycin resistance?
+
+class_gram <- fread("./00-documentation/class_gram_stains.tsv")
+
+
+gram_line_plot <- class_gram %>%
+  filter(Class %in% cl_order) %>%
+  mutate(Class = fct_relevel(Class, cl_order),
+         Present = "Gram") %>%
+  arrange(Class) %>%
+  ggplot(., aes(x = Present, y = Class, fill = Gram_stain)) + # x = factor(Gene, levels=gene_cluster_info), y = Sample, fill = Presence
+  geom_tile() +
+  theme_minimal() +
+  theme(
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        # axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  theme(panel.grid.major.y = element_blank()) +
+  scale_y_discrete(limits=rev) +
+  scale_fill_manual(values = c("#C70E7B","#FC6882","#6a3d9a","#007BC3","white"), na.value = "gray95")
+
+```
+
+```{r vancomycin_pct_plot}
+
+vancomycin_pct_plot <- card_table %>%
+  #only human samples
+  right_join(., cluster_info %>%
+               filter(str_detect(sample_host, "Homo")) %>%
+               select(Bin), by = "Bin") %>%
+  filter(str_detect(Best_Hit_ARO, "van[A-Z]* cluster")) %>%
+  select(Bin) %>%
+  unique() %>%
+  mutate(vancomycin_resistance = "Yes") %>%
+  full_join(., cluster_info %>%
+              filter(str_detect(sample_host, "Homo")) %>%
+              select(Bin, Oral_site, Industrialization), by = "Bin") %>%
+  left_join(., taxonomy, by = "Bin") %>%
+  mutate(vancomycin_resistance = ifelse(is.na(vancomycin_resistance),"No",vancomycin_resistance)) %>%
+  separate(classification, into = c("domain","phylum","Class","order","family","genus","species"), sep = ";") %>%
+  mutate(Class = str_remove_all(Class, "c__")) %>%
+  select(Bin, Oral_site, Industrialization, Class, vancomycin_resistance) %>%
+  group_by(Oral_site, Industrialization, Class, vancomycin_resistance) %>%
+  count() %>%
+  ungroup() %>%
+  group_by(Oral_site, Industrialization, Class) %>%
+  mutate(Percent = n / sum(n) * 100) %>%
+  ungroup() %>%
+  # we can't filter on yes here b/c some classes have no Yes
+  # we can't filter on No here b/c some classes have no No
+  # make a pseudo Yes percent column
+  mutate(Yes_pct = ifelse(vancomycin_resistance == "No", round(100 - Percent), round(Percent))) %>%
+  select(Oral_site, Industrialization, Class, Yes_pct) %>%
+  unite(osi, Oral_site:Industrialization, sep = "_") %>%
+  unique() %>%
+  pivot_wider(names_from = "Class", values_from = "Yes_pct", values_fill = NA) %>%
+  pivot_longer(!osi, names_to = "Class", values_to = "Percent") %>%
+  separate_wider_delim(osi, delim = "_", names = c("Oral_site","Industrialization"), too_many = "merge") %>%
+  right_join(., class_gram, by = "Class") %>%
+  mutate(Oral_site = str_replace_all(Oral_site, "AC","CA"),
+         Oral_site = str_replace_all(Oral_site, "MC","CA"),
+         Industrialization = ifelse(Industrialization == "Ancient","An",
+                                     ifelse(Industrialization == "Industrial","In","N-i")),
+         Oral_site = fct_relevel(Oral_site, "RefSeq","CA","PQ","BM","SL","TN","KG","HP"),
+         Industrialization = fct_relevel(Industrialization, "An","N-i","In"),
+         Class = fct_relevel(Class, cl_order)) %>%
+  ggplot(., aes(Industrialization, Class, fill = Percent)) +
+         geom_tile() +
+         scale_fill_viridis_c(option = "G",  direction = -1, na.value = "gray95") +
+         # scale_fill_manual(values = c("gray","pink")) +
+         scale_y_discrete(limits = rev)  +
+         theme_classic(base_size = 11) +
+         theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0),
+               plot.margin = margin(0, 0, 0, 0, "pt"),
+               axis.title.y = element_blank(),
+               axis.text.y=element_blank(),
+               legend.position = "left") +
+         facet_grid(~Oral_site, scales = "free_x", space = 'free')
+
+vancomycin_pct_plot
+
+```
+
+
+```{r}
+van_genes_gram_plot <- mag_drug_classes + gram_line_plot + vancomycin_pct_plot +
+  plot_layout(guides = "collect", widths = c(12,1,12))
+
+van_genes_gram_plot
+
+# ggsave("06-publication/main_figures/Figure_2/van_genes_gram_plot.pdf", plot = van_genes_gram_plot, device = "pdf",
+#        scale = 1, width = 11, height = 5, units = c("in"), dpi = 300)
+
+
+```
+
+
+## CCTyper - Cas distributions
+```{r}
+
+# read in the cas operon info
+cas_k_o_p <- fread("05-results/PQ_cas_k_o_p.tsv") %>%
+  mutate(Oral_site = "PQ") %>%
+  bind_rows(fread("05-results/SL_cas_k_o_p.tsv") %>%
+            mutate(Oral_site = "SL",
+                   BinID = str_remove_all(BinID, ".genome"))) %>%
+  bind_rows(fread("05-results/TN_cas_k_o_p.tsv") %>%
+            mutate(Oral_site = "TN")) %>%
+  bind_rows(fread("05-results/KG_cas_k_o_p.tsv") %>%
+            mutate(Oral_site = "KG")) %>%
+  bind_rows(fread("05-results/HP_cas_k_o_p.tsv") %>%
+            mutate(Oral_site = "HP")) %>%
+  bind_rows(fread("05-results/BM_cas_k_o_p.tsv") %>%
+            mutate(Oral_site = "BM")) %>%
+  bind_rows(fread("05-results/AC_cas_k_o_p.tsv") %>%
+            mutate(Oral_site = "AC") %>%
+  # need to pull out the likely environmental MAGs from ancient samples
+            anti_join(., ancient_envt_bins  %>%
+                        rename(BinID = Bin), by = "BinID")) %>%
+  bind_rows(fread("05-results/MC_cas_k_o_p.tsv") %>%
+            mutate(Oral_site = "MC")) %>%
+  bind_rows(fread("05-results/RS_cas_k_o_p.tsv") %>%
+            mutate(Oral_site = "RS")) %>% 
+  left_join(., cluster_info %>%
+               select(Bin, sample_host) %>%
+              rename(BinID = Bin), by = "BinID") %>%
+  filter(str_detect(sample_host, "Homo")) %>%
+  select(-sample_host)
+
+```
+
+```{r}
+sample_sub_type_counts <- cas_k_o_p %>%
+  #only human samples
+  inner_join(., cluster_info %>%
+               filter(str_detect(sample_host, "Homo")) %>%
+               select(Bin) %>%
+               rename(BinID = Bin), by = "BinID") %>%
+  select(Industry,BinID, out_type, Best_type) %>% # out_type is known, orphan, or putative
+  # distinct() %>%
+  # group_by(out_type, Best_type) %>%
+  # count(name = "no_samples") %>%
+  # ungroup() %>%
+  mutate(Best_type = str_replace_all(Best_type, "\\[",""),
+         Best_type = str_replace_all(Best_type, "\\]",""),
+         Best_type = str_replace_all(Best_type, "'",""),
+         Full_type = Best_type) %>%
+  separate(Best_type, into = c("Type","Sub-Type"), sep = "-", extra = "merge") %>%
+  mutate(Class = ifelse(Type == "I","1",
+                        ifelse(Type == "III", "1",
+                               ifelse(Type == "IV", "1","2")))) %>%
+  separate(`Sub-Type`, into = c("Sub_type", "Alt_sub_type"), sep = ",", extra = "merge") %>%
+  select(out_type, Class, everything()) %>%
+  mutate(Full_type = ifelse(Full_type == "I-A, I-B, I-C, I-D", "I-ABCD",
+                            ifelse(Full_type == "I-A, I-B, I-C, I-D, I-G", "I-ABCDG",
+                                   ifelse(Full_type ==  "I-A, I-B, I-D, I-E, I-F, I-G", "I-ABDEFG",
+                                          ifelse(Full_type == "I-A, I-B, I-D, I-E, I-F, I-G, III-A, III-D", "I-ABDEFG, III-AD",
+                                                 ifelse(Full_type == "II-A, II-C, V-A, V-E, V-F1, V-F2, V-F3, V-F","II-AC, V-AEF1F2F",
+                                                        ifelse(Full_type == "I-A, I-B, I-C, I-D, I-G, II-B, V-A, V-B1, V-B2, V-E, V-F1, V-F2, V-F3, V-F", "I-ABCDG, II-B, V-AB1B2EF1F2F", Full_type))))))) %>%
+  mutate(Full_type = ifelse(Full_type == "I-A, I-B", "I-AB",
+                            ifelse(Full_type == "II-A, II-C", "II-AC",
+                                   ifelse(Full_type == "II-B, III-C, III-D","II-B, III-CD",
+                                          ifelse(Full_type == "III-A, III-D", "III-AD",
+                                                 ifelse(Full_type == "III-B, III-C", "III-BC", Full_type)))))) %>%
+  mutate(Class = ifelse(Full_type == "I-ABCDG, II-B, V-AB1B2EF1F2F", "Undefined",
+                        ifelse(Full_type == "II-B, III-CD", "Undefined", Class))) %>%
+  mutate(BinID = str_replace_all(BinID, ".genome","")) %>%
+  left_join(., taxonomy %>%
+              rename(BinID = Bin), by = "BinID") %>%
+  separate(classification, into = c("domain","phylum","class","order","family","genus","species"), sep = ";", extra = "merge") %>%
+  # add the oral site
+  left_join(., cluster_info %>%
+              rename(BinID = Bin) %>%
+              select(BinID, Oral_site) %>%
+              unique())  %>%
+  select(out_type:Full_type, Oral_site, everything())
+
+```
+
+```{r}
+
+cl_order <- taxonomy %>%
+  separate(classification, into = c("domain","phylum","class","order","family","genus","species"), sep = ";", extra = "merge") %>%
+  select(domain, phylum, class)  %>%
+  unique() %>%
+  arrange(domain, phylum, class) %>%
+  mutate(class = str_replace_all(class, "c__","")) %>%
+  pull(class)
+
+# set oral site order
+os_order <- c("AC","MC","CA","PQ","BM","KG","HP","TN","SL","RefSeq")
+
+```
+
+
+
+```{r}
+# MAG Cas distribution
+
+mag_cas_class_weights <- cluster_info %>%
+  left_join(., taxonomy, by = "Bin") %>%
+  select(Bin, Oral_site, classification) %>%
+  mutate(Oral_site = ifelse(Oral_site == "RefSeq","RefSeq","MAGs")) %>%
+  separate(classification, into = c("domain","phylum","class","order","family","genus","species"), sep = ";", extra = "merge") %>%
+  select(Bin, Oral_site, class) %>%
+  group_by(Oral_site, class) %>%
+  count(name = "total_MAGs") %>%
+  ungroup() %>%
+  # now the number of MAGs per class, known
+  left_join(., cluster_info %>%
+            select(Bin, Oral_site, Secondary_sample_accession) %>%
+            inner_join(., sample_sub_type_counts %>%
+                       rename(Bin = BinID) %>%
+                       filter(out_type == "known") %>%
+                       select(Type, Full_type, Bin, class))%>%
+            mutate(Type = ifelse(str_detect(Full_type, ","),"Uncertain",Type),
+                   Oral_site = ifelse(Oral_site == "RefSeq","RefSeq","MAGs")) %>%
+            select(Oral_site, Bin, Type, class) %>%
+            unique() %>%
+            group_by(Oral_site, Type, class) %>%
+            count(name = "No. MAGs") %>%
+            ungroup()) %>%
+  # MAGs w/no known Cas detected
+  bind_rows(., 
+    cluster_info %>%
+    left_join(., taxonomy, by = "Bin") %>%
+    select(Bin, Oral_site, classification) %>%
+    mutate(Oral_site = ifelse(Oral_site == "RefSeq","RefSeq","MAGs")) %>%
+    separate(classification, into = c("domain","phylum","class","order","family","genus","species"), sep = ";", extra = "merge") %>%
+    select(Bin, Oral_site, class) %>%
+    group_by(Oral_site, class) %>%
+    count(name = "total_MAGs") %>%
+    ungroup() %>%
+    left_join(., cluster_info %>%
+              select(Bin, Oral_site) %>%
+              anti_join(., sample_sub_type_counts %>%
+                         rename(Bin = BinID) %>%
+                         filter(out_type == "known")) %>%
+              left_join(., taxonomy, by = "Bin") %>%
+              mutate(Oral_site = ifelse(Oral_site == "RefSeq","RefSeq","MAGs")) %>%
+              separate(classification, into = c("domain","phylum","class","order","family","genus","species"), sep = ";", extra = "merge") %>%
+              group_by(Oral_site, class) %>%
+              count(name = "No. MAGs") %>%
+              ungroup() %>%
+              mutate(Type = " None")) %>%
+    select(Oral_site, class, total_MAGs, Type, `No. MAGs`)) %>%
+    arrange(Oral_site, class, Type) %>%
+    mutate(weight = `No. MAGs` / total_MAGs) %>%
+    mutate(class = str_remove_all(class, "c__"))  %>%
+    mutate(Dataset = "Oral",
+           Type = ifelse(str_detect(Type, "^I|^V"),str_replace_all(Type, "^","Type_"),Type)) %>%
+    rename(subtype = Type) %>%
+    select(-total_MAGs, -`No. MAGs`) %>%
+    drop_na(subtype)
+
+```
+
+```{r figure3_plot}
+mags_v_rs <- mag_cas_class_weights %>%
+  # select(Oral_site, class, subtype, weight) %>%
+  # pivot_wider(!Oral_site:class, names_from = "subtype", values_from = "weight", values_fill = 0) %>%
+  # pivot_longer(names_to = "subtype", values_to = "weight") %>%
+  select(-Dataset) %>%
+  unite(osc, Oral_site:class, sep = ";") %>%
+  pivot_wider(names_from = "subtype", values_from = "weight", values_fill = NA) %>%
+  pivot_longer(!osc, names_to = "subtype", values_to = "weight") %>%
+  separate_wider_delim(osc, delim = ";", names = c("Oral_site", "Class")) %>%
+  unite(cst, Class:subtype, sep = ";") %>%
+  pivot_wider(names_from = "Oral_site", values_from = "weight", values_fill = NA) %>%
+  pivot_longer(!cst, names_to = "Oral_site", values_to = "weight") %>%
+  separate_wider_delim(cst, delim = ";", names = c("Class", "subtype")) %>%
+  mutate(Class = fct_relevel(Class, cl_order),
+         Oral_site = fct_relevel(Oral_site, os_order),
+         subtype = str_replace_all(subtype, "_", " ")) %>%
+  arrange(subtype, Class, Oral_site) %>%
+  ggplot(., aes(Oral_site, Class, fill = weight)) +
+    geom_tile() +
+    scale_fill_viridis_c(option = "G", name = "Weight", na.value = "gray95", breaks = c(.10, .20, .30, .40, .50, .60, .70, .80, .90, 1.00), labels = c(".10", ".20", ".30",".40",".50",".60",".70",".80",".90","1.00"), direction = -1) +
+    theme_classic(base_size = 10) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5),
+          plot.margin = margin(0, 0, 0, 0, "pt"),
+          axis.title.y = element_blank(),
+          legend.position = "left") +
+    scale_y_discrete(limits=rev) +
+    # scale_x_discrete(position = "top") +
+    theme(strip.text.x.top = element_text(angle = 0, hjust = 0.5, size = 10)) +
+    facet_grid(~factor(subtype, levels = c("Type I", "Type III", "Type IV", "Type II", "Type V", "Type VI", "Uncertain", " None")), scales = "free", space = 'free')
+
+mags_v_rs
+
+# ggsave("06-publication/main_figures/Figure_2/cctyper_mags_v_rs.pdf", plot = mags_v_rs, device = "pdf",
+#        scale = 1, width = 4, height = 3, units = c("in"), dpi = 300)
+
+```
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,1256 @@
+---
+title: "Figure 5"
+author: "Irina Velsko"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output:
+    github_document:
+        fig_width: 8
+        fig_height: 6
+        toc: true
+---
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(janitor)
+library(ComplexHeatmap)
+library(tidyverse)
+library(ggtree)
+library(ggstar)
+library(patchwork)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+Set the working directory of the notebook to the parent directory of the 
+notebook itself.  
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath("../../.."))
+```
+
+```{r}
+os_colors <- c("Calculus - Ancient" = "#EF7C12",
+               "Calculus - Industrial" = "#F4B95A",
+               "Plaque - Industrial" = "#FC6882",
+               "Plaque - Non-industrial" = "#C70E7B",
+               "Buccal mucosa - Industrial" = "#8FDA04",
+               "Buccal mucosa - Non-industrial" = "#009F3F",
+               "Saliva - Industrial" = "#54BCD1",
+               "Saliva - Non-industrial" = "#007BC3",
+               "RefSeq" = "gray80",
+               "Tongue - Industrial" = "#78d9ca",
+               # "Tongue - Non-industrial" = "#189a85",
+               "Hard palate - Industrial" = "#cab2d6",
+               # "Hard_palate - Non-industrial" = "#6a3d9a",
+               "Keratinized gingiva - Industrial" = "#F7E690",
+               # "Keratinized gingiva - Non-ndustrial" = "#F5D000",
+               "PQ" = "#FC6882", "AC" = "#EF7C12", "MC" = "#F4B95A",
+               "BM" = "#8FDA04","SL" = "#54BCD1","TN" = "#78d9ca","KG" = "#F7E690","HP" = "#cab2d6")
+
+
+Continent_colors <- c("Oceania" = "#098BD9", 
+                  "Europe" = "#7472af", 
+                  "Africa" = "#cc79a7", 
+                  "Caribbean" = "#f6865e", 
+                  "Asia" = "#86c73a",
+                  "South America" = "gray50",
+                  "North America" = "#1ec1a7")
+
+host_colors <- c("Human" = "#FFD5AF", "Neanderthal"  = "#FEEDA0", "Non-human primate"  = "#BCE1FF")
+
+ba_colors <- c("pre-14000" = "#35264c","post-14000" = "#3487a6", "modern" = "#ade3c0")
+
+```
+
+```{r}
+
+# read in the taxonomy  table
+taxonomy <- fread("./00-documentation/mod_anc_refined_mag_taxonomy_26_07_2024.tsv") %>%
+  bind_rows(., fread("./00-documentation/csc001_taxonomy.tsv"))
+
+# read in the cluster info file
+cluster_info <- fread("./00-documentation/cluster_info_all_metadata_26_07_2024.tsv") %>%
+  mutate(primary_cluster = as.character(primary_cluster)) %>%
+  bind_rows(., fread("00-documentation/csc_mags_info.tsv")) %>%
+  mutate(Oral_site = str_replace_all(Oral_site, "anc_calc$", "AC"),
+         Oral_site = str_replace_all(Oral_site, "anc_calculus", "AC"),
+         Oral_site = str_replace_all(Oral_site, "ancient_calculus", "AC"),
+         Oral_site = str_replace_all(Oral_site, "mod_calculus", "MC"),
+         Oral_site = str_remove_all(Oral_site, "sub"),
+         Oral_site = str_remove_all(Oral_site, "sup")) %>%
+  mutate(primary_cluster = as.numeric(primary_cluster))
+
+#  read in  the ancient environmental bins list
+ancient_envt_bins <- fread("./00-documentation/ancient_envt_bins_26_07_2024.tsv")
+ancient_envt_clusters <- fread("./00-documentation/ancient_envt_clusters_26_07_2024.tsv")
+
+```
+
+```{r fig_5_prep}
+# ancient humans
+clusters_w_anc_human <- cluster_info %>%
+  filter(sample_host == "Homo sapiens" & MAG_source == "Ancient") %>%
+  anti_join(., ancient_envt_bins, by = "Bin") %>%
+  select(primary_cluster) %>%
+  unique()
+
+# modern humans nonind-PQ
+clusters_w_nonind_pq <- cluster_info %>%
+  filter(str_detect(Bin, "CMC"))  %>%
+  select(primary_cluster) %>%
+  unique()
+
+# modern humans ind-PQ+CS
+clusters_w_ind_pq_cs <- cluster_info %>%
+  filter(sample_host == "Homo sapiens",
+         MAG_source != "Ancient",
+         str_detect(Oral_site, "PQ|calculus"),
+         !str_detect(Bin, "CMC"))  %>%
+  select(primary_cluster) %>%
+  unique()
+
+# neanderthals filtered
+clusters_w_neanderthal_filt <- cluster_info %>%
+  anti_join(., ancient_envt_bins, by = "Bin") %>%
+  filter(sample_host == "Homo sapiens neanderthalensis")  %>%
+  select(primary_cluster) %>%
+  filter(!str_detect(primary_cluster, "1175|1179|1282|1543|3421|3442|3504|csc")) %>%
+  separate_wider_delim(primary_cluster, delim = "/", names = "primary_cluster", too_many = "drop") %>%
+  unique() %>%
+  mutate(primary_cluster = as.numeric(primary_cluster))
+
+# Non-human primates
+clusters_w_nhp <- cluster_info %>%
+  filter(str_detect(sample_host, "Pan|Gorilla|Alouatta|Papio"))  %>%
+  anti_join(., ancient_envt_bins, by = "Bin") %>%
+  select(primary_cluster) %>%
+  unique()
+
+# Ursus
+clusters_w_ursus <- cluster_info %>%
+  anti_join(., ancient_envt_bins, by = "Bin") %>%
+  filter(str_detect(sample_host, "Ursus"))  %>%
+  select(primary_cluster) %>%
+  unique()
+
+# Rangifer
+clusters_w_rangifer <- cluster_info %>%
+  anti_join(., ancient_envt_bins, by = "Bin") %>%
+  filter(str_detect(sample_host, "Rangifer"))  %>%
+  select(primary_cluster) %>%
+  unique()
+
+# Pan
+clusters_w_pan <- cluster_info %>%
+  anti_join(., ancient_envt_bins, by = "Bin") %>%
+  filter(str_detect(sample_host, "Pan"))  %>%
+  select(primary_cluster) %>%
+  unique()
+
+# Gorilla
+clusters_w_gorilla <- cluster_info %>%
+  anti_join(., ancient_envt_bins, by = "Bin") %>%
+  filter(str_detect(sample_host, "Gorilla"))  %>%
+  select(primary_cluster) %>%
+  unique()
+
+```
+
+
+```{r tina_primate}
+
+# humans PQ-CS
+clusters_w_human_tina <- cluster_info %>%
+  filter(str_detect(sample_host, "Homo"),
+         str_detect(Oral_site, "PQ|AC")) %>%
+  anti_join(., ancient_envt_bins) %>%
+  select(primary_cluster) %>%
+  unique() %>%
+  # filter out Neanderthal contamination
+  filter(!str_detect(primary_cluster, "1175|1179|1282|1543|3421|3442|3504"))
+
+# make a binary table for each cluster
+cluster_host_tina <- clusters_w_human_tina %>%
+  mutate(Homo = 1) %>%
+  full_join(., clusters_w_pan %>%
+              mutate(Pan = 1)) %>%
+  full_join(., clusters_w_gorilla %>%
+              mutate(Gorilla = 1), by = "primary_cluster") %>%
+  # remove clusters found in non-primates
+  anti_join(., clusters_w_ursus, by = "primary_cluster") %>%
+  anti_join(., clusters_w_rangifer, by = "primary_cluster") %>%
+  # remove environmental bins
+  anti_join(., ancient_envt_clusters, by = "primary_cluster") %>%
+  replace(is.na(.), 0) %>%
+  mutate(primary_cluster = as.character(primary_cluster)) %>%
+  mutate(primary_cluster = str_replace_all(primary_cluster, "0","a"),
+         primary_cluster = str_replace_all(primary_cluster, "1","b"),
+         primary_cluster = str_replace_all(primary_cluster, "2","c"),
+         primary_cluster = str_replace_all(primary_cluster, "3","d"),
+         primary_cluster = str_replace_all(primary_cluster, "4","e"),
+         primary_cluster = str_replace_all(primary_cluster, "5","f"),
+         primary_cluster = str_replace_all(primary_cluster, "6","g"),
+         primary_cluster = str_replace_all(primary_cluster, "7","h"),
+         primary_cluster = str_replace_all(primary_cluster, "8","i"),
+         primary_cluster = str_replace_all(primary_cluster, "9","j")) %>%
+  # adorn_totals(where = "col") %>%
+  # arrange(Total)
+  column_to_rownames("primary_cluster") %>%
+  as.matrix(.)
+
+```
+
+```{r venn_primate_plot}
+
+
+# make an upset plot
+m1 <- ComplexHeatmap::make_comb_mat(cluster_host_tina)
+ss = set_size(m1)
+cs = comb_size(m1)
+countss = cluster_info %>%
+  anti_join(., ancient_envt_bins, by = "Bin") %>%
+  filter(!str_detect(sample_host, "Rangifer|Ursus|Alouatta|Papio"),
+         str_detect(Oral_site, "PQ|AC"),
+         !str_detect(primary_cluster, "1175|1179|1282|1543|3421|3442|3504")) %>%
+  select(Secondary_sample_accession, sample_host, Oral_site) %>%
+  unique() %>%
+  mutate(Host = ifelse(str_detect(sample_host, "Homo"),"Homo",
+                       ifelse(str_detect(sample_host, "Pan"),"Pan",
+                              ifelse(str_detect(sample_host, "Gorilla"),"Gorilla",sample_host)))) %>%
+  filter(str_detect(Oral_site, "PQ|AC")) %>%
+  select(-Oral_site) %>%
+  group_by(Host) %>%
+  count() %>%
+  ungroup() %>%
+  mutate(Host = fct_relevel(Host, "Homo","Pan","Gorilla")) %>%
+  arrange(Host) %>%
+  deframe()
+
+ht = ComplexHeatmap::UpSet(m1, 
+                      set_order = c("Homo","Pan","Gorilla"), 
+                      comb_order = rev(order(comb_name(m1))),
+                      comb_col = c("#e6778e","black","black","black","black")[comb_degree(m1)],
+                      top_annotation = HeatmapAnnotation(
+                        "Shared species clusters" = anno_barplot(cs, 
+                            ylim = c(0, max(cs)*1.1),
+                            border = FALSE, 
+                            gp = gpar(fill = "black"), 
+                            height = unit(4, "cm")
+                        ),
+                      annotation_name_side = "left", 
+                      annotation_name_rot = 90),
+                      left_annotation = rowAnnotation(
+                      "Species clusters" = anno_barplot(-ss, 
+                          baseline = 0,
+                          axis_param = list(
+                              at = c(0, -200, -400, -600, -800, -1000, -1200),
+                              labels = c(0, 200, 400, 600, 800, 1000, 1200),
+                              labels_rot = 0),
+                          border = FALSE, 
+                          gp = gpar(fill = "gray"), 
+                          width = unit(4, "cm")
+                      ),
+                      set_name = anno_text(set_name(m1), 
+                          location = 1.0, 
+                          just = "right",
+                          width = max_text_width(set_name(m1)) + unit(4, "mm"))
+                  ), 
+                  right_annotation = rowAnnotation(
+                      "Samples" = anno_barplot(countss, 
+                          baseline = 0,
+                          axis_param = list(
+                              at = c(0, 200, 400, 600, 800, 1000),
+                              labels = c(0, 200, 400, 600, 800, 1000),
+                              labels_rot = 0),
+                          border = FALSE, 
+                          gp = gpar(fill = "#77e6cf"), # "#e6778e","#FAF3DD",
+                          width = unit(4, "cm")
+                      ),
+                      set_name = anno_text(paste0(countss), # set_name(m1)
+                          location = 0.1, 
+                          rot = 270,
+                          just = "center",
+                          width = max_text_width(set_name(m1)) + unit(4, "mm"))
+                  ),
+                  show_row_names = FALSE)
+
+ht = draw(ht)
+od = column_order(ht)
+decorate_annotation("Shared species clusters", {
+    grid.text(cs[od], x = seq_along(cs), y = unit(cs[od], "native") + unit(2, "pt"), 
+        default.units = "native", just = c("center", "bottom"), 
+        gp = gpar(fontsize = 8, col = "#404040"), rot = 0)
+                      })
+
+
+```
+
+```{r venn_primate_figure, eval = F}
+
+pdf(file = "./06-publication/main_figures/Figure_XX6/cluster_tina_hosts_upset.pdf", width = 8, height = 3) 
+
+ht = draw(ht)
+od = column_order(ht)
+decorate_annotation("Shared species clusters", {
+    grid.text(cs[od], x = seq_along(cs), y = unit(cs[od], "native") + unit(2, "pt"), 
+        default.units = "native", just = c("center", "bottom"), 
+        gp = gpar(fontsize = 8, col = "#404040"), rot = 0)
+                      })
+
+dev.off()
+
+
+```
+
+```{r}
+# make a binary table for each cluster
+cluster_host_figxx2_tooth_binary <- clusters_w_ind_pq_cs %>%
+  mutate(Modern_ind_human = 1) %>%
+  full_join(., clusters_w_nonind_pq %>%
+              mutate(Modern_ni_human = 1)) %>%
+  full_join(., clusters_w_anc_human %>%
+              mutate(Ancient_human = 1), by = "primary_cluster") %>%
+  full_join(., clusters_w_neanderthal_filt %>%
+              mutate(primary_cluster = as.numeric(primary_cluster)) %>%
+              mutate(Neanderthal = 1), by = "primary_cluster") %>%
+  full_join(., clusters_w_nhp %>%
+              mutate(NHP = 1), by = "primary_cluster") %>%
+  # remove clusters found in non-primates
+  anti_join(., clusters_w_ursus %>%
+              # keep this cluster b/c lots of humans
+              filter(primary_cluster != 1269), by = "primary_cluster") %>%
+  anti_join(., clusters_w_rangifer, by = "primary_cluster") %>%
+  # remove environmental bins
+  anti_join(., ancient_envt_clusters, by = "primary_cluster") %>%
+  mutate(primary_cluster = as.numeric(primary_cluster)) %>%
+  replace(is.na(.), 0) %>%
+  mutate(primary_cluster = as.character(primary_cluster)) %>%
+  mutate(primary_cluster = str_replace_all(primary_cluster, "0","a"),
+         primary_cluster = str_replace_all(primary_cluster, "1","b"),
+         primary_cluster = str_replace_all(primary_cluster, "2","c"),
+         primary_cluster = str_replace_all(primary_cluster, "3","d"),
+         primary_cluster = str_replace_all(primary_cluster, "4","e"),
+         primary_cluster = str_replace_all(primary_cluster, "5","f"),
+         primary_cluster = str_replace_all(primary_cluster, "6","g"),
+         primary_cluster = str_replace_all(primary_cluster, "7","h"),
+         primary_cluster = str_replace_all(primary_cluster, "8","i"),
+         primary_cluster = str_replace_all(primary_cluster, "9","j")) %>%
+  # adorn_totals(where = "col") %>%
+  # arrange(Total)
+  column_to_rownames("primary_cluster") %>%
+  as.matrix(.)
+
+clusters_w_neanderthal_filt %>%
+  anti_join(., ancient_envt_clusters, by = "primary_cluster") %>%
+  inner_join(., clusters_w_ursus)
+
+```
+
+```{r fig_5_upset_plot}
+
+
+# make an upset plot
+m1 <- ComplexHeatmap::make_comb_mat(cluster_host_figxx2_tooth_binary)
+ss = set_size(m1)
+cs = comb_size(m1)
+countss = cluster_info %>%
+  anti_join(., ancient_envt_bins, by = "Bin") %>%
+  filter(!str_detect(sample_host, "Rangifer|Ursus"),
+         str_detect(Oral_site, "PQ|AC|MC"),
+         !str_detect(primary_cluster, "1175|1179|1282|1543|3421|3442|3504")) %>%
+  select(Secondary_sample_accession, sample_host,MAG_source, Oral_site) %>%
+  unique() %>%
+  mutate(sample_host = str_replace_all(sample_host, "Homo sapiens neanderthalensis","Neanderthal"),
+         sample_host = ifelse(str_detect(sample_host, "Papio|Alouatta|Pan|Gorilla"),"NHP",sample_host)) %>%
+  mutate(sample_host =  ifelse(sample_host == "Homo sapiens" & MAG_source == "Ancient","Ancient_human",
+                               ifelse(MAG_source == "CMC", "Modern_ni_human", 
+                                      ifelse(str_detect(Oral_site, "MC|PQ") & MAG_source != "CMC", "Modern_ind_human", sample_host)))) %>%
+  select(-MAG_source, -Oral_site) %>%
+  group_by(sample_host) %>%
+  count() %>%
+  ungroup() %>%
+  mutate(sample_host = fct_relevel(sample_host, "Modern_ind_human","Modern_ni_human","Ancient_human","Neanderthal","NHP")) %>%
+  arrange(sample_host) %>%
+  deframe()
+
+ht = ComplexHeatmap::UpSet(m1, 
+                      set_order = c("Modern_ind_human","Modern_ni_human","Ancient_human","Neanderthal","NHP"), 
+                      comb_order = rev(order(comb_name(m1))),
+                      comb_col = c("#e6778e","black","black","black","black")[comb_degree(m1)],
+                      top_annotation = HeatmapAnnotation(
+                        "Shared species clusters" = anno_barplot(cs, 
+                            ylim = c(0, max(cs)*1.1),
+                            border = FALSE, 
+                            gp = gpar(fill = "black"), 
+                            height = unit(4, "cm")
+                        ),
+                      annotation_name_side = "left", 
+                      annotation_name_rot = 90),
+                      left_annotation = rowAnnotation(
+                      "Species clusters" = anno_barplot(-ss, 
+                          baseline = 0,
+                          axis_param = list(
+                              at = c(0, -100, -200,  -300, -400, -500, -600, -700),
+                              labels = c(0, 100, 200,  300, 400, 500, 600, 700),
+                              labels_rot = 0),
+                          border = FALSE, 
+                          gp = gpar(fill = "gray"), 
+                          width = unit(4, "cm")
+                      ),
+                      set_name = anno_text(set_name(m1), 
+                          location = 1.0, 
+                          just = "right",
+                          width = max_text_width(set_name(m1)) + unit(4, "mm"))
+                  ), 
+                  right_annotation = rowAnnotation(
+                      "Samples" = anno_barplot(countss, 
+                          baseline = 0,
+                          axis_param = list(
+                              at = c(0, 100, 200, 300, 400, 500),
+                              labels = c(0, 100, 200, 300, 400, 500),
+                              labels_rot = 0),
+                          border = FALSE, 
+                          gp = gpar(fill = "#77e6cf"), # "#e6778e","#FAF3DD",
+                          width = unit(4, "cm")
+                      ),
+                      set_name = anno_text(paste0(countss), # set_name(m1)
+                          location = 0.1, 
+                          rot = 270,
+                          just = "center",
+                          width = max_text_width(set_name(m1)) + unit(4, "mm"))
+                  ),
+                  show_row_names = FALSE)
+
+ht = draw(ht)
+od = column_order(ht)
+decorate_annotation("Shared species clusters", {
+    grid.text(cs[od], x = seq_along(cs), y = unit(cs[od], "native") + unit(2, "pt"), 
+        default.units = "native", just = c("center", "bottom"), 
+        gp = gpar(fontsize = 8, col = "#404040"), rot = 0)
+                      })
+
+
+```
+
+```{r, eval = F}
+
+pdf(file = "./06-publication/main_figures/Figure_5/cluster_neanderthals_hosts_upset.pdf", width = 10, height = 3) 
+
+ht = draw(ht)
+od = column_order(ht)
+decorate_annotation("Shared species clusters", {
+    grid.text(cs[od], x = seq_along(cs), y = unit(cs[od], "native") + unit(2, "pt"), 
+        default.units = "native", just = c("center", "bottom"), 
+        gp = gpar(fontsize = 8, col = "#404040"), rot = 0)
+                      })
+
+dev.off()
+
+
+```
+
+```{r}
+n_envt_cl <- cluster_info %>%
+  # Fix the date for ERS3774464 MAGs 
+  mutate(Age_BP = ifelse(Secondary_sample_accession == "ERS3774464",18000,Age_BP)) %>%
+  # filter for Neanderhtal MAGs (there are 58 in total before adding CSC)
+  filter(str_detect(sample_host, "neanderthal")) %>%
+  filter(!str_detect(primary_cluster, "csc")) %>%
+  group_by(primary_cluster) %>%
+  count() %>%
+  ungroup() %>%
+  arrange(desc(n)) %>%
+  # filter(n == 1) %>%
+  select(primary_cluster) %>%
+  inner_join(., cluster_info %>%
+             select(Bin, primary_cluster, Age_BP, sample_host, MAG_source, Study), by = "primary_cluster") %>%
+  left_join(., taxonomy, by = "Bin") %>%
+  filter(str_detect(classification, "Cutibacterium|Pelomonas|Azonexus|Rahnella|Acinetobacter|Psychrobacter")) %>%
+  select(primary_cluster) %>%
+  unique()
+
+host_bars <- cluster_info %>%
+  # Fix the date for ERS3774464 MAGs 
+  mutate(Age_BP = ifelse(Secondary_sample_accession == "ERS3774464",18000,Age_BP)) %>%
+  # filter for Neanderhtal MAGs (there are 58 in total)
+  filter(str_detect(sample_host, "neanderthal")) %>%
+  drop_na(primary_cluster) %>%
+  group_by(primary_cluster) %>%
+  count() %>%
+  ungroup() %>%
+  arrange(desc(n)) %>%
+  # filter(n == 1) %>%
+  select(primary_cluster) %>%
+  inner_join(., cluster_info %>%
+             select(Bin, primary_cluster, Age_BP, sample_host, MAG_source, Study), by = "primary_cluster") %>%
+  anti_join(., n_envt_cl, by = "primary_cluster") %>%
+  anti_join(., ancient_envt_clusters, by = "primary_cluster") %>%
+  mutate(Host = ifelse(str_detect(sample_host, "Gorilla|Pan|Papio"),"Non-human primate",
+                                      ifelse(str_detect(sample_host, "neanderthal"),"Neanderthal","Human"))) %>%
+  group_by(primary_cluster, Host) %>%
+  count() %>%
+  ungroup() %>%
+  left_join(., taxonomy %>%
+              inner_join(., cluster_info %>%
+                           select(Bin, primary_cluster), by = "Bin"), by = "primary_cluster") %>%
+  select(-Bin) %>%
+  separate_wider_delim(classification, delim = ";", too_few = "align_start", names = c("domain","phylum","Class","order","family","genus","species")) %>%
+  unite(lineage, domain:genus, sep = ";") %>%
+  select(-species) %>%
+  unique()
+
+```
+
+
+```{r}
+
+host_pr_cl_order <- host_bars %>%
+  select(primary_cluster, lineage) %>%
+  unique() %>%
+  arrange(lineage) %>%
+  left_join(., fread("00-documentation/cluster_taxonomy_for_taxdump_26_07_2024.tsv") %>%
+              select(id, species) %>%
+              mutate(id = str_remove_all(id, "pr_cl_"),
+                     id = as.numeric(id)) %>%
+              rename(primary_cluster = id), by = "primary_cluster") %>%
+  pull(species)
+
+
+neanderthal_bars <- host_bars %>%
+  left_join(., fread("00-documentation/cluster_taxonomy_for_taxdump_26_07_2024.tsv") %>%
+              select(id, species) %>%
+              mutate(id = str_remove_all(id, "pr_cl_"),
+                     id = as.numeric(id)) %>%
+              rename(primary_cluster = id), by = "primary_cluster") %>%
+  mutate(species = fct_relevel(species, host_pr_cl_order),
+         Host = fct_relevel(Host, "Non-human primate","Human","Neanderthal")) %>%
+  drop_na(species) %>%
+  arrange(species) %>%
+   ggplot(., aes(x = n, y = species, group = Host)) +
+         theme_minimal(base_size = 18) +
+         geom_vline(xintercept = 1, linetype = "solid", color = "gray90") +
+         geom_vline(xintercept = 10, linetype = "solid", color = "gray90") +
+         geom_vline(xintercept = 50, linetype = "solid", color = "gray90") +
+         geom_bar(aes(fill = Host), stat = "identity", color = "black", linewidth = 0.1) + # , position = position_dodge2(width = 0.9, preserve = "single")
+         scale_fill_manual(values = host_colors) +
+         theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0, size = 18),
+               # axis.text.y = element_blank(),
+               ) +
+         theme(panel.grid.minor = element_blank()) +
+         scale_y_discrete(limits = rev) +
+         ggbreak::scale_x_cut(c(40,52), which = c(1,2,3), scales = c(4,0.5,1)) +
+         ylab("Species cluster") +
+         xlab("Total MAGs")
+   
+ neanderthal_bars
+ 
+# ggsave("06-publication/main_figures/Figure_5/neanderthal_cluster_bars.pdf", plot = neanderthal_bars, device = "pdf",
+#        scale = 1, width = 9, height = 8, units = c("in"), dpi = 300)
+
+ 
+ host_bars %>%
+  left_join(., fread("00-documentation/cluster_taxonomy_for_taxdump_26_07_2024.tsv") %>%
+              select(id, species) %>%
+              mutate(id = str_remove_all(id, "pr_cl_"),
+                     id = as.numeric(id)) %>%
+              rename(primary_cluster = id), by = "primary_cluster") %>%
+  mutate(species = fct_relevel(species, host_pr_cl_order),
+         Host = fct_relevel(Host, "Non-human primate","Human","Neanderthal")) %>%
+  drop_na(species) %>%
+  arrange(species) %>%
+   ggplot(., aes(x = n, y = species, group = Host)) +
+         theme_minimal(base_size = 18) +
+         geom_vline(xintercept = 1, linetype = "solid", color = "gray90") +
+         geom_vline(xintercept = 10, linetype = "solid", color = "gray90") +
+         geom_vline(xintercept = 50, linetype = "solid", color = "gray90") +
+         geom_bar(aes(fill = Host), stat = "identity", color = "black", linewidth = 0.1) + # , position = position_dodge2(width = 0.9, preserve = "single")
+         scale_fill_manual(values = host_colors) +
+         theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0, size = 18),
+               # axis.text.y = element_blank(),
+               ) +
+         theme(panel.grid.minor = element_blank()) +
+         scale_y_discrete(limits = rev) +
+         ylab("Species cluster") +
+         xlab("Total MAGs")
+ 
+```
+
+## Phylogenetic trees
+
+### DUUL01
+```{r}
+
+bin_metadata <- fread("./00-documentation/cluster_info_all_metadata_26_07_2024.tsv") %>%
+  mutate(primary_cluster = as.character(primary_cluster)) %>%
+  bind_rows(., fread("./00-documentation/csc_mags_info.tsv")) %>%
+  mutate(quality = ifelse(completeness >= 90 & contamination <= 5, "High", "Medium")) %>%
+  filter(primary_cluster == "2516") %>%
+  select(Bin, Secondary_sample_accession, primary_cluster, Age_BP, Study, sample_host, Country, Continent) %>%
+  rename(Host = sample_host) %>%
+  mutate() %>%
+  mutate(Age_BP = ifelse(Secondary_sample_accession == "ERS3774464",18000,Age_BP),
+         Host = str_replace_all(Host, "Homo sapiens neanderthalensis","Neanderthal"),
+         Host = str_replace_all(Host, "Homo sapiens","Human"),
+         Host = str_replace_all(Host, "Pan troglodytes schweinfurthii","Chimpanzee"),
+         Host = ifelse(Secondary_sample_accession == "ERS3774464","EMN001",Host),
+         log_age_BP = log10(Age_BP),
+         binary_age = ifelse(Age_BP >= 14000, "pre-14000",
+                             ifelse(Age_BP < 100, "modern", "post-14000"))) %>%
+  mutate(binary_age = ifelse(str_detect(Host, "Chimpanzee|Gorilla|Baboon"),"modern",binary_age)) %>%
+  left_join(., fread("./00-documentation/ersx_code_conversion_table.tsv") %>%
+              select(ERSX, ERS) %>%
+              rename(Secondary_sample_accession = ERSX) %>%
+              bind_rows(., fread("./00-documentation/cmc_accession_codes_published.tsv") %>%
+                         rename(ERS = 3,
+                                Secondary_sample_accession = 1) %>%
+                         select(-BioProject_accession, -run_accessions))) %>%
+  mutate(ERS = ifelse(is.na(ERS),"unneeded",ERS)) %>%
+  separate_wider_delim(Bin, delim = ".", names = c("ssa","bin"), too_many = "merge", too_few = "align_start") %>%
+  mutate(bin2 = bin) %>%
+  unite(Bin, ssa:bin, sep = ".") %>%
+  unite(Bin_pub, ERS:bin2, sep = ".") %>%
+  mutate(Bin_pub = ifelse(str_detect(Bin_pub, "unneeded"),Bin, Bin_pub)) %>%
+  # filter(str_detect(Bin, "MGYG")) %>%
+  mutate(Bin = str_remove_all(Bin, ".NA"),
+         Bin_pub = str_remove_all(Bin_pub, ".NA")) %>%
+  unique()
+
+```
+
+```{r, eval = F}
+# Genome Biol Evol. 2012 May 16;4(8):821–831. doi: 10.1093/gbe/evs047
+source("./01-data/mad.R")
+
+```
+
+```{r, eval = F}
+
+duul01_mad_root <- mad(duul01_scc_tree_unrooted, 'full') # newick
+
+duul01_mad_root %>%
+  as.list() %>%
+  fwrite(., "./04-analysis/emn_trees/phylogenies/duul01_mad_root.nwk", quote = F)
+
+```
+
+```{r}
+
+duul01_mad_root_nq <- ape::read.tree("./04-analysis/emn_trees/phylogenies/duul01_mad_root.nwk")
+
+# Root the tree with the root determined by MAD
+duul01_mad_root_nq <- ape::root(duul01_mad_root_nq, outgroup = "ERS3774444.bin.r.1")
+
+bin_metadata_mr <- bin_metadata %>%
+  full_join(., duul01_mad_root_nq$tip.label %>%
+              as_tibble() %>%
+              rowid_to_column("tip_order") %>%
+              rename(Bin = value))%>%
+  arrange(tip_order) %>%
+  select(Bin_pub, everything()) %>%
+  rename(assembly_bin = Bin,
+         Bin = Bin_pub)
+
+bin_metadata_short <- bin_metadata_mr %>%
+  select(Bin, binary_age, Continent, Host) # , Country
+
+bin_metadata_short_2 <- bin_metadata_short %>%
+  column_to_rownames("Bin")
+
+
+duul01_mad_root_nq$tip.label <- bin_metadata_mr$Bin
+
+ggtree(duul01_mad_root_nq, ladderize = T) + 
+    # geom_tiplab(size=2, align = T) +
+    geom_text2(aes(label=label, subset = !is.na(as.numeric(label)) & as.numeric(label) > 70), size = 3) +
+    geom_treescale(x = 0, y = 1)
+
+p_duul01_scc_madroot_meta <- ggtree(duul01_mad_root_nq, ladderize = T) %<+% bin_metadata_mr
+p_duul01_scc_madroot_meta_tree <- p_duul01_scc_madroot_meta + 
+  # geom_star(mapping=aes(fill=log_age_BP, starshape=Host), size = 3.5, position="identity",starstroke=0.1) + # geom_tippoint(aes(color = Continent), size = 1.5) + # size = SNPs
+  # geom_text2 is for the bootstrap values
+  geom_text2(aes(label=label, subset = !is.na(as.numeric(label)) & as.numeric(label) > 70), size = 3) +
+  # geom_tiplab(size = 2) +
+  geom_treescale(x = 0, y = 1) +
+  scale_fill_viridis_c(option = "G", direction = -1) +
+  scale_starshape_manual(values = c(19, 1, 15,28))
+
+p_duul01_scc_madroot_meta_tree
+
+# get the tree tip order
+tip_order_duul01_mad_scc <- get_taxa_name(p_duul01_scc_madroot_meta_tree)
+
+tip_order_duul01_mad_scc %>%
+  as_tibble() %>%
+  rename(Bin = 1) %>%
+  left_join(., bin_metadata_mr %>%
+              select(Bin, Study, Country, Age_BP, binary_age, Host))
+
+```
+
+```{r}
+
+# Binary Age
+age_binary_plot <- bin_metadata_mr %>%
+  select(Bin, binary_age) %>%
+  pivot_longer(!Bin, names_to = "quality", values_to = "percent") %>%
+  ggplot(., aes(x = quality, y = factor(Bin, levels = tip_order_duul01_mad_scc), fill = percent)) + # x = factor(Gene, levels=gene_cluster_info), y = Sample, fill = Presence
+  geom_tile() +
+  theme_minimal() +
+  theme(
+    # axis.title.x=element_blank(),
+        # axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(), # element_text(size = 5)
+        axis.ticks.y=element_blank()) +
+  theme(panel.grid.major.y = element_blank()) +
+  scale_y_discrete(limits=rev) +
+  scale_fill_manual(values = ba_colors)
+
+age_binary_plot
+
+# Geography
+continent_plot <- bin_metadata_mr %>%
+  select(Bin, Continent) %>%
+  pivot_longer(!Bin, names_to = "quality", values_to = "percent") %>%
+  ggplot(., aes(x = quality, y = factor(Bin, levels = tip_order_duul01_mad_scc), fill = percent)) + # x = factor(Gene, levels=gene_cluster_info), y = Sample, fill = Presence
+  geom_tile() +
+  theme_minimal() +
+  theme(
+    # axis.title.x=element_blank(),
+        # axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(), # element_text(size = 5)
+        axis.ticks.y=element_blank()) +
+  theme(panel.grid.major.y = element_blank()) +
+  scale_y_discrete(limits=rev) +
+  scale_fill_manual(values = Continent_colors)
+
+continent_plot
+
+```
+
+```{r}
+duul01_csc_plot_mf <- p_duul01_scc_madroot_meta_tree + age_binary_plot + continent_plot
+  plot_layout(guides = 'collect', widths = c(5,1))
+duul01_csc_plot_mf
+
+# ggsave("./06-publication/main_figures/Figure_5/duul01_scc_tree.pdf", plot = duul01_csc_plot_mf, device = "pdf",
+#        scale = 1, width = 6, height = 10, units = c("in"), dpi = 300)
+
+```
+
+
+### D. oralis
+```{r}
+
+bin_metadata <- fread("./00-documentation/cluster_info_all_metadata_26_07_2024.tsv") %>%
+  mutate(primary_cluster = as.character(primary_cluster)) %>%
+  bind_rows(., fread("./00-documentation/csc_mags_info.tsv")) %>%
+  mutate(quality = ifelse(completeness >= 90 & contamination <= 5, "High", "Medium")) %>%
+  filter(primary_cluster == "3434") %>%
+  select(Bin, Secondary_sample_accession, primary_cluster, Age_BP, Study, sample_host, Country, Continent) %>%
+  rename(Host = sample_host) %>%
+  mutate(Age_BP = ifelse(Secondary_sample_accession == "ERS3774464",18000,Age_BP),
+         Host = str_replace_all(Host, "Homo sapiens neanderthalensis","Neanderthal"),
+         Host = str_replace_all(Host, "Homo sapiens","Human"),
+         Host = str_replace_all(Host, "Pan troglodytes schweinfurthii","Chimpanzee"),
+         Host = str_replace_all(Host, "Gorilla beringei beringei","Gorilla"),
+         Host = ifelse(Secondary_sample_accession == "ERS3774464","EMN001",Host),
+         log_age_BP = log10(Age_BP),
+         binary_age = ifelse(Age_BP >= 14000, "pre-14000",
+                             ifelse(Age_BP < 100, "modern", "post-14000"))) %>%
+  mutate(binary_age = ifelse(str_detect(Host, "Chimpanzee|Gorilla|Baboon"),"modern",binary_age)) %>%
+  left_join(., fread("./00-documentation/ersx_code_conversion_table.tsv") %>%
+              select(ERSX, ERS) %>%
+              rename(Secondary_sample_accession = ERSX) %>%
+              bind_rows(., fread("./00-documentation/cmc_accession_codes_published.tsv") %>%
+                         rename(ERS = 3,
+                                Secondary_sample_accession = 1) %>%
+                         select(-BioProject_accession, -run_accessions))) %>%
+  mutate(ERS = ifelse(is.na(ERS),"unneeded",ERS)) %>%
+  separate_wider_delim(Bin, delim = ".", names = c("ssa","bin"), too_many = "merge", too_few = "align_start") %>%
+  mutate(bin2 = bin) %>%
+  unite(Bin, ssa:bin, sep = ".") %>%
+  unite(Bin_pub, ERS:bin2, sep = ".") %>%
+  mutate(Bin_pub = ifelse(str_detect(Bin_pub, "unneeded"),Bin, Bin_pub)) %>%
+  # filter(str_detect(Bin, "MGYG")) %>%
+  mutate(Bin = str_remove_all(Bin, ".NA"),
+         Bin_pub = str_remove_all(Bin_pub, ".NA")) %>%
+  unique()
+
+```
+
+```{r}
+
+# D. oralis
+doralis_scc_tree_unrooted <- ape::read.tree("./04-analysis/emn_trees/raxml/doralis_scc.raxml.support")
+
+# Root tree by midpoint rooting with phangorn
+doralis_scc_tree <- phangorn::midpoint(doralis_scc_tree_unrooted)
+
+bin_metadata_mr <- bin_metadata %>%
+  full_join(., doralis_scc_tree$tip.label %>%
+              as_tibble() %>%
+              rowid_to_column("tip_order") %>%
+              rename(Bin = value))%>%
+  arrange(tip_order) %>%
+  select(Bin_pub, everything()) %>%
+  rename(assembly_bin = Bin,
+         Bin = Bin_pub)
+
+bin_metadata_short <- bin_metadata_mr %>%
+  select(Bin, binary_age, Continent, Host) # , Country
+
+bin_metadata_short_2 <- bin_metadata_short %>%
+  column_to_rownames("Bin")
+
+
+doralis_scc_tree$tip.label <- bin_metadata_mr$Bin
+
+```
+
+
+```{r}
+p_doralis_scc <- ggtree(doralis_scc_tree, ladderize = T) + 
+    # geom_tiplab(size=2, align = T) +
+    geom_text2(aes(label=label, subset = !is.na(as.numeric(label)) & as.numeric(label) > 70), size = 3) +
+    geom_treescale(x = 0, y = 1)
+
+p_doralis_scc
+
+p_doralis_scc_meta <- ggtree(doralis_scc_tree, ladderize = T) %<+% bin_metadata_mr
+p_doralis_scc_meta_tree <- p_doralis_scc_meta + 
+  #geom_star(mapping=aes(fill=binary_age, starshape=Host), size = 3.0, position="identity",starstroke=0.1) + # geom_tippoint(aes(color = Continent), size = 1.5) + # size = SNPs
+  # geom_text2 is for the bootstrap values
+  geom_text2(aes(label=label, subset = !is.na(as.numeric(label)) & as.numeric(label) > 70), size = 3) +
+  geom_treescale(x = 0, y = 1) +
+  scale_fill_viridis_d(option = "G", direction = -1) +
+  scale_starshape_manual(values = c(19,1,12,15,28))
+
+p_doralis_scc_meta_tree
+
+# ggsave("./06-publication/main_figures/Figure_5/doralis_scc_age_tree.pdf", plot = p_doralis_scc_meta_tree, device = "pdf",
+#        scale = 1, width = 5, height = 10, units = c("in"), dpi = 300)
+
+# get the tree tip order
+tip_order_doralis_scc <- get_taxa_name(p_doralis_scc)
+
+tip_order_doralis_scc %>%
+  as_tibble() %>%
+  rename(Bin = 1) %>%
+  left_join(., bin_metadata %>%
+              select(Bin, Study, Country, Age_BP, binary_age, Host))
+
+p_doralis_scc_meta_tree
+
+```
+
+```{r}
+
+# Binary Age
+age_binary_plot <- bin_metadata_mr %>%
+  select(Bin, binary_age) %>%
+  pivot_longer(!Bin, names_to = "quality", values_to = "percent") %>%
+  ggplot(., aes(x = quality, y = factor(Bin, levels = tip_order_doralis_scc), fill = percent)) + # x = factor(Gene, levels=gene_cluster_info), y = Sample, fill = Presence
+  geom_tile() +
+  theme_minimal() +
+  theme(
+    # axis.title.x=element_blank(),
+        # axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(), # element_text(size = 5)
+        axis.ticks.y=element_blank()) +
+  theme(panel.grid.major.y = element_blank()) +
+  scale_y_discrete(limits=rev) +
+  scale_fill_manual(values = ba_colors)
+
+age_binary_plot
+
+# Continent plot
+continent_plot <- bin_metadata_mr %>%
+  select(Bin, Continent) %>%
+  pivot_longer(!Bin, names_to = "quality", values_to = "percent") %>%
+  ggplot(., aes(x = quality, y = factor(Bin, levels = tip_order_doralis_scc), fill = percent)) + # x = factor(Gene, levels=gene_cluster_info), y = Sample, fill = Presence
+  geom_tile() +
+  theme_minimal() +
+  theme(
+    # axis.title.x=element_blank(),
+        # axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(), # element_text(size = 5)
+        axis.ticks.y=element_blank()) +
+  theme(panel.grid.major.y = element_blank()) +
+  scale_y_discrete(limits=rev) +
+  scale_fill_manual(values = Continent_colors)
+
+continent_plot
+```
+
+
+```{r}
+
+doralis_csc_plot <- p_doralis_scc_meta_tree + age_binary_plot + continent_plot # p_doralis_scc_madroot_meta_tree
+  plot_layout(guides = 'collect', widths = c(5,1,1,1))
+doralis_csc_plot
+
+# ggsave("./06-publication/main_figures/Figure_5/doralis_scc_tree.pdf", plot = doralis_csc_plot, device = "pdf",
+#        scale = 1, width = 6, height = 10, units = c("in"), dpi = 300)
+
+
+```
+
+### Methanomethylophilus pr_cl_3192
+```{r}
+
+bin_metadata <- fread("./00-documentation/cluster_info_all_metadata_26_07_2024.tsv") %>%
+  mutate(primary_cluster = as.character(primary_cluster)) %>%
+  bind_rows(., fread("./00-documentation/csc_mags_info.tsv")) %>%
+  mutate(quality = ifelse(completeness >= 90 & contamination <= 5, "High", "Medium")) %>%
+  select(Bin, Secondary_sample_accession, primary_cluster, Age_BP, Study, sample_host, Country, Continent) %>%
+  rename(Host = sample_host) %>%
+  mutate() %>%
+  mutate(Age_BP = ifelse(Secondary_sample_accession == "ERS3774464",18000,Age_BP),
+         Host = str_replace_all(Host, "Homo sapiens neanderthalensis","Neanderthal"),
+         Host = str_replace_all(Host, "Homo sapiens","Human"),
+         Host = ifelse(Secondary_sample_accession == "ERS3774464","EMN001",Host),
+         log_age_BP = log10(Age_BP),
+         binary_age = ifelse(Age_BP >= 14000, "pre-14000",
+                             ifelse(Age_BP < 100, "modern", "post-14000"))) %>%
+  mutate(binary_age = ifelse(str_detect(Host, "Chimpanzee|Gorilla|Baboon"),"modern",binary_age)) %>%
+  left_join(., fread("./00-documentation/ersx_code_conversion_table.tsv") %>%
+              select(ERSX, ERS) %>%
+              rename(Secondary_sample_accession = ERSX) %>%
+              bind_rows(., fread("./00-documentation/cmc_accession_codes_published.tsv") %>%
+                         rename(ERS = 3,
+                                Secondary_sample_accession = 1) %>%
+                         select(-BioProject_accession, -run_accessions))) %>%
+  mutate(ERS = ifelse(is.na(ERS),"unneeded",ERS)) %>%
+  separate_wider_delim(Bin, delim = ".", names = c("ssa","bin"), too_many = "merge", too_few = "align_start") %>%
+  mutate(bin2 = bin) %>%
+  unite(Bin, ssa:bin, sep = ".") %>%
+  unite(Bin_pub, ERS:bin2, sep = ".") %>%
+  mutate(Bin_pub = ifelse(str_detect(Bin_pub, "unneeded"),Bin, Bin_pub)) %>%
+  # filter(str_detect(Bin, "MGYG")) %>%
+  mutate(Bin = str_remove_all(Bin, ".NA"),
+         Bin_pub = str_remove_all(Bin_pub, ".NA")) %>%
+  unique()
+
+```
+
+```{r, eval = F}
+# Genome Biol Evol. 2012 May 16;4(8):821–831. doi: 10.1093/gbe/evs047
+source("./01-data/mad.R")
+
+```
+
+```{r, eval = F}
+
+m3192_mad_root <- mad(m3192_scc_tree_unrooted, 'full') # newick
+
+m3192_mad_root %>%
+  as.list() %>%
+  fwrite(., "05-results/methanomethylophilus_c3192_mad_root.nwk", quote = F)
+
+```
+
+```{r}
+
+m3192_mad_root_nq <- ape::read.tree("05-results/methanomethylophilus_c3192_mad_root.nwk")
+
+# Root the tree with the root determined by MAD
+m3192_mad_root_nq <- ape::root(m3192_mad_root_nq, outgroup = "ERS5710613.bin.r.61")
+
+bin_metadata_mr <- bin_metadata %>%
+  full_join(., m3192_mad_root_nq$tip.label %>%
+              as_tibble() %>%
+              rowid_to_column("tip_order") %>%
+              rename(Bin = value) %>%
+              mutate(Bin = str_replace_all(Bin, "-megahit_00",".bin.r."),
+                     Bin = str_replace_all(Bin, "-megahit_0",".bin.r."),
+                     Bin = str_replace_all(Bin, "-megahit_0",".bin.r."))) %>%
+  arrange(tip_order) %>%
+  select(Bin_pub, everything()) %>%
+  rename(assembly_bin = Bin,
+         Bin = Bin_pub)
+
+bin_metadata_short <- bin_metadata_mr %>%
+  select(Bin, binary_age, Continent, Host) # , Country
+
+bin_metadata_short_2 <- bin_metadata_short %>%
+  column_to_rownames("Bin")
+
+
+m3192_mad_root_nq$tip.label <- bin_metadata_mr$Bin
+
+ggtree(m3192_mad_root_nq, ladderize = T) + 
+    # geom_tiplab(size=2, align = T) +
+    geom_text2(aes(label=label, subset = !is.na(as.numeric(label)) & as.numeric(label) > 70), size = 3) +
+    geom_treescale(x = 0, y = 1)
+
+p_m3192_scc_madroot_meta <- ggtree(m3192_mad_root_nq, ladderize = T) %<+% bin_metadata_mr
+p_m3192_scc_madroot_meta_tree <- p_m3192_scc_madroot_meta + 
+  # geom_star(mapping=aes(fill=log_age_BP, starshape=Host), size = 3.5, position="identity",starstroke=0.1) + # geom_tippoint(aes(color = Continent), size = 1.5) + # size = SNPs
+  # geom_text2 is for the bootstrap values
+  geom_text2(aes(label=label, subset = !is.na(as.numeric(label)) & as.numeric(label) > 70), size = 3) +
+  # geom_tiplab(size = 2) +
+  geom_treescale(x = 0, y = 1) +
+  scale_fill_viridis_c(option = "G", direction = -1) +
+  scale_starshape_manual(values = c(19, 1, 15,28))
+
+p_m3192_scc_madroot_meta_tree
+
+# get the tree tip order
+tip_order_m3192_mad_scc <- get_taxa_name(p_m3192_scc_madroot_meta_tree)
+
+tip_order_m3192_mad_scc %>%
+  as_tibble() %>%
+  rename(Bin = 1) %>%
+  left_join(., bin_metadata_mr %>%
+              select(Bin, Study, Country, Age_BP, binary_age, Host))
+
+```
+
+```{r}
+
+# Binary Age
+age_binary_plot <- bin_metadata_mr %>%
+  select(Bin, binary_age) %>%
+  pivot_longer(!Bin, names_to = "quality", values_to = "percent") %>%
+  ggplot(., aes(x = quality, y = factor(Bin, levels = tip_order_m3192_mad_scc), fill = percent)) + # x = factor(Gene, levels=gene_cluster_info), y = Sample, fill = Presence
+  geom_tile() +
+  theme_minimal() +
+  theme(
+    # axis.title.x=element_blank(),
+        # axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(), # element_text(size = 5)
+        axis.ticks.y=element_blank()) +
+  theme(panel.grid.major.y = element_blank()) +
+  scale_y_discrete(limits=rev) +
+  scale_fill_manual(values = ba_colors)
+
+age_binary_plot
+
+
+# Continent
+continent_plot <- bin_metadata_mr %>%
+  select(Bin, Continent) %>%
+  pivot_longer(!Bin, names_to = "quality", values_to = "percent") %>%
+  ggplot(., aes(x = quality, y = factor(Bin, levels = tip_order_m3192_mad_scc), fill = percent)) + # x = factor(Gene, levels=gene_cluster_info), y = Sample, fill = Presence
+  geom_tile() +
+  theme_minimal() +
+  theme(
+    # axis.title.x=element_blank(),
+        # axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(), # element_text(size = 5)
+        axis.ticks.y=element_blank()) +
+  theme(panel.grid.major.y = element_blank()) +
+  scale_y_discrete(limits=rev) +
+  scale_fill_manual(values = Continent_colors)
+
+continent_plot
+
+```
+
+```{r}
+m3192_csc_plot_mf <- p_m3192_scc_madroot_meta_tree + age_binary_plot + continent_plot
+  plot_layout(guides = 'collect', widths = c(5,1))
+m3192_csc_plot_mf
+
+# ggsave("./06-publication/main_figures/Figure_5/m3192_scc_tree.pdf", plot = m3192_csc_plot_mf, device = "pdf",
+#        scale = 1, width = 4, height = 4, units = c("in"), dpi = 300)
+
+```
+
+
+
+### Methanocatella pr_cl_1190
+```{r}
+
+bin_metadata <- fread("./00-documentation/cluster_info_all_metadata_26_07_2024.tsv") %>%
+  mutate(primary_cluster = as.character(primary_cluster)) %>%
+  bind_rows(., fread("./00-documentation/csc_mags_info.tsv")) %>%
+  mutate(quality = ifelse(completeness >= 90 & contamination <= 5, "High", "Medium")) %>%
+  # get this cluster and 2 to stand in for the reference-based bins added later
+  filter(primary_cluster == "1190" | Bin == "ERS6256687.bin.r.1" | Bin == "SRS11653547.bin.r.1") %>%
+  mutate(Bin = ifelse(Bin == "ERS6256687.bin.r.1","ERS6256687_22.0.refbinned",
+                      ifelse(Bin == "SRS11653547.bin.r.1", "SRS11653545_22.0.refbinned", Bin)),
+         primary_cluster = ifelse(str_detect(Bin, "ERS6256687|SRS11653545"), "1190", primary_cluster),
+         secondary_cluster = ifelse(str_detect(Bin, "ERS6256687|SRS11653545"), "1190_1", secondary_cluster)) %>%
+  select(Bin, Secondary_sample_accession, primary_cluster, Age_BP, Study, sample_host, Country, Continent) %>%
+  rename(Host = sample_host) %>%
+  mutate() %>%
+  mutate(Age_BP = ifelse(Secondary_sample_accession == "ERS3774464",18000,Age_BP),
+         Host = str_replace_all(Host, "Homo sapiens neanderthalensis","Neanderthal"),
+         Host = str_replace_all(Host, "Homo sapiens","Human"),
+         Host = str_replace_all(Host, "Pan troglodytes schweinfurthii","Chimpanzee"),
+         Host = ifelse(Secondary_sample_accession == "ERS3774464","EMN001",Host),
+         log_age_BP = log10(Age_BP),
+         binary_age = ifelse(Age_BP >= 14000, "pre-14000",
+                             ifelse(Age_BP < 100, "modern", "post-14000"))) %>%
+  mutate(binary_age = ifelse(str_detect(Host, "Chimpanzee|Gorilla|Baboon"),"modern",binary_age)) %>%
+  left_join(., fread("./00-documentation/ersx_code_conversion_table.tsv") %>%
+              select(ERSX, ERS) %>%
+              rename(Secondary_sample_accession = ERSX) %>%
+              bind_rows(., fread("./00-documentation/cmc_accession_codes_published.tsv") %>%
+                         rename(ERS = 3,
+                                Secondary_sample_accession = 1) %>%
+                         select(-BioProject_accession, -run_accessions))) %>%
+  mutate(ERS = ifelse(is.na(ERS),"unneeded",ERS)) %>%
+  separate_wider_delim(Bin, delim = ".", names = c("ssa","bin"), too_many = "merge", too_few = "align_start") %>%
+  mutate(bin2 = bin) %>%
+  unite(Bin, ssa:bin, sep = ".") %>%
+  unite(Bin_pub, ERS:bin2, sep = ".") %>%
+  mutate(Bin_pub = ifelse(str_detect(Bin_pub, "unneeded"),Bin, Bin_pub)) %>%
+  # filter(str_detect(Bin, "MGYG")) %>%
+  mutate(Bin = str_remove_all(Bin, ".NA"),
+         Bin_pub = str_remove_all(Bin_pub, ".NA")) %>%
+  unique()
+
+```
+
+```{r, eval = F}
+# Genome Biol Evol. 2012 May 16;4(8):821–831. doi: 10.1093/gbe/evs047
+source("./01-data/mad.R")
+
+```
+
+```{r, eval = F}
+
+m1190_mad_root <- mad(m1190_scc_tree_unrooted, 'full') # newick
+
+m1190_mad_root %>%
+  as.list() %>%
+  fwrite(., "05-results/methanobrevibacter_c4_mad_root.nwk", quote = F)
+
+```
+
+```{r}
+
+m1190_mad_root_nq <- ape::read.tree("05-results/methanobrevibacter_c4_mad_root.nwk")
+
+# Root the tree with the root determined by MAD
+m1190_mad_root_nq <- ape::root(m1190_mad_root_nq, outgroup = "ERSX0005001-megahit_029")
+
+bin_metadata_mr <- bin_metadata %>%
+  full_join(., m1190_mad_root_nq$tip.label %>%
+              as_tibble() %>%
+              rowid_to_column("tip_order") %>%
+              rename(Bin = value) %>%
+              mutate(Bin = str_replace_all(Bin, "-megahit_00",".bin.r."),
+                     Bin = str_replace_all(Bin, "-megahit_0",".bin.r."),
+                     Bin = str_replace_all(Bin, "-megahit_0",".bin.r."))) %>%
+  arrange(tip_order) %>%
+  select(Bin_pub, everything()) %>%
+  rename(assembly_bin = Bin,
+         Bin = Bin_pub)
+
+bin_metadata_short <- bin_metadata_mr %>%
+  select(Bin, binary_age, Continent, Host) # , Country
+
+bin_metadata_short_2 <- bin_metadata_short %>%
+  column_to_rownames("Bin")
+
+
+m1190_mad_root_nq$tip.label <- bin_metadata_mr$Bin
+
+ggtree(m1190_mad_root_nq, ladderize = T) + 
+    # geom_tiplab(size=2, align = T) +
+    geom_text2(aes(label=label, subset = !is.na(as.numeric(label)) & as.numeric(label) > 70), size = 3) +
+    geom_treescale(x = 0, y = 1)
+
+p_m1190_scc_madroot_meta <- ggtree(m1190_mad_root_nq, ladderize = T) %<+% bin_metadata_mr
+p_m1190_scc_madroot_meta_tree <- p_m1190_scc_madroot_meta + 
+  # geom_star(mapping=aes(fill=log_age_BP, starshape=Host), size = 3.5, position="identity",starstroke=0.1) + # geom_tippoint(aes(color = Continent), size = 1.5) + # size = SNPs
+  # geom_text2 is for the bootstrap values
+  geom_text2(aes(label=label, subset = !is.na(as.numeric(label)) & as.numeric(label) > 70), size = 3) +
+  # geom_tiplab(size = 2) +
+  geom_treescale(x = 0, y = 1) +
+  scale_fill_viridis_c(option = "G", direction = -1) +
+  scale_starshape_manual(values = c(19, 1, 15,28))
+
+p_m1190_scc_madroot_meta_tree
+
+# get the tree tip order
+tip_order_m1190_mad_scc <- get_taxa_name(p_m1190_scc_madroot_meta_tree)
+
+tip_order_m1190_mad_scc %>%
+  as_tibble() %>%
+  rename(Bin = 1) %>%
+  left_join(., bin_metadata_mr %>%
+              select(Bin, Study, Country, Age_BP, binary_age, Host))
+
+```
+
+```{r}
+
+# Binary Age
+age_binary_plot <- bin_metadata_mr %>%
+  select(Bin, binary_age) %>%
+  pivot_longer(!Bin, names_to = "quality", values_to = "percent") %>%
+  ggplot(., aes(x = quality, y = factor(Bin, levels = tip_order_m1190_mad_scc), fill = percent)) + # x = factor(Gene, levels=gene_cluster_info), y = Sample, fill = Presence
+  geom_tile() +
+  theme_minimal() +
+  theme(
+    # axis.title.x=element_blank(),
+        # axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(), # element_text(size = 5)
+        axis.ticks.y=element_blank()) +
+  theme(panel.grid.major.y = element_blank()) +
+  scale_y_discrete(limits=rev) +
+  scale_fill_manual(values = ba_colors)
+
+age_binary_plot
+
+
+# Continent
+continent_plot <- bin_metadata_mr %>%
+  select(Bin, Continent) %>%
+  pivot_longer(!Bin, names_to = "quality", values_to = "percent") %>%
+  ggplot(., aes(x = quality, y = factor(Bin, levels = tip_order_m1190_mad_scc), fill = percent)) + # x = factor(Gene, levels=gene_cluster_info), y = Sample, fill = Presence
+  geom_tile() +
+  theme_minimal() +
+  theme(
+    # axis.title.x=element_blank(),
+        # axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(), # element_text(size = 5)
+        axis.ticks.y=element_blank()) +
+  theme(panel.grid.major.y = element_blank()) +
+  scale_y_discrete(limits=rev) +
+  scale_fill_manual(values = Continent_colors)
+
+continent_plot
+
+```
+
+```{r}
+m1190_csc_plot_mf <- p_m1190_scc_madroot_meta_tree + age_binary_plot + continent_plot
+  plot_layout(guides = 'collect', widths = c(5,1))
+m1190_csc_plot_mf
+
+# ggsave("./06-publication/main_figures/Figure_5/m1190_scc_tree.pdf", plot = m1190_csc_plot_mf, device = "pdf",
+#        scale = 1, width = 4, height = 4, units = c("in"), dpi = 300)
+
+```
+
+
+
+
+
+
+
+
+
+
+

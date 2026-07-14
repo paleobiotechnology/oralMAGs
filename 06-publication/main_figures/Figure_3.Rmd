@@ -1,0 +1,636 @@
+---
+title: "Figure 3"
+author: "Irina Velsko"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output:
+    github_document:
+        fig_width: 8
+        fig_height: 6
+        toc: true
+---
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(janitor)
+library(tidyverse)
+library(patchwork)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+Set the working directory of the notebook to the parent directory of the 
+notebook itself.  
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath("../../.."))
+```
+
+```{r}
+os_colors <- c("Calculus - Ancient" = "#EF7C12",
+               "Calculus - Industrial" = "#F4B95A",
+               "Plaque - Industrial" = "#FC6882",
+               "Plaque - Non-industrial" = "#C70E7B",
+               "Buccal mucosa - Industrial" = "#8FDA04",
+               "Buccal mucosa - Non-industrial" = "#009F3F",
+               "Saliva - Industrial" = "#54BCD1",
+               "Saliva - Non-industrial" = "#007BC3",
+               "RefSeq" = "gray80",
+               "Tongue - Industrial" = "#78d9ca",
+               # "Tongue - Non-industrial" = "#189a85",
+               "Hard palate - Industrial" = "#cab2d6",
+               # "Hard_palate - Non-industrial" = "#6a3d9a",
+               "Keratinized gingiva - Industrial" = "#F7E690",
+               # "Keratinized gingiva - Non-ndustrial" = "#F5D000",
+               "PQ" = "#FC6882", "AC" = "#EF7C12", "MC" = "#F4B95A",
+               "BM" = "#8FDA04","SL" = "#54BCD1","TN" = "#78d9ca","KG" = "#F7E690","HP" = "#cab2d6")
+
+
+Continent_colors <- c("Oceania" = "#098BD9", 
+                  "Europe" = "#7472af", 
+                  "Africa" = "#cc79a7", 
+                  "Caribbean" = "#f6865e", 
+                  "Asia" = "#86c73a",
+                  "South America" = "gray50",
+                  "North America" = "#1ec1a7")
+
+host_colors <- c("Human" = "#8dd3c7", "Neanderthal"  = "#ffffb3", "Non-human primate"  = "#bebada")
+
+vb_colors <- c("VANISH" = "#feb24c", "BloSSUM" = "#FF3200")
+
+```
+
+```{r}
+
+# lib_metadata <- fread("./00-documentation/lib_metadata.tsv") # lib_metadata_general.tsv in the github page
+
+lib_metadata <- fread("./00-documentation/library_sample_eager_metadata.tsv")
+
+# We'll need to remove known contaminants from the data tables
+
+# read in the list of environmental species clusters
+ancient_envt_clusters <- fread("./00-documentation/ancient_envt_clusters_26_07_2024.tsv")
+
+# read in the table used for taxdump to make the kraken2 database, that has the primary cluster and the species name
+taxdump_file <- fread("00-documentation/cluster_taxonomy_for_taxdump_26_07_2024.tsv") %>%
+  select(id, species) %>%
+  mutate(id = str_remove_all(id, "pr_cl_"),
+        id = as.numeric(id))
+
+
+# now get the species names of the ancient environmental species clusters
+anc_envt_species <- ancient_envt_clusters %>%
+  left_join(., taxdump_file %>%
+              rename(primary_cluster = id,
+                     Species = species), by = "primary_cluster") %>%
+  select(Species)
+
+```
+
+```{r read_in_species_tables}
+
+# read in poor samples determined by cuperdec
+poor_samples <- fread("./00-documentation/poor_samples_humans.tsv")
+
+# HOMD_MAGs, all oral samples
+homd_mags_sp <- fread("./05-results/kraken2_ci15_all_oral_samples.homd_mags_11_2025_species.tsv") %>%
+  anti_join(., anc_envt_species, by = "Species") %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  anti_join(., poor_samples, by = "Eager_label") %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Full) %>%
+              unique(), by = "Eager_label") %>%
+  filter(str_detect(Full, "Calculus|Plaque")) %>%
+  select(-Full) %>%
+  pivot_wider(names_from = "Eager_label", values_from = "Counts")
+
+```
+
+```{r}
+
+vb_table <- fread("./05-results/vanish_blossum_table.tsv")
+
+vb_table %>%
+  filter(l2fc <= -5 | l2fc >= 5,
+         `-log10(p.adj)` >= 60) %>%
+  group_by(Type) %>%
+  count() %>%
+  ungroup()
+
+vb_order <- vb_table %>%
+  filter(Type == "VANISH",
+         Species != "Peptoniphilaceae pr_cl_1583",
+         l2fc <= -5,
+         `-log10(p.adj)` >= 60,
+         pct_CA_prev >=30,
+         CA_abund >= 0.5) %>%
+  # slice_min(l2fc, n = 40) %>%
+  arrange(l2fc) %>%
+  bind_rows(., vb_table %>%
+            filter(Type == "BloSSUM",
+                   Species != "Peptoniphilaceae pr_cl_1583",
+                   l2fc >= 5,
+                   `-log10(p.adj)` >= 60) %>%
+              # there are only 19 BloSSUM taxa with these cut-offs
+            slice_max(l2fc, n = 20) %>%
+            arrange(l2fc)) %>%
+  pull(Species)
+
+
+```
+
+```{r}
+
+vb_angle_plot <- vb_table %>%
+  filter(Species %in% vb_order) %>%
+  mutate(Species = fct_relevel(Species, vb_order)) %>%
+  arrange(Species) %>%
+  ggplot(., aes(x = l2fc, y = Species)) +
+    geom_vline(xintercept = 0, color = "gray40") +
+    geom_point(aes(fill = Type, shape = Type, size = Type), stroke = 0.2, position = position_dodge(width = 0.9)) +
+    scale_shape_manual(values = c(21,25)) +
+    scale_fill_manual(values = vb_colors) +
+    scale_size_manual(values = c(3, 2.5)) +
+    theme_minimal(base_size = 12) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust =  0.5, size = 10),
+          axis.title.x = element_text(size=12)) +
+    theme(legend.position = "top") +
+    scale_y_discrete(limits=rev) +
+    scale_x_continuous(breaks=scales::pretty_breaks(n=12)) +
+    ylab("Class") +
+    xlab("log2(fold change in mean abundance) (%) AC vs. PQi")
+
+vb_angle_plot
+
+```
+
+```{r}
+
+da_clr_sp_order <- fread("./05-results/vb_species_plot_order.tsv", sep = "\t") %>%
+  pull(Species)
+
+```
+
+```{r}
+
+vb_line_plot <- homd_mags_sp %>%
+  filter(Species %in% da_clr_sp_order) %>%
+  left_join(vb_table %>%
+              select(Species, Type), by = "Species") %>%
+  mutate(Present = "Yes",
+         Species = fct_relevel(Species, da_clr_sp_order)) %>%
+  arrange(Species) %>%
+  ggplot(., aes(x = Present, y = Species, fill = Type)) + # x = factor(Gene, levels=gene_cluster_info), y = Sample, fill = Presence
+  geom_tile() +
+  theme_minimal() +
+  theme(
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  theme(panel.grid.major.y = element_blank()) +
+  # scale_y_discrete(limits=rev) +
+  scale_fill_manual(values = vb_colors)
+vb_line_plot
+
+```
+
+```{r}
+# List species that have fewer than 2000 counts in each group, to remove them
+
+too_low_species <- homd_mags_sp %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Full) %>%
+              unique(), by = "Eager_label") %>%
+  group_by(Full, Species) %>%
+  summarize(total_counts = sum(Counts)) %>%
+  ungroup() %>%
+  pivot_wider(names_from = "Full", values_from = "total_counts") %>%
+  rename(CA = 2,
+         CI = 3,
+         PI = 4,
+         PnI = 5) %>%
+  mutate(less1000 = ifelse(CA <= 2000 & CI <= 2000 & PI <= 2000 & PnI <= 2000, "Less","More")) %>%
+  filter(less1000 == "Less") %>%
+  select(Species) %>%
+  arrange(Species)
+
+# set sample order 
+sample_order <- homd_mags_sp %>%
+  anti_join(., too_low_species, by = "Species") %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  mutate(Counts = Counts + 1) %>%
+  pivot_wider(names_from = "Species", values_from = "Counts") %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Full) %>%
+              unique(), by = "Eager_label") %>%
+  select(Eager_label, Full) %>%
+  unique() %>%
+  mutate(Full = fct_relevel(Full, "Calculus - Ancient","Calculus - Industrial","Plaque - Non-industrial","Plaque - Industrial")) %>%
+  arrange(Full, Eager_label) %>%
+  pull(Eager_label)
+
+```
+
+```{r}
+
+vp_prevalence_plot <- homd_mags_sp %>%
+  filter(Species %in% da_clr_sp_order) %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  mutate(Counts = ifelse(Counts > 500,1,0),
+         Counts = as.character(Counts)) %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Full) %>%
+              unique(), by = "Eager_label") %>%
+  mutate(Eager_label = fct_relevel(Eager_label, sample_order),
+         Species = fct_relevel(Species, da_clr_sp_order),
+         Full = fct_relevel(Full, "Calculus - Ancient","Calculus - Industrial","Plaque - Non-industrial","Plaque - Industrial",)) %>%
+  arrange(Species, Eager_label) %>%
+  ggplot(., aes(Eager_label, Species, fill = Counts)) +
+    geom_tile() +
+    scale_fill_manual(values = c("#e5f1f9","#007BC3")) +
+    theme_minimal(base_size = 10) +
+    theme(axis.text.x = element_blank(),
+          axis.text.y = element_blank()) +
+    # theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+    theme(plot.margin = margin(0, 0, 0, 0, "pt"),
+          axis.title.y = element_blank(),
+          legend.position = "left") +
+     # scale_y_discrete(limits=rev) +
+     ylab("Species") +
+     xlab("Sample") +
+     facet_grid(~Full, scales = "free_x", space = 'free')
+
+vp_prevalence_plot
+
+```
+
+```{r}
+taxonomy <- fread("./00-documentation/cluster_taxonomy_for_taxdump_26_07_2024.tsv")
+
+cl_order <- fread("./05-results/class_order_table.tsv") %>%
+  pull(Class)
+
+keep_genus <- vb_table %>%
+  left_join(., taxonomy %>%
+              rename(Species = species), by = "Species") %>%
+  unite(tax, domain:genus, sep = ";") %>%
+  group_by(Type, tax) %>%
+  count() %>%
+  ungroup() %>%
+  pivot_wider(names_from = "Type", values_from = "n", values_fill = 0) %>%
+  arrange(desc(BloSSUM), desc(VANISH)) %>%
+  mutate(Keep = ifelse(BloSSUM == 0 & VANISH == 1, "No",
+                       ifelse(BloSSUM == 1 & VANISH == 0, "No",
+                              ifelse(BloSSUM == 1 & VANISH == 1, "No","Yes")))) %>%
+  # filter(Keep == "Yes") %>%
+  separate_wider_delim(tax, names = c("domain","phylum","class","order","family","genus"), delim = ";") %>%
+  arrange(domain, phylum, class, order, family, genus) %>%
+  pull(genus)
+
+```
+
+```{r}
+
+class_bubbles <- vb_table %>%
+  left_join(., taxonomy %>%
+              rename(Species = species), by = "Species") %>%
+  filter(Species %in% da_clr_sp_order) %>%
+  group_by(Type, domain, phylum, class) %>%
+  count() %>%
+  ungroup() %>%
+  pivot_wider(names_from = "Type", values_from = "n", values_fill = 0) %>%
+  pivot_longer(!domain:class, names_to = "Type", values_to = "Counts") %>%
+  mutate(class = fct_relevel(class, cl_order),
+         Type = fct_relevel(Type, "VANISH","BloSSUM")) %>%
+  arrange(class) %>%
+  ggplot(., aes(Type, class, fill = Type, size = Counts)) +
+    geom_point(shape = 21, stroke = 0.3) +
+    geom_text(aes(label = Counts), size = 3.0, nudge_x = 0.1, nudge_y = 0) +
+    scale_size(range = c(.5, 10), name="No. species clusters") +
+    scale_fill_manual(values = vb_colors) +
+    theme_minimal(base_size = 14) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5),
+          plot.margin = margin(0, 0, 0, 0, "pt"),
+          axis.title.y = element_blank(),
+          legend.position = "left") +
+    scale_y_discrete(limits=rev) +
+    theme(strip.text.x.top = element_text(angle = 0, hjust = 0.5, size = 10)) +
+    ggtitle("Species clusters per class")
+
+class_bubbles
+
+```
+
+```{r}
+
+# volcano_table <- fread("./05-results/volcano_table.tsv")
+
+vb_volcano_plot <- vb_table %>%
+  filter(Species != "Peptoniphilaceae pr_cl_1583") %>%
+  mutate(quad = ifelse(l2fc >= 5 & `-log10(p.adj)` >= 60, "up_PQi",
+                       ifelse(l2fc <= -5 & `-log10(p.adj)` >= 60, "up_CA", "neither"))) %>%
+  ggplot(., aes(x = l2fc, y = -log10(`p.adj`))) +
+    geom_point(aes(fill = quad, shape = magnitude), size = 2.5, stroke = 0.2) + # 
+    theme_minimal(base_size = 12) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5,  vjust = 0),
+          text = element_text(size=12)) +
+    theme(panel.grid.minor = element_blank()) +
+    geom_hline(yintercept = 60, col = "gray30", linetype = 'dashed') + # -log10(0.05)
+    geom_vline(xintercept = -5, col = "gray30", linetype = 'dashed') +
+    geom_vline(xintercept = 5, col = "gray30", linetype = 'dashed') +
+    # scale_fill_viridis_c(option = "A") +
+    scale_fill_manual(values = c("gray90","#feb24c","#FF3200")) +
+    scale_shape_manual(values = c(23,21)) +
+    scale_y_continuous(limits = c(15,75), breaks=scales::pretty_breaks(n=8)) +
+    scale_x_continuous(breaks=scales::pretty_breaks(n=10)) +
+    guides(fill="none", shape = "none") +
+    xlab("Log2(FC)") +
+    ylab("-log10(q)")
+ 
+vb_volcano_plot
+
+# ggsave("06-publication/main_figures/Figure_3/vb_volcano_plot.pdf", plot = vb_volcano_plot, device = "pdf",
+#        scale = 1, width = 4, height = 8, units = c("in"), dpi = 300)
+
+
+```
+
+```{r}
+
+bin_taxonomy <- fread("./00-documentation/mod_anc_refined_mag_taxonomy_26_07_2024.tsv")
+
+cluster_info <- fread("./00-documentation/cluster_info_all_metadata_26_07_2024.tsv") %>%
+  select(Bin, primary_cluster, Oral_site, Industrialization) %>%
+  unique() %>%
+  mutate(primary_cluster = as.character(primary_cluster),
+         primary_cluster = str_replace_all(primary_cluster, "^","pr_cl_"),
+         Oral_site = str_replace_all(Oral_site, "anc_calculus","CA"),
+         Oral_site = str_replace_all(Oral_site, "anc_calc","CA"),
+         Oral_site = str_replace_all(Oral_site, "mod_calculus","CA"),
+         Oral_site = str_remove_all(Oral_site, "sup"),
+         Oral_site = str_remove_all(Oral_site, "sub"),
+         Industrialization = str_replace_all(Industrialization, "_","-")) %>%
+  unite(os, Oral_site:Industrialization, sep = " - ")
+  
+ # bin_taxonomy %>%
+ #   separate_wider_delim(classification, delim = ";", too_few = "align_start", names = c("domain","phylum","Class","order","family","genus","Species")) %>%
+ #   select(Bin, domain, Species) %>%
+ #   right_join(., , by = "Species")
+
+vb_mag_abundance <- vb_table %>%
+   select(Type, Species) %>%
+   filter(Species %in% vb_order) %>%
+   left_join(., taxonomy %>%
+               select(id, class, species) %>%
+               rename(Species = species,
+                      primary_cluster = id), by = "Species") %>%
+   left_join(., cluster_info, by = "primary_cluster") %>%
+   group_by(Type, os, class, Species, primary_cluster) %>%
+   count(name = "total_bins") %>%
+   ungroup() %>%
+   mutate(Species = fct_relevel(Species, vb_order),
+          os = fct_relevel(os, "RefSeq - Industrial","HP - Industrial","KG - Industrial","TN - Industrial","SL - Industrial","SL - Non-industrial", "BM - Industrial",  "BM - Non-industrial", "PQ - Industrial", "PQ - Non-industrial", "CA - Industrial", "CA - Ancient")) %>%
+   arrange(Species, os) %>%
+   ggplot(., aes(x = total_bins, y = Species, group = os)) +
+         geom_bar(aes(fill = os), stat = "identity", color = "black", linewidth = 0.1) + # , position = position_dodge2(width = 0.9, preserve = "single")
+         scale_fill_manual(values = c("gray80","#cab2d6","#F7E690","#78d9ca","#54BCD1","#007BC3","#009F3F","#FC6882","#C70E7B","#F4B95A","#EF7C12")) +
+         theme_minimal(base_size = 14) +
+         theme(axis.text.x = element_text(angle = -45, hjust = 0.5, vjust = 0),
+               axis.text.y = element_blank(),
+               axis.text = element_text(size = 10)) +
+         theme(panel.grid.minor = element_blank()) +
+         scale_y_discrete(limits = rev) +
+         scale_x_continuous(breaks=scales::pretty_breaks(n=10)) +
+         ylab("") +
+         xlab("Total genomes")
+
+vb_mag_abundance
+
+```
+
+```{r}
+
+vb_angle_abund <- vb_angle_plot + vb_mag_abundance +
+  plot_layout(guides = "collect", widths = c(2,1))
+
+vb_angle_abund
+
+# ggsave("06-publication/main_figures/Figure_3/vb_mag_abundance.pdf", plot = vb_angle_abund, device = "pdf",
+#        scale = 1, width = 10, height = 8, units = c("in"), dpi = 300)
+
+ 
+```
+
+```{r}
+
+vb_figure <- (vb_volcano_plot + class_bubbles) / (vp_prevalence_plot + vb_line_plot + vb_angle_plot) +
+  plot_layout(guides = "collect", heights = c(1,1), widths = c(c(1,1),c(4,0.5,1)))
+
+vb_figure
+
+# ggsave("06-publication/main_figures/Figure_3/vanish_blossum.pdf", plot = vb_figure, device = "pdf",
+#        scale = 1, width = 14, height = 12, units = c("in"), dpi = 300)
+
+
+# vb_volcano_plot + vp_prevalence_plot + vb_line_plot + vb_angle_plot +
+#   plot_layout( widths = c(2,4,0.5,1))
+
+```
+
+```{r}
+v_species <- vb_table %>%
+  filter(l2fc < -5,
+         `-log10(p.adj)` > 60) %>%
+  select(Species)
+
+b_species <- vb_table %>%
+  filter(l2fc > 5,
+         `-log10(p.adj)` > 60) %>%
+  select(Species)
+
+ac_mc_pq_libraries <- fread("./00-documentation/cluster_info_all_metadata_26_07_2024.tsv")%>%
+  filter(str_detect(Oral_site, "calc|PQ"),
+         str_detect(sample_host, "Homo")) %>%
+  select(Secondary_sample_accession) %>%
+  unique() %>%
+  arrange(Secondary_sample_accession) %>%
+  full_join(., lib_metadata %>%
+              filter(str_detect(Full, "Calculus|Plaque"),
+                     str_detect(Host, "Human|Neanderthal")) %>%
+              select(Study,Secondary_sample_accession, Eager_label) %>%
+              unique(), by = "Secondary_sample_accession") %>%
+  mutate(Eager_label = ifelse(is.na(Eager_label),"unprofiled",Eager_label)) %>%
+  # mutate(Eager_label = ifelse(str_detect(Secondary_sample_accession, "CMC"),Secondary_sample_accession,Eager_label)) %>%
+  drop_na(Eager_label) %>%
+  filter(Eager_label != "unprofiled") %>%
+  anti_join(., poor_samples, by = "Eager_label") %>%
+  select(Eager_label) %>%
+  unique() %>%
+  pull(Eager_label)
+
+```
+
+```{r}
+# HOMD_MAGs, vanish taxa
+homd_mags_v_sp_relab <- fread("./05-results/kraken2_ci15_all_oral_samples.homd_mags_11_2025_species.tsv") %>%
+  anti_join(., anc_envt_species, by = "Species") %>%
+  select(matches(c("Species", ac_mc_pq_libraries))) %>%
+  pivot_longer(!Species, names_to = "Samples", values_to = "Counts") %>%
+  mutate(Counts = ifelse(Counts <500, 0, Counts)) %>%
+  pivot_wider(names_from = "Samples", values_from = "Counts") %>%
+  adorn_percentages(denominator = "col") %>%
+  as_tibble() %>%
+  inner_join(., v_species, by = "Species")
+
+# HOMD_MAGs, blossum taxa
+homd_mags_b_sp_relab <- fread("./05-results/kraken2_ci15_all_oral_samples.homd_mags_11_2025_species.tsv") %>%
+  anti_join(., anc_envt_species, by = "Species") %>%
+  select(matches(c("Species", ac_mc_pq_libraries))) %>%
+  pivot_longer(!Species, names_to = "Samples", values_to = "Counts") %>%
+  mutate(Counts = ifelse(Counts <500, 0, Counts)) %>%
+  pivot_wider(names_from = "Samples", values_from = "Counts") %>%
+  adorn_percentages(denominator = "col") %>%
+  as_tibble() %>%
+  inner_join(., b_species, by = "Species")
+
+```
+
+
+```{r}
+
+v_age_table <- homd_mags_v_sp_relab %>%
+  pivot_longer(!Species, names_to = "Sample", values_to = "Percent") %>%
+  # filter(Percent > 0) %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Age_BP, Full) %>%
+              unique() %>%
+              rename(Sample = Eager_label)) %>%
+  mutate(
+         Percent = Percent * 100
+         ) %>%
+  mutate(Age_BP = ifelse(Sample == "CSC001.A0101", 50000, Age_BP)) %>%
+  mutate(round_age = ifelse(Age_BP >= 40000,"40000+",
+                            ifelse(Age_BP >= 14000 & Age_BP < 40000, "14001-40000",
+                                   ifelse(Age_BP >= 8000 & Age_BP < 14000, "8001-14000",
+                                          ifelse(Age_BP >= 5000 & Age_BP < 8000, "5001-8000",
+                                                 ifelse(Age_BP >= 2500 & Age_BP < 5000, "2501-5000",
+                                                       # ifelse(Age_BP >=1500 & Age_BP < 2500, "1501-2500",
+                                                               ifelse(Age_BP >= 500 & Age_BP < 2500, "501-2500",
+                                                                      ifelse(Age_BP >= 100 & Age_BP < 500, "200-500","Present-day")))))))) %>%
+  # remove samples with no date
+  filter(!str_detect(Sample, "SMD033|SMD047|ERR5729638|ERR5729643")) %>%
+  group_by(Full, Species, round_age) %>%
+  summarize(n = n(),
+            mean_pct = mean(Percent),
+            median_pct = median(Percent),
+            mad_pct = mad(Percent),
+            sd_pct = sd(Percent),
+            se_pct = sd_pct/sqrt(n)) %>%
+  ungroup() %>%
+  mutate(round_age = fct_relevel(round_age, "40000+","14001-40000","8001-14000","5001-8000","2501-5000","501-2500","200-500","Present-day"))
+
+
+b_age_table <- homd_mags_b_sp_relab %>%
+  pivot_longer(!Species, names_to = "Sample", values_to = "Percent") %>%
+  # filter(Percent > 0) %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Age_BP, Full) %>%
+              unique() %>%
+              rename(Sample = Eager_label)) %>%
+  mutate(
+         Percent = Percent * 100
+         ) %>%
+  mutate(Age_BP = ifelse(Sample == "CSC001.A0101", 50000, Age_BP)) %>%
+  mutate(round_age = ifelse(Age_BP >= 40000,"40000+",
+                            ifelse(Age_BP >= 14000 & Age_BP < 40000, "14001-40000",
+                                   ifelse(Age_BP >= 8000 & Age_BP < 14000, "8001-14000",
+                                          ifelse(Age_BP >= 5000 & Age_BP < 8000, "5001-8000",
+                                                 ifelse(Age_BP >= 2500 & Age_BP < 5000, "2501-5000",
+                                                       # ifelse(Age_BP >=1500 & Age_BP < 2500, "1501-2500",
+                                                               ifelse(Age_BP >= 500 & Age_BP < 2500, "501-2500",
+                                                                      ifelse(Age_BP >= 100 & Age_BP < 500, "200-500","Present-day")))))))) %>%
+  # remove samples with no date
+  filter(!str_detect(Sample, "SMD033|SMD047|ERR5729638|ERR5729643")) %>%
+  group_by(Full, Species, round_age) %>%
+  summarize(n = n(),
+            mean_pct = mean(Percent),
+            median_pct = median(Percent),
+            mad_pct = mad(Percent),
+            sd_pct = sd(Percent),
+            se_pct = sd_pct/sqrt(n)) %>%
+  ungroup() %>%
+  mutate(round_age = fct_relevel(round_age, "40000+","14001-40000","8001-14000","5001-8000","2501-5000","501-2500","200-500","Present-day"))
+
+```
+
+
+```{r}
+library(scales)
+
+# Desulfo, RGIG, Evtepia
+v3_plot <- v_age_table %>%
+  filter(str_detect(Species, "Desulfobulbus|RGIG7111|Evtepia pr_cl_3893|Flexilinea pr_cl_3285")) %>%
+  mutate(Full = fct_relevel(Full, "Calculus - Ancient","Calculus - Industrial","Plaque - Non-industrial","Plaque - Industrial")) %>%
+  arrange(round_age, Full) %>%
+  ggplot(., aes(x = round_age, y = mean_pct, group = Full)) + # , group = Country
+         geom_line(aes(color = Full),linewidth=0.8) + #, linetype = Country   
+         geom_point(aes(color = Full), position = position_dodge(width = 0.7)) +
+         geom_errorbar(aes(ymin = mean_pct-se_pct, ymax = mean_pct+se_pct, color = Full), width = 0.2, linewidth = 0.4, position = position_dodge(width = 0.7)) +
+         theme_minimal(base_size = 8) +
+         theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 8)) +
+         theme(axis.text.y = element_text(size = 8)) +
+         theme(panel.grid.minor = element_blank()) +
+         scale_color_manual(values = os_colors) + # , name = "Library treatment"
+         # scale_y_log10(labels = label_comma()) +
+         scale_y_continuous(breaks=scales::pretty_breaks(n=5)) + # , labels = label_comma()
+         # scale_x_reverse(breaks=scales::pretty_breaks(n=5)) +
+         facet_wrap(~Species, nrow = 1)
+v3_plot
+
+# ggsave("06-publication/main_figures/Figure_3/vanish_sp_plot3.pdf", plot = v3_plot, device = "pdf",
+#        scale = 1, width = 7, height = 2, units = c("in"), dpi = 300)
+
+```
+
+
+```{r}
+# Prevotella882, Haemophilus3005, Rothia3628
+
+b3_plot <- b_age_table %>%
+  filter(str_detect(Species, "Prevotella pr_cl_882|Haemophilus_D pr_cl_3005|Rothia pr_cl_3628"))%>%
+  arrange(round_age) %>%
+  ggplot(., aes(x = round_age, y = mean_pct, group = Full)) + # , group = Country
+         geom_line(aes(color = Full),linewidth=0.8) + #, linetype = Country   
+         geom_point(aes(color = Full), position = position_dodge(width = 0.7)) +
+         geom_errorbar(aes(ymin = mean_pct-se_pct, ymax = mean_pct+se_pct, color = Full), width = 0.2, linewidth = 0.4, position = position_dodge(width = 0.7)) +
+         theme_minimal(base_size = 8) +
+         theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 8)) +
+         theme(axis.text.y = element_text(size = 8)) +
+         theme(panel.grid.minor = element_blank()) +
+         scale_color_manual(values = os_colors) + # , name = "Library treatment"
+         scale_y_log10( labels = label_comma()) +
+         # scale_y_continuous(breaks=scales::pretty_breaks(n=5), labels = label_comma(), limits = c(0,1.0)) +
+         # scale_x_reverse(breaks=scales::pretty_breaks(n=5)) +
+         facet_wrap(~Species)
+b3_plot
+
+# ggsave("06-publication/main_figures/Figure_3/blossum_sp_plot3.pdf", plot = b3_plot, device = "pdf",
+#        scale = 1, width = 6, height = 2, units = c("in"), dpi = 300)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
