@@ -1,0 +1,298 @@
+---
+title: "Extended Data Figure 5"
+author: "Irina Velsko"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output:
+    github_document:
+        fig_width: 8
+        fig_height: 6
+        toc: true
+---
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(janitor)
+library(ComplexHeatmap)
+library(tidyverse)
+library(patchwork)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+Set the working directory of the notebook to the parent directory of the 
+notebook itself.  
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath("../../../"))
+```
+
+```{r}
+os_colors <- c("Calculus - Ancient" = "#EF7C12",
+               "Calculus - Industrial" = "#F4B95A",
+               "Plaque - Industrial" = "#FC6882",
+               "Plaque - Non-industrial" = "#C70E7B",
+               "Buccal mucosa - Industrial" = "#8FDA04",
+               "Buccal mucosa - Non-industrial" = "#009F3F",
+               "Saliva - Industrial" = "#54BCD1",
+               "Saliva - Non-industrial" = "#007BC3",
+               "RefSeq" = "gray80",
+               "Tongue - Industrial" = "#78d9ca",
+               # "Tongue - Non-industrial" = "#189a85",
+               "Hard palate - Industrial" = "#cab2d6",
+               # "Hard_palate - Non-industrial" = "#6a3d9a",
+               "Keratinized gingiva - Industrial" = "#F7E690",
+               # "Keratinized gingiva - Non-ndustrial" = "#F5D000",
+               "PQ" = "#FC6882", "AC" = "#EF7C12", "MC" = "#F4B95A",
+               "BM" = "#8FDA04","SL" = "#54BCD1","TN" = "#78d9ca","KG" = "#F7E690","HP" = "#cab2d6")
+
+
+Continent_colors <- c("Oceania" = "#098BD9", 
+                  "Europe" = "#7472af", 
+                  "Africa" = "#cc79a7", 
+                  "Caribbean" = "#f6865e", 
+                  "Asia" = "#86c73a",
+                  "South America" = "gray50",
+                  "North America" = "#1ec1a7")
+
+```
+
+```{r}
+# all information
+cluster_info <- fread( "./00-documentation/cluster_info_all_metadata_26_07_2024.tsv")
+lib_metadata <- fread("./00-documentation/library_sample_eager_metadata.tsv")
+poor_samples <- fread("./00-documentation/poor_samples_humans.tsv")
+
+# read in the list of environmental species clusters
+ancient_envt_clusters <- fread("./00-documentation/ancient_envt_clusters_26_07_2024.tsv")
+
+# read in the table used for taxdump to make the kraken2 database, that has the primary cluster and the species name
+taxdump_file_sp <- fread("00-documentation/cluster_taxonomy_for_taxdump_26_07_2024.tsv") %>%
+  select(id, species) %>%
+  mutate(id = str_remove_all(id, "pr_cl_"),
+        id = as.numeric(id))
+
+# now get the species names of the ancient environmental species clusters
+anc_envt_species <- ancient_envt_clusters %>%
+  left_join(., taxdump_file_sp %>%
+              rename(primary_cluster = id,
+                     Species = species), by = "primary_cluster") %>%
+  select(Species)
+
+```
+
+```{r}
+# make a list of only the libraries we want to use (calculus and plaque)
+ac_mc_pq_libraries <- cluster_info %>%
+  filter(str_detect(Oral_site, "calc|PQ"),
+         str_detect(sample_host, "Homo")) %>%
+  select(Secondary_sample_accession) %>%
+  unique() %>%
+  arrange(Secondary_sample_accession) %>%
+  full_join(., lib_metadata %>%
+              filter(str_detect(Full, "Calculus|Plaque"),
+                     str_detect(Host, "Human|Neanderthal")) %>%
+              select(Study,Secondary_sample_accession, Eager_label) %>%
+              unique(), by = "Secondary_sample_accession") %>%
+  mutate(Eager_label = ifelse(is.na(Eager_label),"unprofiled",Eager_label)) %>%
+  # mutate(Eager_label = ifelse(str_detect(Secondary_sample_accession, "CMC"),Secondary_sample_accession,Eager_label)) %>%
+  drop_na(Eager_label) %>%
+  filter(Eager_label != "unprofiled") %>%
+  anti_join(., poor_samples, by = "Eager_label") %>%
+  select(Eager_label) %>%
+  unique() %>%
+  pull(Eager_label)
+
+```
+
+
+```{r}
+# read in the vanish-blossum table
+vb <- fread("./05-results/vanish_blossum_table.tsv") 
+
+# select vanish species
+v_species <- vb %>%
+  filter(l2fc < -5,
+         `-log10(p.adj)` > 60) %>%
+  select(Species)
+
+# select blossom species
+b_species <- vb %>%
+  filter(l2fc > 5,
+         `-log10(p.adj)` > 60) %>%
+  select(Species)
+
+```
+
+
+```{r}
+
+# HOMD_MAGs, vanish taxa abundance table
+homd_mags_v_sp_relab <- fread("./05-results/kraken2_ci15_all_oral_samples.homd_mags_07_2024_species.tsv") %>%
+  anti_join(., anc_envt_species, by = "Species") %>%
+  select(matches(c("Species", ac_mc_pq_libraries))) %>%
+  pivot_longer(!Species, names_to = "Samples", values_to = "Counts") %>%
+  mutate(Counts = ifelse(Counts <500, 0, Counts)) %>%
+  pivot_wider(names_from = "Samples", values_from = "Counts") %>%
+  adorn_percentages(denominator = "col") %>%
+  as_tibble() %>%
+  inner_join(., v_species, by = "Species")
+
+# HOMD_MAGs, blossom taxa abundance table
+homd_mags_b_sp_relab <- fread("./05-results/kraken2_ci15_all_oral_samples.homd_mags_07_2024_species.tsv") %>%
+  anti_join(., anc_envt_species, by = "Species") %>%
+  select(matches(c("Species", ac_mc_pq_libraries))) %>%
+  pivot_longer(!Species, names_to = "Samples", values_to = "Counts") %>%
+  mutate(Counts = ifelse(Counts <500, 0, Counts)) %>%
+  pivot_wider(names_from = "Samples", values_from = "Counts") %>%
+  adorn_percentages(denominator = "col") %>%
+  as_tibble() %>%
+  inner_join(., b_species, by = "Species")
+
+
+```
+
+
+```{r}
+
+# table for vanish taxa
+v_age_table <- homd_mags_v_sp_relab %>%
+  pivot_longer(!Species, names_to = "Sample", values_to = "Percent") %>%
+  # filter(Percent > 0) %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Age_BP, Full) %>%
+              unique() %>%
+              rename(Sample = Eager_label)) %>%
+  mutate(
+         Percent = Percent * 100
+         ) %>%
+  mutate(round_age = ifelse(Age_BP >= 40000,"40000+",
+                            ifelse(Age_BP >= 14000 & Age_BP < 40000, "14001-40000",
+                                   ifelse(Age_BP >= 8000 & Age_BP < 14000, "8001-14000",
+                                          ifelse(Age_BP >= 5000 & Age_BP < 8000, "5001-8000",
+                                                 ifelse(Age_BP >= 2500 & Age_BP < 5000, "2501-5000",
+                                                       # ifelse(Age_BP >=1500 & Age_BP < 2500, "1501-2500",
+                                                               ifelse(Age_BP >= 500 & Age_BP < 2500, "501-2500",
+                                                                      ifelse(Age_BP >= 100 & Age_BP < 500, "200-500","Present-day")))))))) %>%
+  # remove samples with no date
+  filter(!str_detect(Sample, "SMD033|SMD047|ERR5729638|ERR5729643")) %>%
+  group_by(Full, Species, round_age) %>%
+  summarize(n = n(),
+            mean_pct = mean(Percent),
+            median_pct = median(Percent),
+            mad_pct = mad(Percent),
+            sd_pct = sd(Percent),
+            se_pct = sd_pct/sqrt(n)) %>%
+  ungroup() %>%
+  mutate(round_age = fct_relevel(round_age, "40000+","14001-40000","8001-14000","5001-8000","2501-5000","501-2500","200-500","Present-day"))
+
+
+# table for blossum taxa
+b_age_table <- homd_mags_b_sp_relab %>%
+  pivot_longer(!Species, names_to = "Sample", values_to = "Percent") %>%
+  # filter(Percent > 0) %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Age_BP, Full) %>%
+              unique() %>%
+              rename(Sample = Eager_label)) %>%
+  mutate(
+         Percent = Percent * 100
+         ) %>%
+  mutate(round_age = ifelse(Age_BP >= 40000,"40000+",
+                            ifelse(Age_BP >= 14000 & Age_BP < 40000, "14001-40000",
+                                   ifelse(Age_BP >= 8000 & Age_BP < 14000, "8001-14000",
+                                          ifelse(Age_BP >= 5000 & Age_BP < 8000, "5001-8000",
+                                                 ifelse(Age_BP >= 2500 & Age_BP < 5000, "2501-5000",
+                                                       # ifelse(Age_BP >=1500 & Age_BP < 2500, "1501-2500",
+                                                               ifelse(Age_BP >= 500 & Age_BP < 2500, "501-2500",
+                                                                      ifelse(Age_BP >= 100 & Age_BP < 500, "200-500","Present-day")))))))) %>%
+  # remove samples with no date
+  filter(!str_detect(Sample, "SMD033|SMD047|ERR5729638|ERR5729643")) %>%
+  group_by(Full, Species, round_age) %>%
+  summarize(n = n(),
+            mean_pct = mean(Percent),
+            median_pct = median(Percent),
+            mad_pct = mad(Percent),
+            sd_pct = sd(Percent),
+            se_pct = sd_pct/sqrt(n)) %>%
+  ungroup() %>%
+  mutate(round_age = fct_relevel(round_age, "40000+","14001-40000","8001-14000","5001-8000","2501-5000","501-2500","200-500","Present-day"))
+
+
+```
+
+```{r}
+
+library(scales)
+
+vanish_all_log_plot <- v_age_table %>%
+  mutate(Full = fct_relevel(Full, "Calculus - Ancient","Calculus - Industrial","Plaque - Non-industrial","Plaque - Industrial")) %>%
+  arrange(round_age, Full) %>%
+  ggplot(., aes(x = round_age, y = mean_pct, group = Full)) + # , group = Country
+         geom_line(aes(color = Full),linewidth=0.8) + #, linetype = Country   
+         geom_point(aes(color = Full), position = position_dodge(width = 0.7)) +
+         # geom_errorbar(aes(ymin = mean_pct-sd_pct, ymax = mean_pct+sd_pct, color = Full), width = 0.2, linewidth = 0.4) +
+         theme_minimal(base_size = 8) +
+         theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 8)) +
+         theme(axis.text.y = element_text(size = 8)) +
+         theme(panel.grid.minor = element_blank()) +
+         scale_color_manual(values = os_colors) + # , name = "Library treatment"
+         scale_y_log10(labels = label_comma()) +
+         facet_wrap(~Species)
+vanish_all_log_plot
+
+# ggsave("06-publication/extended_data_figures/Extended_Data_Figure_5/vanish_all_log_plot.pdf", plot = vanish_all_log_plot, device = "pdf",
+#        scale = 1, width = 15, height = 10, units = c("in"), dpi = 300)
+
+```
+
+```{r}
+
+b1_plot <- b_age_table %>%
+  arrange(round_age) %>%
+  ggplot(., aes(x = round_age, y = mean_pct, group = Full)) + # , group = Country
+         geom_line(aes(color = Full),linewidth=0.8) + #, linetype = Country   
+         geom_point(aes(color = Full), position = position_dodge()) +
+         # geom_errorbar(aes(ymin = mean_pct-sd_pct, ymax = mean_pct+sd_pct, color = Full), width = 0.2, linewidth = 0.4) +
+         theme_minimal(base_size = 8) +
+         theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 8)) +
+         theme(axis.text.y = element_text(size = 8)) +
+         theme(panel.grid.minor = element_blank()) +
+         scale_color_manual(values = os_colors) + # , name = "Library treatment"
+         scale_y_log10( labels = label_comma()) +
+         facet_wrap(~Species)
+
+b1_plot
+
+# ggsave("06-publication/extended_data_figures/Extended_Data_Figure_5/blossom_sp_plot3.pdf", plot = b1_plot, device = "pdf",
+#        scale = 1, width = 10, height = 7, units = c("in"), dpi = 300)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

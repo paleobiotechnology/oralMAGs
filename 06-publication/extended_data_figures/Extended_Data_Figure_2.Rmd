@@ -1,0 +1,279 @@
+---
+title: "Extended Data Figure 2"
+author: "Irina Velsko"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output:
+    github_document:
+        fig_width: 8
+        fig_height: 6
+        toc: true
+---
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(vegan)
+library(janitor)
+library(rstatix)
+library(tidyverse)
+library(patchwork)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+Set the working directory of the notebook to the parent directory of the 
+notebook itself.  
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath("../../.."))
+```
+
+```{r}
+os_colors <- c("Calculus - Ancient" = "#EF7C12",
+               "Calculus - Industrial" = "#F4B95A",
+               "Plaque - Industrial" = "#FC6882",
+               "Plaque - Non-industrial" = "#C70E7B",
+               "Buccal mucosa - Industrial" = "#8FDA04",
+               "Buccal mucosa - Non-industrial" = "#009F3F",
+               "Saliva - Industrial" = "#54BCD1",
+               "Saliva - Non-industrial" = "#007BC3",
+               "RefSeq - Industrial" = "gray80",
+               "Tongue - Industrial" = "#78d9ca",
+               # "Tongue - Non-industrial" = "#189a85",
+               "Hard palate - Industrial" = "#cab2d6",
+               # "Hard_palate - Non-industrial" = "#6a3d9a",
+               "Keratinized gingiva - Industrial" = "#F7E690",
+               # "Keratinized gingiva - Non-ndustrial" = "#F5D000",
+               "PQ" = "#FC6882", "AC" = "#EF7C12", "MC" = "#F4B95A",
+               "BM" = "#8FDA04","SL" = "#54BCD1","TN" = "#78d9ca","KG" = "#F7E690","HP" = "#cab2d6")
+
+```
+
+```{r}
+
+bin_taxonomy <-  fread("./00-documentation/mod_anc_refined_mag_taxonomy_26_07_2024.tsv")
+
+cluster_type <- fread("./00-documentation/cluster_type_table.tsv") %>%
+  filter(cluster_type == "H-U" & HOMD == "HOMD") %>%
+  select(primary_cluster)
+
+# read in the list of ancient bins that appear to be environmental
+ancient_envt_bins <- fread("00-documentation/ancient_envt_bins_26_07_2024.tsv")
+
+cluster_info <- fread("./00-documentation/cluster_info_all_metadata_26_07_2024.tsv") %>%
+  anti_join(., ancient_envt_bins, by = "Bin") %>%
+  anti_join(., cluster_type, by = "primary_cluster") %>%
+  mutate(Quality = ifelse(completeness >= 90 & contamination <= 5, "High","Medium")) %>%
+  filter(str_detect(sample_host, "Homo")) %>%
+  mutate(Oral_site = str_replace_all(Oral_site, "anc_calculus","AC"),
+         Oral_site = str_replace_all(Oral_site, "anc_calc","AC"),
+         Oral_site = str_replace_all(Oral_site, "mod_calculus","MC"),
+         Oral_site = str_remove_all(Oral_site, "sub"),
+         Oral_site = str_remove_all(Oral_site, "sup"))
+
+```
+
+```{r}
+
+counts_table <- cluster_info %>%
+  left_join(., bin_taxonomy, by = "Bin") %>%
+  select(Bin, primary_cluster, classification) %>%
+  separate_wider_delim(classification, delim = ";", too_few = "align_start", names = c("domain","phylum","Class","order","family","genus","species")) %>%
+  select(-order, -family, -genus, -species) %>%
+  mutate(domain = str_remove_all(domain, "d__"),
+         phylum = str_remove_all(phylum, "p__"),
+         Class = str_remove_all(Class, "c__")) %>%
+  unite(taxonomy, domain:Class, sep = ";") %>%
+  group_by(taxonomy, primary_cluster) %>%
+  count(name = "no_bins") %>%
+  ungroup() %>%
+  arrange(taxonomy, desc(no_bins)) %>%
+  group_by(taxonomy) %>% 
+  mutate(totals = cumsum(no_bins),
+         id = row_number()) %>%
+  ungroup()
+
+counts_table
+
+```
+
+```{r}
+
+# all oral sites together
+cl_order <- counts_table %>%
+  select(taxonomy) %>%
+  unique() %>%
+  mutate(taxonomy = str_remove_all(taxonomy, "_A"),
+         taxonomy = str_remove_all(taxonomy, "_B"),
+         taxonomy = str_remove_all(taxonomy, "_C")) %>%
+  arrange(taxonomy) %>%
+  separate_wider_delim(taxonomy, delim = ";", names = c("domain","phylum","Class")) %>%
+  pull(Class)
+
+species_curves <- counts_table %>%
+  separate_wider_delim(taxonomy, delim = ";", names = c("domain","phylum","Class")) %>%
+  mutate(phylum = str_remove_all(phylum, "_A"),
+         phylum = str_remove_all(phylum, "_B"),
+         phylum = str_remove_all(phylum, "_C")) %>%
+  mutate(Class = fct_relevel(Class, cl_order)) %>%
+  ggplot(., aes(x = id, y = totals)) +
+    geom_vline(xintercept = 20, color = "gray90") +
+    geom_hline(yintercept = 300, color = "gray90") +
+    geom_line(aes(color = phylum, linetype = Class), stat = "identity", linewidth = 0.75) + # , linetype = "dashed"
+    # scale_color_viridis_d(option = "A", direction = -1) +
+    scale_color_manual(values = c("magenta","pink","red","orange","darkgoldenrod","yellow","yellowgreen","green","cyan","dodgerblue","blue","lavender","purple","gray","brown","black")) +
+    scale_linetype_manual(values = c("solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash")) +
+    theme_minimal(base_size = 12) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0),
+          text = element_text(size=12)) +
+    theme(panel.grid.minor = element_blank()) +
+    # scale_x_continuous(breaks=scales::pretty_breaks(n=10)) +
+    # scale_y_log10() +
+    xlab("No. species clusters") +
+    ylab("No. genomes")
+
+species_curves
+
+# ggsave("06-publication/extended_data_figures/Extended_Data_Figure_2/species_saturation_curves_rainbow2.pdf", plot = species_curves, device = "pdf",
+#        scale = 1, width = 8, height = 9, units = c("in"), dpi = 300)
+
+```
+
+
+```{r}
+
+# all oral sites together, zoomed in near the 0,0 point to see all the smaller curves
+species_curves_zoom <- counts_table %>%
+  separate_wider_delim(taxonomy, delim = ";", names = c("domain","phylum","Class")) %>%
+  mutate(phylum = str_remove_all(phylum, "_A"),
+         phylum = str_remove_all(phylum, "_B"),
+         phylum = str_remove_all(phylum, "_C")) %>%
+  mutate(Class = fct_relevel(Class, cl_order)) %>%
+  ggplot(., aes(x = id, y = totals)) +
+    theme_minimal(base_size = 12) +
+    geom_vline(xintercept = 1, color = "gray90") +
+    geom_line(aes(color = phylum, linetype = Class), stat = "identity", linewidth = 0.75) + # , linetype = "dashed"
+    # scale_color_viridis_d(option = "A", direction = -1) +
+    scale_color_manual(values = c("magenta","pink","red","orange","darkgoldenrod","yellow","yellowgreen","green","cyan","dodgerblue","blue","lavender","purple","gray","brown","black")) +
+    scale_linetype_manual(values = c("solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash")) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0),
+          text = element_text(size=12)) +
+    theme(panel.grid.minor = element_blank()) +
+    scale_x_continuous(limits = c(0,25), breaks = seq(0,25,5)) +
+    ylim(1,300) +
+    # scale_x_continuous(breaks=scales::pretty_breaks(n=10)) +
+    xlab("No. species clusters") +
+    ylab("No. genomes")
+
+species_curves_zoom
+
+# ggsave("06-publication/extended_data_figures/Extended_Data_Figure_2/species_saturation_curves_rainbow2_zoom.pdf", plot = species_curves_zoom, device = "pdf",
+#        scale = 1, width = 8, height = 9, units = c("in"), dpi = 300)
+
+```
+
+```{r}
+# now make a table separated by oral site
+counts_table_osi <- cluster_info %>%
+  # make the calculus entries the same site, differ by Industrialization
+  mutate(Oral_site = ifelse(str_detect(Oral_site, "AC|MC"),"CA",Oral_site),
+         Industrialization = str_replace_all(Industrialization, "Ancient","Non_industrial")) %>%
+  left_join(., bin_taxonomy, by = "Bin") %>%
+  select(Bin, primary_cluster, Oral_site, Industrialization, classification) %>%
+  separate_wider_delim(classification, delim = ";", too_few = "align_start", names = c("domain","phylum","Class","order","family","genus","species")) %>%
+  select(-order, -family, -genus, -species) %>%
+  mutate(domain = str_remove_all(domain, "d__"),
+         phylum = str_remove_all(phylum, "p__"),
+         Class = str_remove_all(Class, "c__")) %>%
+  unite(taxonomy, domain:Class, sep = ";") %>%
+  group_by(taxonomy, Oral_site, Industrialization, primary_cluster) %>%
+  count() %>%
+  ungroup() %>%
+  arrange(taxonomy, Oral_site, Industrialization, desc(n)) %>%
+  group_by(taxonomy, Oral_site, Industrialization) %>% 
+  mutate(totals = cumsum(n),
+         id = row_number()) %>%
+  ungroup()
+
+counts_table_osi
+
+```
+
+```{r}
+# and curves seperated by oral site
+species_curves_osi <- counts_table_osi %>%
+  # select only sites with both industrial and non-industrial samples
+  filter(str_detect(Oral_site, "PQ|CA|SL")) %>%
+  separate_wider_delim(taxonomy, delim = ";", names = c("domain","phylum","Class")) %>%
+  mutate(phylum = str_remove_all(phylum, "_A"),
+         phylum = str_remove_all(phylum, "_B"),
+         phylum = str_remove_all(phylum, "_C")) %>%
+  mutate(Class = fct_relevel(Class, cl_order),
+         Industrialization = fct_relevel(Industrialization, "Non-industrial","Industrial")) %>%
+  ggplot(., aes(x = id, y = totals)) +
+    geom_vline(xintercept = 50, color = "gray70") +
+    geom_hline(yintercept = 250, color = "gray70") +
+    geom_line(aes(color = phylum, linetype = Class), stat = "identity", linewidth = 0.75) + # , linetype = "dashed"
+    # scale_color_viridis_d(option = "A", direction = -1) +
+    scale_color_manual(values = c("magenta","pink","red","orange","darkgoldenrod","yellow","yellowgreen","green","cyan","dodgerblue","blue","lavender","purple","gray","brown","black")) +
+    scale_linetype_manual(values = c("solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash")) +
+    theme_minimal(base_size = 12) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0),
+          text = element_text(size=12)) +
+    theme(panel.grid.minor = element_blank()) +
+    # scale_x_continuous(breaks=scales::pretty_breaks(n=10)) +
+    # scale_y_log10() +
+    xlab("No. species clusters") +
+    ylab("No. genomes") +
+    facet_grid(Oral_site~Industrialization)
+
+species_curves_osi
+
+# ggsave("06-publication/extended_data_figures/Extended_Data_Figure_2/species_saturation_curves_osi.pdf", plot = species_curves_osi, device = "pdf",
+#        scale = 1, width = 9, height = 8, units = c("in"), dpi = 300)
+
+```
+
+```{r}
+
+# now plot curves by oral site zoomed in to the 0,0 point to see the smaller curves
+
+species_curves_osi_zoom <- counts_table_osi %>%
+  # select only sites with both industrial and non-industrial samples
+  filter(str_detect(Oral_site, "PQ|CA|SL")) %>%
+  separate_wider_delim(taxonomy, delim = ";", names = c("domain","phylum","Class")) %>%
+  mutate(phylum = str_remove_all(phylum, "_A"),
+         phylum = str_remove_all(phylum, "_B"),
+         phylum = str_remove_all(phylum, "_C")) %>%
+  mutate(Class = fct_relevel(Class, cl_order)) %>%
+  ggplot(., aes(x = id, y = totals)) +
+    # geom_vline(xintercept = 20, color = "gray90") +
+    # geom_hline(yintercept = 300, color = "gray90") +
+    geom_line(aes(color = phylum, linetype = Class), stat = "identity", linewidth = 0.75) + # , linetype = "dashed"
+    # scale_color_viridis_d(option = "A", direction = -1) +
+    scale_color_manual(values = c("magenta","pink","red","orange","darkgoldenrod","yellow","yellowgreen","green","cyan","dodgerblue","blue","lavender","purple","gray","brown","black")) +
+    scale_linetype_manual(values = c("solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash","solid","dashed","dotted","dotdash","twodash")) +
+    theme_minimal(base_size = 12) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0),
+          text = element_text(size=12)) +
+    theme(panel.grid.minor = element_blank()) +
+    scale_x_continuous(limits = c(0,50), breaks = seq(0,50,10)) +
+    ylim(1,250) +
+    xlab("No. species clusters") +
+    ylab("No. genomes") +
+    facet_grid(Oral_site~Industrialization)
+
+species_curves_osi_zoom
+
+# ggsave("06-publication/extended_data_figures/Extended_Data_Figure_2/species_saturation_curves_osi_zoom.pdf", plot = species_curves_osi_zoom, device = "pdf",
+#        scale = 1, width = 10, height = 9, units = c("in"), dpi = 300)
+
+```
+
+
+
+
+
+
+
+
+

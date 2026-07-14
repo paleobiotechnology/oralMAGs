@@ -1,0 +1,169 @@
+---
+title: "Extended Data Figure 1"
+author: "Irina Velsko"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output:
+    github_document:
+        fig_width: 8
+        fig_height: 6
+        toc: true
+---
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(janitor)
+library(tidyverse)
+library(patchwork)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+Set the working directory of the notebook to the parent directory of the 
+notebook itself.  
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath("../../.."))
+```
+
+```{r}
+# read in the list of ancient bins that appear to be environmental
+ancient_envt_bins <- fread("00-documentation/ancient_envt_bins_26_07_2024.tsv")
+
+# 93% clustering table
+d93 <- fread("./05-results/dRep_ani92_93_Cdb.csv") %>% 
+  select(genome, primary_cluster, secondary_cluster) %>%
+  rename(Bin = genome) %>%
+  mutate(Bin = str_remove_all(Bin, ".genome.fasta"),
+         Bin = str_remove_all(Bin, ".fna"),
+         Bin = str_remove_all(Bin, ".fa")) %>%
+  left_join(., fread("./00-documentation/mod_anc_refined_mag_taxonomy_26_07_2024.tsv"), by = "Bin") %>%
+  anti_join(., ancient_envt_bins)
+
+# combined clustering table 92%-99%
+dRep_steps_table <- fread("./05-results/dRep_steps_table.tsv")
+
+```
+
+```{r}
+
+# list clusters with HOMD genomes (known)
+homd <- d93 %>%
+  filter(str_detect(Bin, "SEQF")) %>%
+  select(primary_cluster) %>%
+  unique()
+
+
+# set genus order
+gn_order <- d93 %>%
+  inner_join(., homd, by = "primary_cluster") %>%
+  separate_wider_delim(classification, delim = ";", names = c("domain","phylum","Class","order","family","genus","species")) %>%
+  select(domain, phylum, Class, genus) %>%
+  arrange(domain, phylum, Class, genus) %>%
+  mutate(Class = str_remove_all(Class, "c__"),
+         genus = ifelse(genus == "g__",str_replace(genus, "g__",paste(Class,"_unk")),genus),
+         genus = str_remove_all(genus, "g__")) %>%
+  unique() %>%
+  filter(!str_detect(genus, "Stenotrophomonas|Sphingomonas|Lact|lact")) %>%
+  pull(genus)
+
+```
+
+```{r}
+
+# set the order for plotting genera
+
+sortorder <- dRep_steps_table %>%
+  filter(Genus %in% gn_order) %>%
+  select(Class, Genus, Genome_count, species_cl_92, pct_single_92, pct_single_93, pct_single_94, pct_single_95, pct_single_96, pct_single_97, pct_single_98, pct_single_99)  %>%
+  pivot_longer(!Class:species_cl_92, names_to = "cluster_pct", values_to = "pct_single") %>%
+  mutate(pct_bin = floor(pct_single / 10) * 10,
+         pct_bin = ifelse(pct_single > 0 & pct_single < 10, 10, pct_bin),
+         pct_bin = as.character(pct_bin)) %>%
+  mutate(pct_bin = fct_relevel(pct_bin, "0","10","20","30","40","50","60","70","80","90","100")) %>%
+  select(-pct_single) %>%
+  pivot_wider(names_from = "cluster_pct", values_from = "pct_bin") %>%
+  arrange(pct_single_95, pct_single_92, pct_single_93, pct_single_94, pct_single_96, pct_single_97, pct_single_98, pct_single_99) %>%
+  mutate(Genus = as.character(Genus)) %>%
+  pull(Genus)
+
+```
+
+
+```{r}
+
+count_up <- dRep_steps_table %>%
+  filter(Genus %in% gn_order) %>%
+  select(Class, Genus, Genome_count, species_cl_92, pct_single_92, pct_single_93, pct_single_94, pct_single_95, pct_single_96, pct_single_97, pct_single_98, pct_single_99) %>%
+  pivot_longer(!Class:species_cl_92, names_to = "cluster_pct", values_to = "pct_single") %>%
+  mutate(pct_bin = floor(pct_single / 10) * 10,
+         pct_bin = ifelse(pct_single > 0 & pct_single < 10, 10, pct_bin),
+         pct_bin = as.character(pct_bin)) %>%
+  mutate(pct_bin = fct_relevel(pct_bin, "0","10","20","30","40","50","60","70","80","90","100"),
+         Genus = fct_relevel(Genus, sortorder)) %>%
+  filter(Genome_count >= 5) %>%
+  arrange(Genus) %>%
+  ggplot(., aes(cluster_pct, Genus, fill = pct_bin)) +
+         geom_tile() +
+         scale_fill_viridis_d(option = "A",  direction = -1, na.value = "gray95") + # , limits = c(0, 100), breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100)
+         scale_y_discrete(limits = rev)  +
+         theme_classic(base_size = 8) +
+         theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0),
+               plot.margin = margin(0, 0, 0, 0, "pt"),
+               axis.title.y = element_blank(),
+               legend.position = "left")
+
+count_up
+
+```
+
+```{r}
+
+genome_ct <- dRep_steps_table %>%
+  select(Class, Genus, Genome_count) %>%
+  mutate(Genus = as.character(Genus),
+         Genus = fct_relevel(Genus, sortorder)) %>%
+  filter(Genus %in% gn_order,
+         Genome_count >= 5) %>%
+  mutate(genome = "yes") %>%
+  ggplot(., aes(genome, Genus, fill = Genome_count)) +
+         geom_tile() +
+         # scale_fill_viridis_c(option = "A",  direction = -1, na.value = "gray95") +
+         # scale_fill_distiller(palette = "RdGy", direction = -1) +
+         scale_fill_gradient(low = "white", high = "black") +
+         scale_y_discrete(limits = rev)  +
+         theme_classic(base_size = 8) +
+         theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0),
+               plot.margin = margin(0, 0, 0, 0, "pt"),
+               axis.title.y = element_blank(),
+               legend.position = "left")
+genome_ct
+
+```
+
+```{r}
+
+singletons_plot <- genome_ct + count_up + 
+  plot_layout(widths = c(1,4))
+
+singletons_plot
+
+# ggsave("06-publication/extended_data_figures/Extended_Data_Figure_1/ani_cluster_pct_singletons.pdf", plot = singletons_plot, device = "pdf",
+#        scale = 1, width = 7, height = 8, units = c("in"), dpi = 300)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

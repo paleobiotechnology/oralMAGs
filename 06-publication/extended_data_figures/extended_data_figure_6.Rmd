@@ -1,0 +1,387 @@
+---
+title: "RGIG7111 MAGs pyDamage"
+author: "Irina Velsko"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output:
+    github_document:
+        fig_width: 8
+        fig_height: 6
+        toc: true
+---
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(janitor)
+library(tidyverse)
+library(patchwork)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+Set the working directory of the notebook to the parent directory of the 
+notebook itself.  
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath("../../.."))
+```
+
+```{r colors}
+
+enzyme_colors <- c("None" = "#C70E7B", "Half" = "#e386bd", "Proof-reading enzyme" = "#007BC3", "Mixed" = "#6a3d9a")
+
+```
+
+```{r}
+# Read in the metadata table saved from drep_anaerovoracaceae.Rmd (this already has the fastBAPS clusters included, from strict filtering)
+all_info_pre <- fread("./00-documentation/rgig7111_anaerovoracaceae_complete_metadata_09_2025.tsv") %>%
+  select(genome, Source, GC_pct, completeness, contamination, checkM2.completeness, checkM2.contamination, primary_cluster, length, N50, gtdb_taxonomy, MAG_source, Study, Age_BP, Continent, Age_BP, Host, GUNC.n_contigs, QUAL)
+
+ersx_conversion <- fread("./00-documentation/ERSX_to_ERS_conversion_table.tsv") %>%
+  mutate(Secondary_sample_accession = ifelse(prepublication_sample_accession == "ERSX0004057","ERS26854147",
+                ifelse(prepublication_sample_accession == "ERSX0004058","ERS26854148",
+                       ifelse(prepublication_sample_accession == "ERSX0004059","ERS26854149", Secondary_sample_accession))))
+
+all_info_ersx <- all_info_pre %>%
+  filter(primary_cluster == "211") %>%
+  filter(str_detect(genome, "ERSX")) %>%
+  mutate(Bin = genome) %>%
+  separate_wider_delim(genome, delim = ".", names = c("ssa","bin"), too_many = "merge") %>%
+  left_join(., ersx_conversion %>%
+              rename(ssa = prepublication_sample_accession), by = "ssa") %>%
+  select(Secondary_sample_accession, bin, everything()) %>%
+  mutate(Secondary_sample_accession = ifelse(ssa == "ERSX0005001", "ERS26854150", Secondary_sample_accession)) %>%
+  unite(Bin, Secondary_sample_accession:bin, sep = ".") %>%
+  select(-ssa)
+
+all_info <- all_info_pre %>%
+  filter(primary_cluster == "211") %>%
+  rename(Bin = genome) %>%
+  filter(!str_detect(Bin, "ERSX")) %>%
+  bind_rows(., all_info_ersx)
+
+
+```
+
+
+```{r}
+
+# make a list of the pydamage files to read in
+
+pydamage_table <- fread("./05-results/rgig7111_pydamage_table.tsv")
+
+pydamage_table %>%
+  group_by(Bin, pass_pydamage) %>%
+  count() %>%
+  ungroup()
+
+```
+
+```{r}
+
+# read in the library table from ancient metagenomeDir to get the UDG treatments for libraries of all samples included here
+amgd <- fread("https://raw.githubusercontent.com/SPAAM-community/AncientMetagenomeDir/refs/heads/master/ancientmetagenome-hostassociated/libraries/ancientmetagenome-hostassociated_libraries.tsv") %>%
+  select(archive_sample_accession, library_treatment, library_polymerase) %>%
+  rename(SampleID = archive_sample_accession) %>%
+  unique() %>%
+  right_join(., all_info %>%
+              select(genome) %>%
+              separate_wider_delim(genome, names = c("SampleID"), delim = ".bin", too_many = "drop"), by = "SampleID") %>%
+  unique()
+
+amgd %>%
+  group_by(SampleID) %>%
+  count() %>%
+  ungroup() %>%
+  filter(n > 1) %>%
+  left_join(., amgd, by = "SampleID")
+
+```
+
+
+```{r damage_curves}
+
+# Find out which samples include UDG-treated data or UDG-half data (all Pacifc and Middenbeemster are UDG-half)
+# then facet by UDG treatment
+
+damage_curves <- pydamage_table %>%
+  select(-SampleID, -pass_pydamage, -predicted_accuracy, -damage_model_p, -pvalue, -qvalue, -nb_reads_aligned, -coverage, -reflen) %>%
+  pivot_longer(!Bin:Contig, names_to = "Base", values_to = "Damage") %>%
+  group_by(Bin, Base) %>%
+  summarize(mean_damage = mean(Damage)) %>%
+  ungroup() %>%
+  mutate(Base = str_remove_all(Base, "CtoT-"),
+         Base = as.numeric(Base)) %>%
+  left_join(., all_info %>%
+              select(Bin, Study), by = "Bin") %>%
+  mutate(sample = Bin) %>%
+  separate_wider_delim(sample, names = "SampleID", delim = ".bin", too_many = "drop") %>%
+  left_join(., amgd %>%
+              mutate(library_treatment = ifelse(str_detect(SampleID, "ERS3774422|ERS3774458|ERS3774460|ERS3774463|ERS3774468"), "mixed", library_treatment))) %>%
+  mutate(library_treatment = ifelse(Study == "PacificCalculus", "half-udg",
+                                    ifelse(Study == "SMH2023","mixed", 
+                                           ifelse(str_detect(Study, "Velsko2019|Warinner2014|Eisenhofer2020|Ozga2019"), "proof-reading enzyme",
+                                                  ifelse(Study == "RIII2023", "none", library_treatment))))) %>%
+  # the Pacific samples processed in Otago were not UDG-treated so fix that
+  mutate(library_treatment = ifelse(str_detect(SampleID, "ERS15409367|ERS15409370|ERS15409385|ERSX0005001"), "none",library_treatment),
+         Study = ifelse(Study == "PacificCalculus", "Velsko2024",Study),
+         Study = str_remove_all(Study, "-nonhumanDNA"),
+         Study = str_remove_all(Study, "-humanaDNA"),
+         Study = ifelse(str_detect(Study, "SMH"),"RIII2023",Study),
+         library_treatment = str_replace_all(library_treatment, "none", "None"),
+         library_treatment = str_replace_all(library_treatment, "mixed", "Mixed"),
+         library_treatment = str_replace_all(library_treatment, "half-udg", "Half"),
+         library_treatment = str_replace_all(library_treatment, "proof", "Proof")) %>%
+  arrange(Bin, Base) %>%
+  filter(Base <= 5) %>%
+  mutate(library_treatment = fct_relevel(library_treatment, c("None", "Half", "Proof-reading enzyme", "Mixed"))) %>%
+  # filter(is.na(library_treatment))
+  ggplot(., aes(x = Base, y = mean_damage, group = Bin)) + # , group = Country
+         geom_line(aes(color = library_treatment), linewidth=0.5) + # aes(color = Country) , linetype = classified
+         # geom_point() +
+         theme_minimal(base_size = 12) +
+         theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5, size = 12)) +
+         theme(axis.text.y = element_text(size = 12)) +
+         scale_color_manual(values = enzyme_colors, name = "Library treatment") +
+         # theme(panel.grid.minor = element_blank()) +
+         scale_y_continuous(breaks=scales::pretty_breaks(n=5)) +
+         scale_x_continuous(breaks=scales::pretty_breaks(n=5)) +
+         # ylim(0,0.4) +
+         ylab("5' C->T frequency") +
+         xlab("Base") +
+         # facet_wrap(~Study) 
+         facet_wrap(~factor(library_treatment, c("None", "Half", "Proof-reading enzyme", "Mixed")), nrow = 1)
+
+damage_curves
+
+# ggsave("06-publication/extended_data_figures/Extended_Data_Figure_6/rgig7111_damage_curves.pdf", plot = damage_curves, device = "pdf",
+#        scale = 1, width = 10, height = 3, units = c("in"), dpi = 300)
+
+
+```
+
+
+```{r qual_counts}
+# How many Continents/Studies/Ages for these MAGs?
+
+qual_counts <- all_info %>%
+  mutate(Host = ifelse(str_detect(MAG_source, "CMC|Modern"), "Modern Human",
+                       ifelse(MAG_source == "Ancient" & Host == "Human", "Ancient Human",Host))) %>%
+  group_by(Host, QUAL) %>%
+  count() %>%
+  ungroup()%>%
+  mutate(Host = fct_relevel(Host, "Baboon","Chimpanzee","Modern Human","Ancient Human","Neanderthal")) %>%
+  ggplot(., aes(x = Host, y = n, group = QUAL)) +
+         geom_bar(aes(fill = QUAL), stat = "identity", position = position_dodge2(width = 0.9, preserve = "single"), color = "black", linewidth = 0.2) +
+         geom_text(aes(label = n), position=position_dodge(width=0.9), vjust=-0.5, size = 4) +
+         scale_fill_manual(values = c("#FF3F38", "#FF8C8D")) +
+         theme_minimal(base_size = 10) +
+         theme(axis.text.x = element_text(angle = 0, hjust = 0.5),
+               axis.text = element_text(size = 12)) +
+         scale_y_continuous(breaks=scales::pretty_breaks(n=8)) +
+        ylab("Number of MAGs")
+
+qual_counts
+
+# ggsave("06-publication/extended_data_figures/Extended_Data_Figure_6/rgig7111_qual_counts.pdf", plot = qual_counts, device = "pdf",
+#        scale = 1, width = 9, height = 5, units = c("in"), dpi = 300)
+
+
+```
+
+
+```{r contig_counts}
+
+contig_counts <- all_info %>%
+  select(Bin, primary_cluster,QUAL, GUNC.n_contigs) %>%
+  mutate(primary_cluster = as.character(primary_cluster)) %>%
+  ggplot(., aes(x = primary_cluster, y = `GUNC.n_contigs`, fill = primary_cluster)) + 
+  ## add half-violin from {ggdist} package
+  ggdist::stat_halfeye(
+    ## custom bandwidth
+    adjust = .5, 
+    ## adjust height
+    width = .6, 
+    ## move geom to the right
+    justification = -.2, 
+    ## remove slab interval
+    .width = 0, 
+    point_colour = NA
+  ) + 
+  geom_boxplot(
+    width = .12, 
+    ## remove outliers
+    outlier.color = NA, ## `outlier.shape = NA` works as well
+    color = "grey30"
+  ) +
+  ## add dot plots from {ggdist} package
+  ggdist::stat_dots(
+    ## orientation to the left
+    side = "left", 
+    ## move geom to the left
+    justification = 1.1, 
+    ## adjust grouping (binning) of observations 
+    binwidth = 10
+  ) + 
+  ## remove white space on the left
+  coord_cartesian(xlim = c(1.2, NA)) +
+  theme_minimal(base_size = 12) +
+  # scale_fill_manual(values = Continent_colors) +
+  theme(axis.text.y = element_text(size = 12)) +
+  theme(legend.position = "none") +
+  scale_fill_manual(values = "#C70E7B") +
+  xlab("Cluster") +
+  ylab("Number of Contigs") +
+  theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5)) 
+
+contig_counts 
+
+# ggsave("06-publication/extended_data_figures/Extended_Data_Figure_6/rgig7111_contig_counts.pdf", plot = contig_counts, device = "pdf",
+#        scale = 1, width = 8.5, height = 4, units = c("in"), dpi = 300)
+
+```
+
+```{r GC}
+
+gc_plot <- all_info %>%
+  select(Bin, primary_cluster, GC_pct) %>%
+  mutate(primary_cluster = as.character(primary_cluster)) %>%
+  ggplot(., aes(x = primary_cluster, y = GC_pct, fill = primary_cluster)) + 
+  ## add half-violin from {ggdist} package
+  ggdist::stat_halfeye(
+    ## custom bandwidth
+    adjust = .5, 
+    ## adjust height
+    width = .6, 
+    ## move geom to the right
+    justification = -.2, 
+    ## remove slab interval
+    .width = 0, 
+    point_colour = NA
+  ) + 
+  geom_boxplot(
+    width = .12, 
+    ## remove outliers
+    outlier.color = NA, ## `outlier.shape = NA` works as well
+    color = "grey30"
+  ) +
+  ## add dot plots from {ggdist} package
+  ggdist::stat_dots(
+    ## orientation to the left
+    side = "left", 
+    ## move geom to the left
+    justification = 1.1, 
+    ## adjust grouping (binning) of observations 
+    binwidth = 0.05
+  ) + 
+  ## remove white space on the left
+  coord_cartesian(xlim = c(1.2, NA)) +
+  theme_minimal(base_size = 12) +
+  # scale_fill_manual(values = Continent_colors) +
+  theme(axis.text.y = element_text(size = 12)) +
+  theme(legend.position = "none") +
+  scale_fill_manual(values = "#C70E7B") +
+  xlab("Cluster") +
+  ylab("%GC") +
+  theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5)) 
+
+gc_plot
+
+# ggsave("06-publication/extended_data_figures/Extended_Data_Figure_6/rgig7111_gc_plot.pdf", plot = gc_plot, device = "pdf",
+#        scale = 1, width = 7.5, height = 4, units = c("in"), dpi = 300)
+
+
+```
+
+
+```{r length_plot_checkM}
+
+# How does that compare to other oral genome sizes in this family?
+# Close, where complete genomes seem to be around 1.8Mb
+# Mogibacterium and Eubacterium_B
+
+length_plot <- all_info_pre %>%
+  filter(Source == "oral",
+         MAG_source != "NCBI MAG") %>%
+  drop_na(GC_pct) %>%
+  mutate(length = length / 100000) %>%
+  ggplot(., aes(x = length, y = completeness, color = MAG_source)) +
+    geom_point(aes(color = MAG_source), size = 1.5) +
+    theme_minimal(base_size = 14) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5,  vjust = 0),
+          text = element_text(size=14)) +
+    theme(panel.grid.minor = element_blank()) +
+    scale_color_manual(values = c("#EF7C12", "#C70E7B", "#F4B95A","gray30")) + # "gray","blue",
+    scale_y_continuous(breaks=scales::pretty_breaks(n=10)) +
+    scale_x_continuous(breaks=scales::pretty_breaks(n=10)) +
+    xlab("Length (bp) (x10^5)")
+
+length_plot
+
+# ggsave("./06-publication/extended_data_figures/Extended_Data_Figure_6/rgig7111_length_plot.pdf", plot = length_plot, device = "pdf",
+#        scale = 1, width = 5, height = 4, units = c("in"), dpi = 300)
+
+
+```
+
+```{r}
+
+checkM2_complete <- all_info_pre %>%
+  filter(primary_cluster == "211") %>%
+  drop_na(GC_pct) %>%
+  mutate(length = length / 100000) %>%
+  ggplot(., aes(x = length, y = `checkM2.completeness`, fill = MAG_source)) +
+    geom_point(aes(color = MAG_source), size = 1.5) +
+    theme_minimal(base_size = 14) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5,  vjust = 0),
+          text = element_text(size=14)) +
+    theme(panel.grid.minor = element_blank()) +
+    scale_color_manual(values = c("#EF7C12", "#C70E7B", "#F4B95A","gray30")) + # "gray","blue",
+    scale_y_continuous(breaks=scales::pretty_breaks(n=10)) +
+    scale_x_continuous(breaks=scales::pretty_breaks(n=10)) +
+    xlab("Gene count") +
+    ylab("CheckM2 Completeness (%)")
+checkM2_complete
+
+# ggsave("06-publication/extended_data_figures/Extended_Data_Figure_6/rgig7111_checkM2_completeness.pdf", plot = checkM2_complete, device = "pdf",
+#        scale = 1, width = 8.5, height = 4, units = c("in"), dpi = 300)
+
+```
+
+```{r}
+
+# How does that compare to other oral genome sizes in this family?
+# Close, where complete genomes seem to be around 1.8Mb
+# Mogibacterium and Eubacterium_B
+
+length_plot <- all_info %>%
+  filter(Source == "oral",
+         MAG_source != "NCBI MAG") %>%
+  drop_na(GC_pct) %>%
+  mutate(length = length / 100000) %>%
+  ggplot(., aes(x = length, y = completeness, color = MAG_source)) +
+    geom_point(aes(color = MAG_source), size = 1.5) +
+    theme_minimal(base_size = 14) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5,  vjust = 0),
+          text = element_text(size=14)) +
+    theme(panel.grid.minor = element_blank()) +
+    scale_color_manual(values = c("#EF7C12", "#C70E7B", "#F4B95A","gray30")) + # "gray","blue",
+    scale_y_continuous(breaks=scales::pretty_breaks(n=10)) +
+    scale_x_continuous(breaks=scales::pretty_breaks(n=10)) +
+    xlab("Length (bp) (x10^5)")
+
+length_plot
+
+# ggsave("./06-publication/extended_data_figures/Extended_Data_Figure_6/rgig7111_length_plot.pdf", plot = length_plot, device = "pdf",
+#        scale = 1, width = 5, height = 4, units = c("in"), dpi = 300)
+
+
+```
+
+
+
+
+
+
+
+
+

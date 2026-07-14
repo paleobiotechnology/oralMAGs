@@ -1,0 +1,684 @@
+---
+title: "Extended Data Figure 4"
+author: "Irina Velsko"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output:
+    github_document:
+        fig_width: 8
+        fig_height: 6
+        toc: true
+---
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(janitor)
+library(tidyverse)
+library(patchwork)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+Set the working directory of the notebook to the parent directory of the 
+notebook itself.  
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath("../../.."))
+```
+
+```{r quality_colors}
+
+os_colors <- c("Calculus - Ancient" = "#EF7C12",
+               "Calculus - Industrial" = "#F4B95A",
+               "Plaque - Industrial" = "#FC6882",
+               "Plaque - Non-industrial" = "#C70E7B",
+               "Buccal mucosa - Industrial" = "#8FDA04",
+               "Buccal mucosa - Non-industrial" = "#009F3F",
+               "Saliva - Industrial" = "#54BCD1",
+               "Saliva - Non-industrial" = "#007BC3",
+               "RefSeq" = "gray80",
+               "Tongue - Industrial" = "#78d9ca",
+               # "Tongue - Non-industrial" = "#189a85",
+               "Hard palate - Industrial" = "#cab2d6",
+               # "Hard_palate - Non-industrial" = "#6a3d9a",
+               "Keratinized gingiva - Industrial" = "#F7E690",
+               # "Keratinized gingiva - Non-ndustrial" = "#F5D000",
+               "PQ" = "#FC6882", "AC" = "#EF7C12", "MC" = "#F4B95A",
+               "BM" = "#8FDA04","SL" = "#54BCD1","TN" = "#78d9ca","KG" = "#F7E690","HP" = "#cab2d6")
+
+db_colors = c("HOMD" =  "#cab2d6",
+              "HOMD_MAGs" = "#6a3d9a")
+
+vb_colors <- c("VANISH" = "#feb24c", "BloSSUM" = "#FF3200")
+
+```
+
+```{r}
+
+# read in the list of environmental species clusters
+ancient_envt_clusters <- fread("./00-documentation/ancient_envt_clusters_26_07_2024.tsv")
+
+# read in the table used for taxdump to make the kraken2 database, that has the primary cluster and the species name
+taxdump_file <- fread("00-documentation/cluster_taxonomy_for_taxdump_26_07_2024.tsv") %>%
+  select(id, species) %>%
+  mutate(id = str_remove_all(id, "pr_cl_"),
+        id = as.numeric(id))
+
+
+# now get the species names of the ancient environmental species clusters
+anc_envt_species <- ancient_envt_clusters %>%
+  left_join(., taxdump_file %>%
+              rename(primary_cluster = id,
+                     Species = species), by = "primary_cluster") %>%
+  select(Species)
+
+poor_samples <- fread("./00-documentation/poor_samples_humans.tsv")
+
+lib_metadata <- fread("./00-documentation/library_sample_eager_metadata.tsv")
+  
+```
+
+
+```{r}
+
+# HOMD_MAGs, all oral samples
+homd_mags_sp <- fread("./05-results/kraken2_ci15_all_oral_samples.homd_mags_07_2024_species.tsv") %>%
+  anti_join(., anc_envt_species, by = "Species") %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  anti_join(., poor_samples, by = "Eager_label") %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Full) %>%
+              unique(), by = "Eager_label") %>%
+  filter(str_detect(Full, "Calculus|Plaque")) %>%
+  select(-Full) %>%
+  pivot_wider(names_from = "Eager_label", values_from = "Counts")
+
+# volcano plot table
+volcano_table <- fread("./05-results/volcano_table.tsv") %>%
+  mutate(direction = ifelse(l2fc >= 5 & q >= 60, "BloSSUM",
+                            ifelse(l2fc <= -5 & q >= 60, "VANISH","neither")))
+
+```
+
+```{r}
+vb_volcano_plot <- volcano_table %>%
+  filter(Species != "Peptoniphilaceae pr_cl_1583") %>%
+  mutate(quad = ifelse(l2fc >= 5 & q >= 60, "up_PQi",
+                       ifelse(l2fc <= -5 & q >= 60, "up_CA", "neither"))) %>%
+  mutate(quad = ifelse(quad == "neither" & l2fc >= 2 & q >= 40, "low_up_PQi",
+                       ifelse(quad == "neither" & l2fc <= -2 & q >= 40, "low_up_CA", quad))) %>%
+  ggplot(., aes(x = l2fc, y = -log10(`p.adj`))) +
+    geom_point(aes(fill = quad, shape = magnitude), size = 2.5, stroke = 0.2) + # 
+    theme_minimal(base_size = 12) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5,  vjust = 0),
+          text = element_text(size=12)) +
+    theme(panel.grid.minor = element_blank()) +
+    geom_hline(yintercept = 60, col = "gray30", linetype = 'dashed') + # -log10(0.05)
+    geom_vline(xintercept = -5, col = "gray30", linetype = 'dashed') +
+    geom_vline(xintercept = 5, col = "gray30", linetype = 'dashed') +
+    # geom_hline(yintercept = 40, col = "gray30", linetype = 'dotted') + # -log10(0.05)
+    # geom_vline(xintercept = -2, col = "gray30", linetype = 'dotted') +
+    # geom_vline(xintercept = 2, col = "gray30", linetype = 'dotted') +
+    # scale_fill_viridis_c(option = "A") +
+    scale_fill_manual(values = c("gray90","gray90","gray90","#feb24c","#FF3200")) + # "#fee0b7","#ff8466"
+    scale_shape_manual(values = c(23,21)) +
+    scale_y_continuous(limits = c(15,75), breaks=scales::pretty_breaks(n=8)) +
+    scale_x_continuous(breaks=scales::pretty_breaks(n=10)) +
+    guides(fill="none", shape = "none") +
+    xlab("Log2(FC)") +
+    ylab("-log10(q)")
+ 
+vb_volcano_plot
+
+# ggsave("06-publication/main_figures/Figure_XX2/vb_volcano_lower_limits.pdf", plot = vb_volcano_plot, device = "pdf",
+#        scale = 1, width = 3, height = 5, units = c("in"), dpi = 300)
+
+# ggsave("06-publication/extended_data_figures/Extended_Data_Figure_4/volcano_plot.pdf", plot = vb_volcano_plot, device = "pdf",
+#        scale = 1, width = 5, height = 4, units = c("in"), dpi = 300)
+
+```
+
+```{r}
+
+# Look at the top 300 most abundant species in each group instead and plot those
+
+top_50_sp_list <- homd_mags_sp %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Full) %>%
+              unique(), by = "Eager_label") %>%
+  group_by(Full, Species) %>%
+  summarize(total_counts = sum(Counts)) %>%
+  ungroup() %>%
+  group_by(Full) %>%
+  slice_max(total_counts, n = 300) %>%
+  ungroup() %>%
+  select(Species) %>%
+  unique() %>%
+  filter(!str_detect(Species, "Burkholderia")) 
+
+top_50_sp <- top_50_sp_list %>%
+  pull()
+
+```
+
+```{r}
+
+homd_mags_sp_pre_clr <- homd_mags_sp %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  mutate(Counts = Counts + 1) %>%
+  pivot_wider(names_from = "Species", values_from = "Counts") %>%
+  column_to_rownames("Eager_label")
+
+homd_mags_sp.pca <- mixOmics::pca(homd_mags_sp_pre_clr, ncomp = 3, logratio = 'CLR')
+
+# Select out CLR-transformed matrix into a new table
+homd_mags_sp_clr <- as.data.frame.matrix(homd_mags_sp.pca$X) %>%
+  rownames_to_column("Eager_label") %>%
+  as_tibble() %>%
+  pivot_longer(!Eager_label, names_to = "Species", values_to = "CLR")
+
+
+diff_abund_clr_table <- homd_mags_sp_clr %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Full) %>%
+              unique(), by = "Eager_label") %>%
+  filter(Species %in% top_50_sp) %>%
+  group_by(Species) %>%
+  rstatix::wilcox_test(CLR~Full, p.adjust.method = "fdr") %>%
+  full_join(., homd_mags_sp_clr %>%
+            left_join(., lib_metadata %>%
+                        select(Eager_label, Full) %>%
+                        unique(), by = "Eager_label") %>%
+            filter(Species %in% top_50_sp) %>%
+            group_by(Species) %>%
+            rstatix::wilcox_effsize(CLR~Full))
+
+
+da_clr_sp <- diff_abund_clr_table %>%
+    filter(group1 == "Calculus - Ancient",
+           group2 == "Plaque - Industrial",
+           p.adj <= 0.05,
+           effsize >= 0.3) %>%
+    select(-`.y.`, -group1, -group2) %>%
+    arrange(Species) 
+
+    
+da_clr_sp_calc <- diff_abund_clr_table %>%
+    filter(group1 == "Calculus - Ancient",
+           group2 == "Calculus - Industrial",
+           p.adj <= 0.05) %>%
+    select(-`.y.`, -group1, -group2) %>%
+    arrange(Species)
+
+
+da_clr_sp_pq <- diff_abund_clr_table %>%
+    filter(group1 == "Plaque - Industrial",
+           group2 == "Plaque - Non-industrial",
+           p.adj <= 0.05) %>%
+    select(-`.y.`, -group1, -group2) %>%
+    arrange(Species)
+
+```
+
+
+```{r calc_volcano}
+
+volcano_table_calc <- homd_mags_sp %>%
+  # convert counts to proportion (columns (here Samples) sum to 1)
+  adorn_percentages(denominator = "col") %>%
+  as_tibble() %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Pct") %>%
+  # mutate(Pct = 100 * Pct) %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Full) %>%
+              unique(), by = "Eager_label") %>%
+  group_by(Full, Species) %>%
+  summarize(mean_pct = mean(Pct * 100)) %>%
+  ungroup() %>%
+  pivot_wider(names_from = "Full", values_from = "mean_pct") %>%
+  filter(Species %in% top_50_sp) %>%
+  select(Species, `Calculus - Ancient`, `Calculus - Industrial`) %>%
+  mutate(
+         fc = (`Calculus - Industrial` / `Calculus - Ancient`),
+         l2fc = log2(abs(fc))) %>% # abs(fc)
+  right_join(., da_clr_sp_calc %>%
+              select(Species, effsize, magnitude, `p.adj`), by = "Species") %>%
+  mutate(q = -log10(`p.adj`)) %>%
+  mutate(direction = ifelse(l2fc >= 5 & q >= 5, "BloSSUM",
+                            ifelse(l2fc <= -5 & q >= 5, "VANISH","neither")))
+
+# fwrite(volcano_table_calc, "./05-results/volcano_table_calc.tsv", quote = F, sep = "\t")
+
+
+volcano_plot_calc <- volcano_table_calc %>%
+  filter(Species != "Peptoniphilaceae pr_cl_1583") %>%
+  mutate(quad = ifelse(l2fc >= 5 & q >= 5, "up_PQi",
+                       ifelse(l2fc <= -5 & q >= 5, "up_CA", "neither"))) %>%
+  # mutate(quad = ifelse(quad == "neither" & l2fc >= 2 & q >= 40, "low_up_PQi",
+  #                      ifelse(quad == "neither" & l2fc <= -2 & q >= 40, "low_up_CA", quad))) %>%
+  ggplot(., aes(x = l2fc, y = -log10(`p.adj`))) + # 
+    geom_point(aes(fill = quad, shape = magnitude), size = 2.5, stroke = 0.2) + # 
+    theme_minimal(base_size = 12) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5,  vjust = 0),
+          text = element_text(size=12)) +
+    theme(panel.grid.minor = element_blank()) +
+    geom_hline(yintercept = 5, col = "gray30", linetype = 'dashed') + # -log10(0.05)
+    geom_vline(xintercept = -5, col = "gray30", linetype = 'dashed') +
+    geom_vline(xintercept = 5, col = "gray30", linetype = 'dashed') +
+    scale_fill_manual(values = c("gray90","#feb24c","#FF3200")) +
+    scale_shape_manual(values = c(21)) +
+    scale_y_continuous(breaks=scales::pretty_breaks(n=8)) + # limits = c(15,75), 
+    scale_x_continuous(breaks=scales::pretty_breaks(n=10)) +
+    guides(fill="none", shape = "none") +
+    xlab("Log2(FC)") +
+    ylab("-log10(q)")
+
+volcano_plot_calc
+
+# ggsave("06-publication/extended_data_figures/Extended_Data_Figure_4/volcano_plot_calc.pdf", plot = volcano_plot_calc, device = "pdf",
+#        scale = 1, width = 5, height = 4, units = c("in"), dpi = 300)
+
+
+```
+
+
+
+```{r pq_volcano}
+
+volcano_table_pq <- homd_mags_sp %>%
+  # convert counts to proportion (columns (here Samples) sum to 1)
+  adorn_percentages(denominator = "col") %>%
+  as_tibble() %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Pct") %>%
+  # mutate(Pct = 100 * Pct) %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Full) %>%
+              unique(), by = "Eager_label") %>%
+  group_by(Full, Species) %>%
+  summarize(mean_pct = mean(Pct * 100)) %>%
+  ungroup() %>%
+  pivot_wider(names_from = "Full", values_from = "mean_pct") %>%
+  filter(Species %in% top_50_sp) %>%
+  select(Species, `Plaque - Non-industrial`, `Plaque - Industrial`) %>%
+  mutate(
+         fc = (`Plaque - Industrial` / `Plaque - Non-industrial`),
+         l2fc = log2(abs(fc))) %>% # abs(fc)
+  right_join(., da_clr_sp_pq %>%
+              select(Species, effsize, magnitude, `p.adj`), by = "Species") %>%
+  mutate(q = -log10(`p.adj`)) %>%
+  mutate(direction = ifelse(l2fc >= 5 & q >= 17, "BloSSUM",
+                            ifelse(l2fc <= -5 & q >= 17, "VANISH","neither")))
+
+# fwrite(volcano_table_pq, "./05-results/volcano_table_pq.tsv", quote = F, sep = "\t")
+
+
+volcano_plot_pq <- volcano_table_pq %>%
+  filter(Species != "Peptoniphilaceae pr_cl_1583") %>%
+  mutate(quad = ifelse(l2fc >= 5 & q >= 17, "up_PQi",
+                       ifelse(l2fc <= -5 & q >= 17, "up_PQni", "neither"))) %>%
+  ggplot(., aes(x = l2fc, y = -log10(`p.adj`))) + # 
+    geom_point(aes(fill = quad, shape = magnitude), size = 2.5, stroke = 0.2) + # 
+    theme_minimal(base_size = 12) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5,  vjust = 0),
+          text = element_text(size=12)) +
+    theme(panel.grid.minor = element_blank()) +
+    geom_hline(yintercept = 17, col = "gray30", linetype = 'dashed') + # -log10(0.05)
+    geom_vline(xintercept = -5, col = "gray30", linetype = 'dashed') +
+    geom_vline(xintercept = 5, col = "gray30", linetype = 'dashed') +
+    scale_fill_manual(values = c("gray90","#FF3200","#feb24c")) +
+    scale_shape_manual(values = c(21,23,23)) +
+    scale_y_continuous(breaks=scales::pretty_breaks(n=8)) + # limits = c(15,75), 
+    scale_x_continuous(breaks=scales::pretty_breaks(n=10)) +
+    guides(fill="none", shape = "none") +
+    xlab("Log2(FC)") +
+    ylab("-log10(q)")
+
+volcano_plot_pq
+
+# ggsave("06-publication/extended_data_figures/Extended_Data_Figure_4/volcano_plot_pq.pdf", plot = volcano_plot_pq, device = "pdf",
+#        scale = 1, width = 5, height = 4, units = c("in"), dpi = 300)
+
+
+```
+
+
+```{r vanish_table_upset}
+
+# calc anc vs pqi
+clusters_w_capi <- volcano_table %>%
+  filter(Species != "Peptoniphilaceae pr_cl_1583") %>%
+  filter(direction == "VANISH")  %>%
+  select(Species) %>%
+  unique()
+
+# calc anc vs mod
+clusters_w_caci <- volcano_table_calc %>%
+  filter(Species != "Peptoniphilaceae pr_cl_1583") %>%
+  filter(direction == "VANISH")  %>%
+  select(Species) %>%
+  unique()
+
+# plaque ni vs i
+clusters_w_pnipi <- volcano_table_pq %>%
+  filter(Species != "Peptoniphilaceae pr_cl_1583") %>%
+  filter(direction == "VANISH")  %>%
+  select(Species) %>%
+  unique()
+
+vanish_binary <- clusters_w_capi %>%
+  mutate(AC_PQi = 1) %>%
+  full_join(., clusters_w_caci %>%
+              mutate(AC_MC = 1), by = "Species") %>%
+  full_join(., clusters_w_pnipi %>%
+              mutate(PQni_PQi = 1), by = "Species") %>%
+  replace(is.na(.), 0) %>%
+  # adorn_totals(where = "col") %>%
+  # arrange(Total)
+  column_to_rownames("Species") %>%
+  as.matrix(.)
+
+```
+
+```{r upset_plot_all_oral_sites}
+library(ComplexHeatmap)
+
+# make an upset plot
+m1 <- ComplexHeatmap::make_comb_mat(vanish_binary)
+ss = set_size(m1)
+cs = comb_size(m1)
+
+ht = ComplexHeatmap::UpSet(m1, 
+                      set_order = c("AC_PQi","AC_MC","PQni_PQi"),
+                      comb_order = rev(order(comb_name(m1))),
+                      comb_col = c("#e6778e","black","black","black","black","black","black","black","black")[comb_degree(m1)],
+                      top_annotation = HeatmapAnnotation(
+                        "Shared species clusters" = anno_barplot(cs, 
+                            ylim = c(0, max(cs)*1.1),
+                            border = FALSE, 
+                            gp = gpar(fill = "black"), 
+                            height = unit(4, "cm")
+                        ),
+                      annotation_name_side = "left", 
+                      annotation_name_rot = 90),
+                      left_annotation = rowAnnotation(
+                      "Species clusters" = anno_barplot(-ss, 
+                          baseline = 0,
+                          axis_param = list(
+                              at = c(0, -25, -50, -75, -100),
+                              labels = c(0, 25, 50, 75, 100),
+                              labels_rot = 0),
+                          border = FALSE, 
+                          gp = gpar(fill = "gray"), 
+                          width = unit(4, "cm")
+                      ),
+                      set_name = anno_text(set_name(m1), 
+                          location = 1.0, 
+                          just = "right",
+                          width = max_text_width(set_name(m1)) + unit(4, "mm"))
+                  ), 
+                  show_row_names = FALSE)
+
+ht = draw(ht)
+od = column_order(ht)
+decorate_annotation("Shared species clusters", {
+    grid.text(cs[od], x = seq_along(cs), y = unit(cs[od], "native") + unit(2, "pt"),
+        default.units = "native", just = c("center", "bottom"),
+        gp = gpar(fontsize = 8, col = "#404040"), rot = 0)
+                      })
+
+```
+
+```{r, eval = F}
+
+pdf(file = "./06-publication/extended_data_figures/Extended_Data_Figure_4/vanish_upset.pdf", width = 4, height = 3) 
+
+ht = draw(ht)
+od = column_order(ht)
+decorate_annotation("Shared species clusters", {
+    grid.text(cs[od], x = seq_along(cs), y = unit(cs[od], "native") + unit(2, "pt"), 
+        default.units = "native", just = c("center", "bottom"), 
+        gp = gpar(fontsize = 8, col = "#404040"), rot = 0)
+                      })
+
+dev.off()
+
+
+```
+
+```{r blossum_table_upset}
+
+# calc anc vs pqi
+blossum_w_capi <- volcano_table %>%
+  filter(direction == "BloSSUM")  %>%
+  select(Species) %>%
+  unique()
+
+# calc anc vs mod
+blossum_w_caci <- volcano_table_calc %>%
+  filter(direction == "BloSSUM")  %>%
+  select(Species) %>%
+  unique()
+
+# plaque ni vs i
+blossum_w_pnipi <- volcano_table_pq %>%
+  filter(direction == "BloSSUM")  %>%
+  select(Species) %>%
+  unique()
+
+blossum_binary <- blossum_w_capi %>%
+  mutate(AC_PQi = 1) %>%
+  full_join(., blossum_w_caci %>%
+              mutate(AC_MC = 1), by = "Species") %>%
+  full_join(., blossum_w_pnipi %>%
+              mutate(PQni_PQi = 1), by = "Species") %>%
+  replace(is.na(.), 0) %>%
+  # adorn_totals(where = "col") %>%
+  # arrange(Total)
+  column_to_rownames("Species") %>%
+  as.matrix(.)
+
+```
+
+```{r upset_plot_all_oral_sites}
+
+# make an upset plot
+m1 <- ComplexHeatmap::make_comb_mat(blossum_binary)
+ss = set_size(m1)
+cs = comb_size(m1)
+
+ht = ComplexHeatmap::UpSet(m1, 
+                      set_order = c("AC_PQi","AC_MC","PQni_PQi"),
+                      comb_order = rev(order(comb_name(m1))),
+                      comb_col = c("#e6778e","black","black","black","black","black","black","black","black")[comb_degree(m1)],
+                      top_annotation = HeatmapAnnotation(
+                        "Shared species clusters" = anno_barplot(cs, 
+                            ylim = c(0, max(cs)*1.1),
+                            border = FALSE, 
+                            gp = gpar(fill = "black"), 
+                            height = unit(4, "cm")
+                        ),
+                      annotation_name_side = "left", 
+                      annotation_name_rot = 90),
+                      left_annotation = rowAnnotation(
+                      "Species clusters" = anno_barplot(-ss, 
+                          baseline = 0,
+                          axis_param = list(
+                              at = c(0, -5, -10, -15, -20),
+                              labels = c(0, 5, 10, 15,20),
+                              labels_rot = 0),
+                          border = FALSE, 
+                          gp = gpar(fill = "gray"), 
+                          width = unit(4, "cm")
+                      ),
+                      set_name = anno_text(set_name(m1), 
+                          location = 1.0, 
+                          just = "right",
+                          width = max_text_width(set_name(m1)) + unit(4, "mm"))
+                  ), 
+                  show_row_names = FALSE)
+
+ht = draw(ht)
+od = column_order(ht)
+decorate_annotation("Shared species clusters", {
+    grid.text(cs[od], x = seq_along(cs), y = unit(cs[od], "native") + unit(2, "pt"),
+        default.units = "native", just = c("center", "bottom"),
+        gp = gpar(fontsize = 8, col = "#404040"), rot = 0)
+                      })
+
+```
+
+```{r, eval = F}
+
+pdf(file = "./06-publication/extended_data_figures/Extended_Data_Figure_4/blossom_upset.pdf", width = 4, height = 3) 
+
+ht = draw(ht)
+od = column_order(ht)
+decorate_annotation("Shared species clusters", {
+    grid.text(cs[od], x = seq_along(cs), y = unit(cs[od], "native") + unit(2, "pt"), 
+        default.units = "native", just = c("center", "bottom"), 
+        gp = gpar(fontsize = 8, col = "#404040"), rot = 0)
+                      })
+
+dev.off()
+
+
+```
+
+
+```{r vanish_heatmaps}
+
+vanish_order <- clusters_w_capi %>%
+  mutate(AC_PQi = 1) %>%
+  full_join(., clusters_w_caci %>%
+              mutate(AC_MC = 1), by = "Species") %>%
+  full_join(., clusters_w_pnipi %>%
+              mutate(PQni_PQi = 1), by = "Species") %>%
+  replace(is.na(.), 0) %>%
+  arrange(desc(AC_PQi), desc(AC_MC), desc(PQni_PQi)) %>%
+  pull(Species)
+
+clusters_w_capi %>%
+  mutate(AC_PQi = 1) %>%
+  full_join(., clusters_w_caci %>%
+              mutate(AC_MC = 1), by = "Species") %>%
+  full_join(., clusters_w_pnipi %>%
+              mutate(PQni_PQi = 1), by = "Species") %>%
+  replace(is.na(.), 0) %>%
+  pivot_longer(!Species, names_to = "Comparison", values_to = "Present") %>%
+  mutate(Present = as.character(Present),
+         Species = fct_relevel(Species, vanish_order),
+         Comparison = fct_relevel(Comparison, "AC_PQi", "AC_MC","PQni_PQi")) %>%
+  arrange(Comparison, Species) %>%
+  ggplot(., aes(Comparison, Species, fill = Present)) +
+    geom_tile() +
+    scale_fill_manual(values = c("#e5f1f9","#007BC3")) +
+    theme_minimal(base_size = 8) +
+    # theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+    theme(plot.margin = margin(0, 0, 0, 0, "pt"),
+          axis.title.y = element_blank(),
+          legend.position = "left") +
+     scale_y_discrete(limits=rev) +
+     ylab("Species") +
+     xlab("Comparison")
+
+
+vanish_heat <- volcano_table %>%
+  filter(direction == "VANISH") %>%
+  select(Species, l2fc) %>%
+  mutate(Comparison = "AC_PQi") %>%
+  bind_rows(., volcano_table_calc %>%
+            filter(direction == "VANISH") %>%
+            select(Species, l2fc) %>%
+            mutate(Comparison = "AC_MC")) %>%
+  bind_rows(., volcano_table_pq %>%
+            filter(direction == "VANISH") %>%
+            select(Species, l2fc) %>%
+            mutate(Comparison = "PQni_PQi")) %>%
+  filter(Species != "Peptoniphilaceae pr_cl_1583") %>%
+  pivot_wider(names_from = "Comparison", values_from = "l2fc", values_fill = NA) %>%
+  pivot_longer(!Species, names_to = "Comparison", values_to = "l2fc") %>%
+  mutate(Species = fct_relevel(Species, vanish_order),
+         Comparison = fct_relevel(Comparison, "AC_PQi", "AC_MC","PQni_PQi")) %>%
+  arrange(Comparison, Species) %>%
+  ggplot(., aes(Comparison, Species, fill = l2fc)) +
+    geom_tile() +
+    scale_fill_viridis_c(option = "G", na.value = "gray90") +
+    theme_minimal(base_size = 8) +
+    # theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+    theme(plot.margin = margin(0, 0, 0, 0, "pt"),
+          axis.title.y = element_blank(),
+          legend.position = "left") +
+     scale_y_discrete(limits=rev) +
+     ylab("Species") +
+     xlab("Comparison")
+
+vanish_heat
+
+# ggsave("06-publication/extended_data_figures/Extended_Data_Figure_4/vanish_heat.pdf", plot = vanish_heat, device = "pdf",
+#        scale = 1, width = 4, height = 9, units = c("in"), dpi = 300)
+
+```
+
+```{r blossum_heatmaps}
+
+blossum_order <- blossum_w_capi %>%
+  mutate(AC_PQi = 1) %>%
+  full_join(., blossum_w_caci %>%
+              mutate(AC_MC = 1), by = "Species") %>%
+  full_join(., blossum_w_pnipi %>%
+              mutate(PQni_PQi = 1), by = "Species") %>%
+  replace(is.na(.), 0) %>%
+  arrange(desc(AC_PQi), desc(AC_MC), desc(PQni_PQi)) %>%
+  pull(Species)
+
+
+blossum_heat <- volcano_table %>%
+  filter(direction == "BloSSUM") %>%
+  select(Species, l2fc) %>%
+  mutate(Comparison = "AC_PQi") %>%
+  bind_rows(., volcano_table_calc %>%
+            filter(direction == "BloSSUM") %>%
+            select(Species, l2fc) %>%
+            mutate(Comparison = "AC_MC")) %>%
+  bind_rows(., volcano_table_pq %>%
+            filter(direction == "BloSSUM") %>%
+            select(Species, l2fc) %>%
+            mutate(Comparison = "PQni_PQi")) %>%
+  filter(Species != "Peptoniphilaceae pr_cl_1583") %>%
+  pivot_wider(names_from = "Comparison", values_from = "l2fc", values_fill = NA) %>%
+  pivot_longer(!Species, names_to = "Comparison", values_to = "l2fc") %>%
+  mutate(Species = fct_relevel(Species, blossum_order),
+         Comparison = fct_relevel(Comparison, "AC_PQi", "AC_MC","PQni_PQi")) %>%
+  arrange(Comparison, Species) %>%
+  ggplot(., aes(Comparison, Species, fill = l2fc)) +
+    geom_tile() +
+    scale_fill_viridis_c(option = "F", na.value = "gray90", direction = -1) +
+    theme_minimal(base_size = 12) +
+    # theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+    theme(plot.margin = margin(0, 0, 0, 0, "pt"),
+          axis.title.y = element_blank(),
+          legend.position = "left") +
+     scale_y_discrete(limits=rev) +
+     ylab("Species") +
+     xlab("Comparison")
+
+blossum_heat
+
+# ggsave("06-publication/extended_data_figures/Extended_Data_Figure_4/blossum_heat.pdf", plot = blossum_heat, device = "pdf",
+#        scale = 1, width = 4, height = 4, units = c("in"), dpi = 300)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
