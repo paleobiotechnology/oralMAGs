@@ -31,5 +31,5 @@ The files starting with the prefix `ENVS` are conda environments used in combina
 - `methanomethylophilus_cluster3192_tree.Rmd`: visualize Ca. *Methanomethylophilus fidelis* (pr_cl_3192) single copy core gene tree and metadata (supplemental figure 34)
 - `archaea_cas_alignments.Rmd`: create MUSCLE and MAFFT percent identity heat maps for *Methanocatella* cas IIIA and *Methanomethylophilus* cas IIA (supplemental figures 42 and 43)
 - `mad.R`: Minimal Ancestor Deviation (MAD) rooting R script file used for single copy core gene tree rooting
-- `methanocatella_c1190_tree_comparison.Rmd`: generate tanglegrams to compare RAxML and CASTER-site Ca. *Methanocatella cohabitans* (pr_cl_1190) trees both with and without an outgroup (*M. oralis*)
-- `methanomethylophilus_c3192_tree_comparisons.Rmd`: generate tanglegrams to compare RAxML and CASTER-site Ca. *Methanomethylophilus fidelis* (pr_cl_3192) trees both with and without an outgroup (*M.* pr_cl_3194)
+- `methanocatella_c1190_tree_comparison.Rmd`: generate tanglegrams to compare RAxML and CASTER-site Ca. *Methanocatella cohabitans* (pr_cl_1190) trees both with and without an outgroup (*M. oralis*) (supplemental figure 40.1)
+- `methanomethylophilus_c3192_tree_comparisons.Rmd`: generate tanglegrams to compare RAxML and CASTER-site Ca. *Methanomethylophilus fidelis* (pr_cl_3192) trees both with and without an outgroup (*M.* pr_cl_3194) (supplemental figure 34.1)
