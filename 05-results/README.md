@@ -64,6 +64,9 @@ Files that are used as input for generating figures:
 - `methanocatella_cas_IIIA_nodes_structures.csv`: Table grouping *Methanocatella* Cas IIIA operons into structural subtypes 
 - `methanocatella_casIIIA_MUSCLE_matrix.csv`: Percent identity matrix of *Methanocatella* Cas IIIA MUSCLE (protein) alignment
 - `methanocatella_dRep_ANI_Mdb.csv`: Similarity between all *Methanocatella* MAGs (dRep output)
+- `methanocatella_damage_curves.tsv`: PyDamage estimations for contigs from *Methanocatella* assemblies
+- `methanogenesis_genes.csv`: KEGG genes used to determine methanogenesis operons
+- `methanogenesis_locus_tags_and_panaroo_group.tsv`: correlating named methanogenesis genes with panaroo gene IDs
 
 *Methanocatella* *massiliense* (pr_cl_1187):
 - `methanocatella_c1187_scc.raxml.support`: *M. massiliense* (pr_cl_1187) non-recombinant single copy core gene tree with bootstraps 
@@ -113,7 +116,8 @@ Ca. *Methanocatella* *cohabitans* (pr_cl_1190):
 - `methanomethylophilus_methanogenesis_genes_presence_absence.tsv`: The presence/absence of genes involved in methane production across *Methanomethylophilus* MAGs
 - `methanomethylophilus_casIIA_MAFFT_matrix.csv`: Percent identity matrix of *Methanomethylophilus* Cas IIA MAFFT (nucleotide) alignment 
 - `methanomethylophilus_cas_IIA_nodes_structures.csv`: Table grouping *Methanomethylophilus* Cas IIA operons into structural subtypes 
-- `methanomethylophilus_casIIA_MUSCLE_matrix.csv`: Percent identity matrix of *Methanomethylophilus* Cas IIA MUSCLE (protein) alignment 
+- `methanomethylophilus_casIIA_MUSCLE_matrix.csv`: Percent identity matrix of *Methanomethylophilus* Cas IIA MUSCLE (protein) alignment
+- `methanomethylophilus_damage_curves.tsv`: PyDamage estimations for contigs from *Methanomethylophilus* assemblies
 
 Ca. *Methanomethylophilus fidelis* (pr_cl_3192):
 - `methanomethylophilus_c3192_scc.raxml.support`: Ca. *M. fidelis* (pr_cl_3192) non-recombinant single copy core gene tree with bootstraps 
@@ -126,5 +130,6 @@ Ca. *Methanomethylophilus fidelis* (pr_cl_3192):
 - `methanomethylophilus_c3192_w_outgroup.caster.nwk`: Ca. *M. fidelis* (pr_cl_3192) non-recombinant single copy core gene tree CASTER-site newick file with *M*. pr_cl_3194 as the outgroup
 
 *nimI*:
-- `nimI_GTR.raxml.support`: nimI nucleotide alignment RAxML with bootstraps
-- `nimI_muscle.raxml.support`: nimI protein alignment RAxML with bootstraps
+- `nimI_GTR.raxml.support`: *nimI* nucleotide alignment RAxML with bootstraps
+- `nimI_muscle.raxml.support`: *nimI* protein alignment RAxML with bootstraps
+- `nimI_CARD_table_w_taxonomy.tsv`: CARD *nimI* hits with associated taxonomy to annotate trees
