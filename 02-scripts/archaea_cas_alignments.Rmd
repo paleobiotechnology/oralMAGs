@@ -25,13 +25,13 @@ opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
 knitr::opts_knit$set(root.dir = normalizePath(".."))
 ```
 
-# Methanobrevibacter Cas III-A
+# Methanocatella Cas III-A
 
 ## Nucleotide - MAFFT
 ```{r}
 reference <- "Methanobrevibacter_ruminantium - crispr_IIIA - cas_IIIA"
 
-IIIA_mafft_matrix <- fread("./05-results/methanobrevibacter_casIIIA_MAFFT_matrix.csv") %>%
+IIIA_mafft_matrix <- fread("./05-results/methanocatella_casIIIA_MAFFT_matrix.csv") %>%
   rename(sample = 1) %>%
   pivot_longer(-sample, names_to = "sample2", values_to = "value") %>%
   mutate(
@@ -54,12 +54,12 @@ IIIA_mafft_matrix
 
 ### Nodes and structures
 ```{r}
-metadata <- fread("05-results/methanobrevibacter_metadata.tsv") %>%
+metadata <- fread("05-results/methanocatella_metadata.tsv") %>%
   rename(Label = Bin) %>%
   rename(Bin = prepublication_bin) %>%
   relocate(Bin, .before = Label)
 
-methanobrevibacter_cas <- fread("./05-results/methanobrevibacter_cctyper_cas_table.tsv") %>%
+methanocatella_cas <- fread("./05-results/methanocatella_cctyper_cas_table.tsv") %>%
   dplyr::rename(source = MAG_source, Bin = sampleID) %>%
   select(-primary_cluster) %>%
   left_join(., metadata %>%
@@ -67,12 +67,12 @@ methanobrevibacter_cas <- fread("./05-results/methanobrevibacter_cctyper_cas_tab
   filter(str_detect(out_type, "known")) %>%
   filter(Best_type == "III-A")
 
-IIIA_structures <- fread("05-results/methanobrevibacter_cas_IIIA_nodes_structures.csv") %>%
+IIIA_structures <- fread("05-results/methanocatella_cas_IIIA_nodes_structures.csv") %>%
   rename(Node = 'Node_') %>%
   separate("Node", into = "Node", sep = "\\ -", extra = "drop") %>%
   mutate(Structure = as.character(Structure)) %>%
   rename(Contig = Node) %>%
-  full_join(., methanobrevibacter_cas, by = "Contig")
+  full_join(., methanocatella_cas, by = "Contig")
 
 
 
@@ -81,7 +81,7 @@ IIIA_structures <- fread("05-results/methanobrevibacter_cas_IIIA_nodes_structure
 
 ## Protein - MUSCLE
 ```{r}
-IIIA_muscle_matrix <- fread("05-results/methanobrevibacter_casIIIA_MUSCLE_matrix.csv") %>%
+IIIA_muscle_matrix <- fread("05-results/methanocatella_casIIIA_MUSCLE_matrix.csv") %>%
   rename(sample = 1) %>%
   pivot_longer(-sample, names_to = "sample2", values_to = "value") %>%
   mutate(
