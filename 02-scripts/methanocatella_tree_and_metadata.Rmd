@@ -682,12 +682,12 @@ methanocatella_full_tree
 individual_id_species <- metadata %>%
   filter(!str_detect(Label, "GC")) %>%
   select(Secondary_sample_accession, primary_cluster) %>%
-  mutate(value = 1) %>%
+  mutate(value = 1)%>%
   unique() %>%
   pivot_wider(names_from = Secondary_sample_accession, values_from = value, values_fill = 0) %>%
   column_to_rownames("primary_cluster")
 
-individual_id_species <- individual_id_species[c("1", "2", "3", "4"), , drop = FALSE]
+individual_id_species <- individual_id_species[c("1187", "1188", "1189", "1190"), , drop = FALSE]
 
 species_matrix <- individual_id_species %>%
   as.matrix() 
@@ -718,13 +718,13 @@ comb_order_from_labels <- function(comb_mat, set_order, desired_labels, append_r
   idx
 }
 
-set_order <- c("3","1","2","4")
-#interaction_order <- c("1", "1&3", "1&4", "2", "2&3", "2&4", "3", "3&4", "4")
-interaction_order <- c("3", "1&3", "2&3", "3&4", "1", "1&4", "2", "2&4", "4")
+set_order <- c("1187","1188","1189","1190")
+interaction_order <- c("1187", "1188&1187", "1189&1187", "1187&1190", "1188", "1188&1190", "1189", "1189&1190", "1190")
 
 ord <- comb_order_from_labels(comb_mat, set_order, interaction_order, append_rest = TRUE)
 
-UpSet(comb_mat, set_order  = set_order, comb_order = ord, top_annotation = top_anno)
+
+UpSet(comb_mat, set_order  = set_order, comb_order = ord)
 
 #bar heights 
 bar_heights <- comb_size(comb_mat)

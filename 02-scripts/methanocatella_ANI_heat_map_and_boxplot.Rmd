@@ -1,0 +1,318 @@
+---
+title: "Methanocatella ANI"
+author: "Keri Burge"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output: html_document
+---
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(janitor)
+library(ape)
+library(ggtree)
+library(aplot)
+library(viridis)
+library(ComplexHeatmap)
+library(tidyverse)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath(".."))
+```
+
+# Colors
+```{r}
+# Species clusters (5)
+cluster_colors <- c("1188" = "#4292C6",
+                      "1189" = "#A1D99B",
+                      "1187" = "#FCB076",
+                      "1190" = "#E794C1",
+                      "Reference" = "lightgrey")
+```
+
+# Metadata
+```{r}
+metadata <- fread("./05-results/methanocatella_metadata.tsv") %>%
+  rename(Label = Bin) %>%
+  rename(Bin = prepublication_bin) %>%
+  relocate(Bin, .before = Label)
+  
+```
+
+## Methanobrevibacter ANI Heat Map 
+Create a heat map to show that cluster 4 is actually a different genus than Methanobrevibacter 
+```{r}
+mags_to_filter <- metadata %>%
+  dplyr::select(Bin) %>%
+  pull()
+
+ani_matrix <- fread("05-results/methanocatella_dRep_ANI_Mdb.csv") %>%
+  dplyr::select(genome1, genome2, similarity) %>%
+  rename(mag1 = 1,
+         mag2 = 2,
+         similarity = 3) %>%
+  filter(mag1 != mag2) %>%
+  mutate(mag1 = str_replace_all(mag1, ".fna", ""),
+         mag2 = str_replace_all(mag2, ".fna", "")) %>%
+  mutate(mag1 = str_replace_all(mag1, ".fa", ""),
+         mag2 = str_replace_all(mag2, ".fa", "")) %>%
+  mutate(mag1 = if_else(str_detect(mag1, "GC|refbinned"), mag1, 
+                        str_replace_all(mag1, "-metaspades_00", ".bin.r.") %>%
+                        str_replace_all("-metaspades_0", ".bin.r.") %>%
+                        str_replace_all("-metaspades", ".bin.r.") %>%
+                        str_replace_all("-megahit_00", ".bin.r.") %>%
+                        str_replace_all("-megahit_0", ".bin.r.") %>%
+                        str_replace_all("-megahit_", ".bin.r."))) %>%
+  mutate(mag2 = if_else(str_detect(mag2, "GC|refbinned"), mag2, 
+                        str_replace_all(mag2, "-metaspades_00", ".bin.r.") %>%
+                        str_replace_all("-metaspades_0", ".bin.r.") %>%
+                        str_replace_all("-metaspades", ".bin.r.") %>%
+                        str_replace_all("-megahit_00", ".bin.r.") %>%
+                        str_replace_all("-megahit_0", ".bin.r.") %>%
+                        str_replace_all("-megahit_", ".bin.r."))) %>%
+  filter(mag1 %in% mags_to_filter) %>%
+  filter(mag2 %in% mags_to_filter) %>%
+  mutate(similarity = na_if(similarity, 0))
+
+ani_sym <- bind_rows(
+  ani_matrix,
+  ani_matrix %>% rename(mag1 = mag2, mag2 = mag1)
+) %>% distinct()
+
+mags <- sort(unique(c(ani_sym$mag1, ani_sym$mag2)))
+
+ani_full <- ani_sym %>%
+  complete(mag1 = mags, mag2 = mags) %>%
+  mutate(similarity = ifelse(mag1 == mag2, 1, similarity))  
+
+ani_mat <- ani_full %>%
+  pivot_wider(names_from = mag2, values_from = similarity) %>%
+  arrange(mag1)
+
+#convert to matrix
+ani_mat <- as.data.frame(ani_mat)   
+rownames(ani_mat) <- ani_mat$mag1   
+ani_mat <- ani_mat[ , -1]            
+ani_mat <- as.matrix(ani_mat)  
+
+
+```
+
+```{r}
+#cluster info
+clusters <- metadata %>%
+  dplyr::select(Bin, primary_cluster)
+
+#create color scale
+library(circlize)
+viridis_map = circlize::colorRamp2(seq(0, 1, length.out = 20), viridis(20))
+
+ComplexHeatmap::Heatmap(ani_mat, 
+                        name = "Similarity", 
+                        col = viridis_map,
+                        column_names_gp = gpar(fontsize = 0), 
+                        row_names_gp = gpar(fontsize = 0),
+                        na_col = "gray95")
+
+#add cluster info
+cluster_df <- tibble(Bin = rownames(ani_mat)) %>%
+  left_join(clusters, by = c("Bin" = "Bin"))
+
+#top annotation bar (columns)
+top_ha <- HeatmapAnnotation(
+  Cluster = cluster_df$primary_cluster,
+  col = list(Cluster = cluster_colors),
+  annotation_name_side = "left",
+  simple_anno_size = unit(4, "mm")
+)
+
+# left annotation bar (rows)
+left_ha <- rowAnnotation(
+  Cluster = cluster_df$primary_cluster,
+  col = list(Cluster = cluster_colors),
+  annotation_name_side = "top",
+  width = unit(4, "mm")
+)
+
+Heatmap(
+  ani_mat,
+  name = "Similarity",
+  col = viridis_map,
+  show_row_names = FALSE,
+  show_column_names = FALSE,
+  row_split = cluster_df$primary_cluster,    
+  column_split = cluster_df$primary_cluster,
+  top_annotation = top_ha,
+  left_annotation = left_ha,
+  heatmap_legend_param = list(title = "Similarity"),
+  na_col = "gray95")
+
+
+```
+
+```{r}
+#To save, in console run:
+pdf(file = "/mnt/archgen/microbiome_calculus/ancient_archaea/05-results/methanobrevibacter_mags_similarity_heat_map.pdf",
+    width = 8,
+    height = 6)
+
+Heatmap(
+  ani_mat,
+  name = "Similarity",
+  col = viridis_map,
+  show_row_names = FALSE,
+  show_column_names = FALSE,
+  row_split = cluster_df$primary_cluster,    
+  column_split = cluster_df$primary_cluster,
+  top_annotation = top_ha,
+  left_annotation = left_ha,
+  heatmap_legend_param = list(title = "Similarity"),
+  na_col = "gray95")
+
+dev.off()
+
+```
+
+
+## ANI Boxplot
+```{r}
+clusters <- metadata %>%
+  select(Bin, primary_cluster)
+
+mags_to_filter <- metadata %>%
+  dplyr::select(Bin) %>%
+  pull()
+
+similarity <- fread("05-results/methanocatella_dRep_ANI_Mdb.csv") %>%
+  dplyr::select(genome1, genome2, similarity) %>%
+  rename(mag1 = 1,
+         mag2 = 2,
+         similarity = 3) %>%
+  mutate(mag1 = str_replace_all(mag1, ".fna", ""),
+         mag2 = str_replace_all(mag2, ".fna", "")) %>%
+  mutate(mag1 = str_replace_all(mag1, ".fa", ""),
+         mag2 = str_replace_all(mag2, ".fa", "")) %>%
+  mutate(mag1 = if_else(str_detect(mag1, "GC|refbinned"), mag1, 
+                        str_replace_all(mag1, "-metaspades_00", ".bin.r.") %>%
+                        str_replace_all("-metaspades_0", ".bin.r.") %>%
+                        str_replace_all("-metaspades", ".bin.r.") %>%
+                        str_replace_all("-megahit_00", ".bin.r.") %>%
+                        str_replace_all("-megahit_0", ".bin.r.") %>%
+                        str_replace_all("-megahit_", ".bin.r."))) %>%
+  mutate(mag2 = if_else(str_detect(mag2, "GC|refbinned"), mag2, 
+                        str_replace_all(mag2, "-metaspades_00", ".bin.r.") %>%
+                        str_replace_all("-metaspades_0", ".bin.r.") %>%
+                        str_replace_all("-metaspades", ".bin.r.") %>%
+                        str_replace_all("-megahit_00", ".bin.r.") %>%
+                        str_replace_all("-megahit_0", ".bin.r.") %>%
+                        str_replace_all("-megahit_", ".bin.r."))) %>%
+  filter(mag1 %in% mags_to_filter) %>%
+  filter(mag2 %in% mags_to_filter) %>%
+  mutate(similarity = as.numeric(similarity)) %>%
+  filter(!is.na(mag1), !is.na(mag2), !is.na(similarity), mag1 != mag2)
+
+
+similarity_labeled <- similarity %>%
+  left_join(clusters %>% rename(species_cluster1 = primary_cluster),
+            by = c("mag1" = "Bin")) %>%
+  left_join(clusters %>% rename(species_cluster2 = primary_cluster),
+            by = c("mag2" = "Bin"))
+```
+
+
+```{r}
+pairs_123_vs_4 <- similarity_labeled %>%
+  filter(
+    (species_cluster1 %in% c(1188,1189,1187) & species_cluster2 == 1190) |
+    (species_cluster2 %in% c(1188,1189,1187) & species_cluster1 == 1190)
+  ) %>%
+  mutate(
+    focal_genome  = if_else(species_cluster1 %in% c(1188,1189,1187), mag1, mag2),
+    focal_cluster = if_else(species_cluster1 %in% c(1188,1189,1187), species_cluster1, species_cluster2),
+    partner_genome= if_else(species_cluster1 %in% c(1188,1189,1187), mag2, mag1)
+  ) %>%
+  unique() %>%
+  select(focal_genome, focal_cluster, partner_genome, similarity) %>%
+  distinct(focal_genome, partner_genome, .keep_all = TRUE)
+
+focal_summary <- pairs_123_vs_4 %>%
+  group_by(focal_cluster, focal_genome) %>%
+  summarise(
+    mean_similarity_to_cluster4 = mean(similarity, na.rm = TRUE),
+    n_partners = n(),       
+    .groups = "drop"
+  ) %>%
+  filter(is.finite(mean_similarity_to_cluster4)) %>%
+  mutate(focal_cluster = factor(focal_cluster, levels = c(1188,1189,1187)))
+
+similarity_boxplot <- focal_summary %>%
+  mutate(focal_cluster = factor(focal_cluster, levels = c("1188", "1189", "1187"))) %>%
+  mutate(mean_similarity_to_cluster4 = mean_similarity_to_cluster4*100) %>%
+  ggplot(., aes(x = focal_cluster, y = mean_similarity_to_cluster4)) +
+    geom_boxplot(outlier.shape = NA, fill = "#2c778e") +
+    geom_jitter(width = 0.08, alpha = 0.6, size = 1.6) +
+    labs(
+      x = "Species Cluster",
+      y = "Average Similarity to Sp. Cluster 1190 (%)") +
+    theme_minimal(base_size = 12) +
+    scale_y_continuous(limits = c(0, 100),
+                      breaks = seq(0, 100, by = 10)) +
+    theme(panel.grid.minor.y = element_blank())
+
+similarity_boxplot
+
+```
+
+```{r}
+means_df <- focal_summary %>%
+  mutate(mean_similarity_to_cluster4 = mean_similarity_to_cluster4 * 100) %>%
+  group_by(focal_cluster) %>%
+  summarise(mean_pct = mean(mean_similarity_to_cluster4, na.rm = TRUE), .groups = "drop")
+```
+
+
+```{r}
+similarity_boxplot <- focal_summary %>%
+  mutate(focal_cluster = factor(focal_cluster, levels = c("1188", "1189", "1187"))) %>%
+  ggplot(., aes(x = focal_cluster, y = mean_similarity_to_cluster4)) + 
+  ggdist::stat_halfeye(
+    fill = "#2c778e",
+    adjust = .5, 
+    width = .8, 
+    justification = -.4, 
+    .width = 0, 
+    point_colour = NA
+  ) + 
+  geom_boxplot(
+    fill = "#2c778e",
+    width = .5, 
+    outlier.color = NA 
+  ) +
+  ggdist::stat_dots(
+    color = "#2c778e",
+    side = "left", 
+    justification = 1.3, 
+    binwidth = .01,
+    overflow = "compress"
+  ) + 
+  theme_minimal() +
+  theme(
+    legend.position = "none", 
+    plot.title = element_text(hjust = 0.5),
+    strip.text = element_text(size = 12),
+    axis.text.y = element_text(size = 11),
+    axis.text.x = element_text(size = 11),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12)
+    ) +
+  labs(
+    title = "", 
+    y = "Average Similarity to Sp. Cluster 1190", 
+    x = "Species Cluster"
+    ) 
+
+similarity_boxplot
+
+```

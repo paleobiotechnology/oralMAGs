@@ -1,0 +1,158 @@
+---
+title: "nimI Phylogenies"
+author: "Keri Burge"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output:
+    github_document:
+        fig_width: 8
+        fig_height: 6
+        toc: true
+---
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(ape)
+library(ggtree)
+library(ggplot2)
+library(tidyverse)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+Set the working directory of the notebook to the parent directory of the 
+notebook itself.  
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath(".."))
+```
+
+#nimI hits with taxonomy
+```{r}
+complete_nimI_table_w_taxonomy <- fread("./05-results/nimI_CARD_table_w_taxonomy.tsv")
+```
+
+
+## Nucleotide alignment
+```{r}
+family_colors <- c("Methanobacteriaceae" = "#098BD9",
+                  "Oscillospiraceae" = "#7472af",
+                  "Eggerthellaceae" = "#cc79a7",
+                  "Anaerolineaceae" = "#f6865e",
+                  "Selenomonadaceae" = "#86c73a",
+                  "Bacteroidaceae" = "#1ec1a7")
+
+
+host_shapes <- c("Homo sapiens" = 16, "Pan troglodytes schweinfurthii"  = 17, "Pan troglodytes verus" = 6, "Gorilla gorilla gorilla" = 18, "Reference" = 7, "Homo sapiens neanderthalensis" = 15)
+
+
+```
+
+
+```{r}
+# read in the tree
+tre_nimI_nucleotide <- ape::read.tree("./05-results/nimI_GTR.raxml.support")
+
+# Root tree by midpoint rooting with phangorn
+tre_nimI_nucleotide <- phangorn::midpoint(tre_nimI_nucleotide)
+
+
+```
+
+Color by family and label with genus/species
+```{r}
+#adjust for  the bin that has two different sequences
+complete_nimI_table_w_taxonomy_edited <- complete_nimI_table_w_taxonomy %>%
+  mutate(Bin = case_when(
+    Bin == "CMC034.B.bin.r.9" & str_detect(ORF_ID, "NODE_750") ~ "CMC034.B.bin.r.9_1",
+    Bin == "CMC034.B.bin.r.9" & str_detect(ORF_ID, "NODE_21457") ~ "CMC034.B.bin.r.9_2",
+    TRUE ~ Bin  
+  )) 
+
+add_reference <- tibble(Bin = "NG_048016.1", Secondary_sample_accession = "NG_048016.1", Oral_site = "Reference", Continent = "Reference", sample_host = "Reference", family = "Bacteroidaceae", genus = "Prevotella", species = "Prevotella baroniae")
+
+#Fotakis2020 - 10.1098/rstb.2019.0584
+include <- tibble(Bin = "ERS5113011_24.0.refbinned", Secondary_sample_accession = "ERS5113011", Continent = "Europe", sample_host = "Homo sapiends", family = "Methanobacteriaceae", genus = "Methanobrevibacter_A")
+
+complete_nimI_table_w_taxonomy_edited <- complete_nimI_table_w_taxonomy_edited %>%
+  full_join(., add_reference) %>%
+  filter(!str_detect(Bin, "ERS5113011_24.0.refbinned")) %>%
+  full_join(., include) %>%
+  mutate(species = na_if(species, "")) %>%
+  mutate(genus = na_if(genus, "")) %>%
+  mutate(taxonomy = species) %>%
+  mutate(taxonomy = ifelse(is.na(taxonomy), genus, taxonomy))
+
+nim_nucleotide_tree <- ggtree(tre_nimI_nucleotide, ladderize = T)
+
+nimI_nucleotide_tree_color_family <- nim_nucleotide_tree %<+% complete_nimI_table_w_taxonomy_edited + 
+  geom_tippoint(aes(color = family, shape = sample_host), size = 2) +
+  geom_tiplab(aes(label = taxonomy), size = 1.5, hjust = -0.5) +
+  scale_size_continuous(limits = c(0,3)) +
+  theme(legend.position="right") +
+  geom_nodelab(aes(label = ifelse(as.numeric(label) > 50, label, "")), size = 2, hjust = -0.01) +
+  scale_shape_manual(values = host_shapes, name = "Sample Host") +
+  scale_color_manual(values = family_colors, name = "Family") +
+  geom_treescale(x = 0, y = -1.5, width = 0.1, fontsize = 4)
+
+
+nimI_nucleotide_tree_color_family
+
+```
+
+
+## Protein alignment
+```{r}
+# read in the tree
+tre_nimI_protein <- ape::read.tree("./05-results/nimI_muscle.raxml.support")
+
+# Root tree by midpoint rooting with phangorn
+tre_nimI_protein <- phangorn::midpoint(tre_nimI_protein)
+
+
+```
+
+Color by family and label with genus/species
+```{r}
+#adjust for  the bin that has two different sequences
+complete_nimI_table_w_taxonomy_edited <- complete_nimI_table_w_taxonomy %>%
+  mutate(Bin = case_when(
+    Bin == "CMC034.B.bin.r.9" & str_detect(ORF_ID, "NODE_750") ~ "CMC034.B.bin.r.9_1",
+    Bin == "CMC034.B.bin.r.9" & str_detect(ORF_ID, "NODE_21457") ~ "CMC034.B.bin.r.9_2",
+    TRUE ~ Bin  
+  )) 
+
+add_reference <- tibble(Bin = "WP_021588763.1", Secondary_sample_accession = "WP_021588763.1", Oral_site = "Reference", Continent = "Reference", sample_host = "Reference", family = "Bacteroidaceae", genus = "Prevotella", species = "	Prevotella baroniae")
+
+#Fotakis2020 - 10.1098/rstb.2019.0584
+include <- tibble(Bin = "ERS5113011_24.0.refbinned", Secondary_sample_accession = "ERS5113011", Continent = "Europe", sample_host = "Homo sapiends", family = "Methanobacteriaceae", genus = "Methanobrevibacter_A")
+
+
+complete_nimI_table_w_taxonomy_edited <- complete_nimI_table_w_taxonomy_edited %>%
+  full_join(., add_reference) %>%
+  filter(!str_detect(Bin, "ERS5113011_24.0.refbinned")) %>%
+  full_join(., include) %>%
+  mutate(species = na_if(species, "")) %>%
+  mutate(genus = na_if(genus, "")) %>%
+  mutate(taxonomy = species) %>%
+  mutate(taxonomy = ifelse(is.na(taxonomy), genus, taxonomy))
+
+nim_protein_tree <- ggtree(tre_nimI_protein, ladderize = T)
+
+nimI_protein_tree_color_family <- nim_protein_tree %<+% complete_nimI_table_w_taxonomy_edited + 
+  geom_tippoint(aes(color = family, shape = sample_host), size = 2) +
+  geom_tiplab(aes(label = taxonomy), size = 1.5, hjust = -0.5) +
+  scale_size_continuous(limits = c(0,3)) +
+  theme(legend.position="right") +
+  geom_nodelab(aes(label = ifelse(as.numeric(label) > 50, label, "")), size = 2, hjust = -0.01) +
+  scale_shape_manual(values = host_shapes, name = "Sample Host") +
+  scale_color_manual(values = family_colors, name = "Family") +
+  geom_treescale(x = 0, y = -1.5, width = 0.1, fontsize = 4)
+
+
+nimI_protein_tree_color_family
+
+
+```
+
+
+
