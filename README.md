@@ -10,6 +10,8 @@ This repository contains the scripts and files used to generate the figures for 
 
 `00-documentation` - contains input and metadata files for the samples.
 
+`01-resources` - contains files that are unchangeable resources for the analyses of this project.
+
 `02-scripts` - additional scripts used for generating supplemental figures.
 
 `05-results` - contains results tables and files that are used for plotting.
