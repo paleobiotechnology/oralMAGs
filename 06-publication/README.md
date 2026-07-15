@@ -1,5 +1,7 @@
-**Scripts to produce main text figures.**
+## Scripts to produce main text figures.
 
+
+This folder contains two folders with scripts to produce the figures for this study: `main_figures` and `extended_data_figures`.
 
 `main_figures` - This folder contains the R markdown files with all scripts to produce the 5 main text figures. Each figure file is labeled with the figure number. There are three exceptions: `Figure 1`, `Figure 2` and `Figure 4`.  
 
