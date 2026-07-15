@@ -1,6 +1,8 @@
 ## Overview of the folder `00-documentation`
 
-This folder contains documentation and metadata tables for samples and MAGs in this project, including summary tables produced by the analysis workflows. These files are used for generating figures from scripts in 06-publication/main_figures`
+This folder contains documentation and metadata tables for samples and MAGs in this project, including summary tables produced by the analysis workflows. 
+
+These files are used for generating figures from scripts in `06-publication/main_figures` and `06-publication/extended_data_figures`.
 
 - `ERSX_to_ERS_conversion_table.tsv` - Sample label conversion table
 - `ancient_envt_bins_26_07_2024.tsv` - bins considered to be environmental contamination
