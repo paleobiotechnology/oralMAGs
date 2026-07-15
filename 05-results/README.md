@@ -1,6 +1,8 @@
 ## Overview of the folder `05-results`
 
-This folder contains all results generated in this project, including processed data and summary tables produced by the analysis workflows.
+This folder contains the results files generated in this project, including processed data and summary tables produced by the analysis workflows. 
+
+These files are used by the scripts in `06-publication/main_figures` and `06-publication/extended_data_figures` for plotting figures.
 
 Files that are used as input for generating figures:
 - `AC_cas_k_o_p.tsv` - CCTyper Cas gene hits known, orphan, putative; ancient calculus MAGs
