@@ -1,0 +1,1507 @@
+---
+title: "Extended Data Figure 3"
+author: "Irina Velsko"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output:
+    github_document:
+        fig_width: 8
+        fig_height: 6
+        toc: true
+---
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(vegan)
+library(rstatix)
+library(janitor)
+library(variancePartition)
+library(tidyverse)
+library(patchwork)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+Set the working directory of the notebook to the parent directory of the 
+notebook itself.  
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath("../../.."))
+```
+
+```{r}
+os_colors <- c("Calculus - Ancient" = "#EF7C12",
+               "Calculus - Industrial" = "#F4B95A",
+               "Plaque - Industrial" = "#FC6882",
+               "Plaque - Non-industrial" = "#C70E7B",
+               "Buccal mucosa - Industrial" = "#8FDA04",
+               "Buccal mucosa - Non-industrial" = "#009F3F",
+               "Saliva - Industrial" = "#54BCD1",
+               "Saliva - Non-industrial" = "#007BC3")
+
+db_colors = c("HOMD" =  "#cab2d6",
+              "HOMD_MAGs" = "#6a3d9a")
+
+oss_colors <- c("CA" = "#EF7C12",
+               "CI" = "#F4B95A",
+               "PI" = "#FC6882",
+               "PnI" = "#C70E7B",
+               "BMI" = "#8FDA04",
+               "BMnI" = "#009F3F",
+               "SI" = "#54BCD1",
+               "SnI" = "#007BC3",
+               "Discarded" = "gray")
+
+
+```
+
+
+```{r}
+
+lib_metadata <- fread("./00-documentation/library_sample_eager_metadata.tsv")
+
+# read in the list of environmental species clusters
+ancient_envt_clusters <- fread("./00-documentation/ancient_envt_clusters_26_07_2024.tsv")
+
+# read in the table used for taxdump to make the kraken2 database, that has the primary cluster and the species name
+taxdump_file <- fread("00-documentation/cluster_taxonomy_for_taxdump_26_07_2024.tsv") %>%
+  select(id, species) %>%
+  mutate(id = str_remove_all(id, "pr_cl_"),
+        id = as.numeric(id))
+
+
+# now get the species names of the ancient environmental species clusters
+anc_envt_species <- ancient_envt_clusters %>%
+  left_join(., taxdump_file %>%
+              rename(primary_cluster = id,
+                     Species = species), by = "primary_cluster") %>%
+  select(Species)
+
+```
+
+
+```{r}
+
+# Now we need to be able to distinguish the deep and shallow sequenced sample names
+cmc_short_to_library <- lib_metadata %>%
+  filter(str_detect(Eager_label, "CMC")) %>%
+  mutate(Eager_label = ifelse(!str_detect(Sample_alias, "deep"), str_trunc(Eager_label, width = 8, side = "right", ellipsis = ""), Eager_label)) %>%
+  select(Eager_label, Sample_alias) %>%
+  unique() %>%
+  mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+  filter(Sample_alias != "CMC001.A0201") %>%
+  filter(!str_detect(Sample_alias, ".deep"))
+
+cmc_shallow_only <- lib_metadata %>%
+  filter(str_detect(Eager_label, "CMC")) %>%
+  mutate(Eager_label = ifelse(!str_detect(Sample_alias, "deep"), str_trunc(Eager_label, width = 8, side = "right", ellipsis = ""), Eager_label)) %>%
+  select(Eager_label) %>%
+  unique() %>%
+  mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+  group_by(Eager_label) %>%
+  count() %>%
+  ungroup() %>%
+  filter(n == 1) %>%
+  inner_join(., cmc_short_to_library) %>%
+  pull(Sample_alias)
+
+```
+
+
+```{r}
+
+# HOMD only, all oral samples
+homd_sp <- fread("./05-results/kraken2_ci15_all_oral_samples.homd_11_2025_species.tsv") %>%
+  anti_join(., anc_envt_species, by = "Species") %>%
+  # remove all CMC samples
+  select(-matches("CMC")) %>%
+  # add back only the deep sequenced CMC samples
+  full_join(., fread("./05-results/cmc_deep_kraken2_ci_15_homd_07_2024_species.tsv")) %>%
+  rename_if(str_detect(names(.), "CMC"), ~ str_remove_all(., ".deep.homd")) %>%
+  # Now add back the shallow sequenced samples that weren't deep sequenced
+  full_join(., fread("./05-results/kraken2_ci15_all_oral_samples.homd_11_2025_species.tsv") %>%
+            anti_join(., anc_envt_species, by = "Species") %>%
+            select(matches(c(cmc_shallow_only %>% str_c(collapse = "|")))) %>%
+            # rename_if(str_detect(names(.), "CMC"), ~ str_trunc(., width = 8, side = "right", ellipsis = "")) %>%  
+            bind_cols(., fread("./05-results/kraken2_ci15_all_oral_samples.homd_11_2025_species.tsv") %>%
+                      anti_join(., anc_envt_species, by = "Species") %>%
+                      select(Species)) %>%
+            select(Species, everything()), by = "Species") %>%
+  full_join(., fread("./05-results/kraken2_ci15_vc23_saliva.homd_species.tsv")) %>%
+  replace(is.na(.), 0)
+
+# HOMD and MAGs, all oral samples
+homd_mags_sp <- fread("./05-results/kraken2_ci15_all_oral_samples.homd_mags_11_2025_species.tsv") %>%
+  anti_join(., anc_envt_species, by = "Species") %>%
+  # remove all CMC samples
+  select(-matches("CMC")) %>%
+  # add back only the deep sequenced CMC samples
+  full_join(., fread("./05-results/cmc_deep_kraken2_ci_15_homd_mags_07_2024_species.tsv")) %>%
+  rename_if(str_detect(names(.), "CMC"), ~ str_remove_all(., ".deep.homd_mags")) %>%
+  # Now add back the shallow sequenced samples that weren't deep sequenced
+  full_join(., fread("./05-results/kraken2_ci15_all_oral_samples.homd_mags_11_2025_species.tsv") %>%
+            anti_join(., anc_envt_species, by = "Species") %>%
+            select(matches(c(cmc_shallow_only %>% str_c(collapse = "|")))) %>%
+            # rename_if(str_detect(names(.), "CMC"), ~ str_trunc(., width = 8, side = "right", ellipsis = "")) %>%  
+            bind_cols(., fread("./05-results/kraken2_ci15_all_oral_samples.homd_mags_11_2025_species.tsv") %>%
+                      anti_join(., anc_envt_species, by = "Species") %>%
+                      select(Species)) %>%
+            select(Species, everything()), by = "Species") %>%
+  full_join(., fread("./05-results/kraken2_ci15_vc23_saliva.homd_mags_species.tsv")) %>%
+  replace(is.na(.), 0)
+
+```
+
+```{r}
+# Make a table with the number of samples per oral site
+sample_counts <- homd_sp %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")), by = "Eager_label") %>%
+  select(Eager_label, Full) %>%
+  unique() %>%
+  mutate(Full = ifelse(Full == "Calculus - Ancient","CA",
+                       ifelse(Full == "Calculus - Industrial","CI",
+                              ifelse(Full == "Plaque - Industrial","PI",
+                                     ifelse(Full == "Plaque - Non-industrial","PnI",
+                                            ifelse(Full == "Saliva - Industrial","SI",
+                                                   ifelse(Full == "Saliva - Non-industrial","SnI",
+                                                          ifelse(Full == "Buccal mucosa - Industrial","BMI","BMnI")))))))) %>%
+  group_by(Full) %>%
+  count(name = "Samples") %>%
+  ungroup
+
+```
+
+```{r filter_prevalence}
+
+## HOMD and MAGs
+# Filter by prevalence per oral site (>= 10% of samples)
+homd_mags_prev <- homd_mags_sp %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")), by = "Eager_label") %>%
+  mutate(Full = ifelse(Full == "Calculus - Ancient","CA",
+                       ifelse(Full == "Calculus - Industrial","CI",
+                              ifelse(Full == "Plaque - Industrial","PI",
+                                     ifelse(Full == "Plaque - Non-industrial","PnI",
+                                            ifelse(Full == "Saliva - Industrial","SI",
+                                                   ifelse(Full == "Saliva - Non-industrial","SnI",
+                                                          ifelse(Full == "Buccal mucosa - Industrial","BMI","BMnI")))))))) %>%
+  # Convert to a binary count table (presence/absence)
+  mutate(Counts = ifelse(Counts > 500,1,0)) %>%
+  distinct() %>%
+  # Get the the number of samples that have each species for each oral site
+  # and the percent per oral site for each species
+  group_by(Full, Species) %>%
+  summarize(Total_counts  = sum(Counts)) %>%
+  ungroup() %>%
+  full_join(., sample_counts, by = "Full") %>%
+  group_by(Full) %>%
+  mutate(Percent = Total_counts / Samples * 100) %>%
+  filter(Percent > 10) %>%
+  ungroup()
+
+
+# make a list of the species for each oral site
+homd_mags_prev_sp <- split(homd_mags_prev$Species, homd_mags_prev$Full)
+
+
+## HOMD only
+# Same metrics as for beta-diversity
+# Min 500 reads to be present, min 10% of samples present
+homd_prev <- homd_sp %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")), by = "Eager_label") %>%
+  mutate(Full = ifelse(Full == "Calculus - Ancient","CA",
+                       ifelse(Full == "Calculus - Industrial","CI",
+                              ifelse(Full == "Plaque - Industrial","PI",
+                                     ifelse(Full == "Plaque - Non-industrial","PnI",
+                                            ifelse(Full == "Saliva - Industrial","SI",
+                                                   ifelse(Full == "Saliva - Non-industrial","SnI",
+                                                          ifelse(Full == "Buccal mucosa - Industrial","BMI","BMnI")))))))) %>%
+  # Convert to a binary count table (presence/absence)
+  mutate(Counts = ifelse(Counts > 500,1,0)) %>%
+  distinct() %>%
+  # Get the the number of samples that have each species for each oral site
+  # and the percent per oral site for each species
+  group_by(Full, Species)%>%
+  summarize(Total_counts  = sum(Counts)) %>%
+  ungroup() %>%
+  full_join(., sample_counts, by = "Full") %>%
+  group_by(Full) %>%
+  mutate(Percent = Total_counts / Samples * 100) %>%
+  ungroup() %>%
+  filter(Percent > 10)
+
+
+
+# make a list of the species for each oral site
+homd_prev_sp <- split(homd_prev$Species, homd_prev$Full)
+  
+
+  
+```
+
+```{r homd_mag_filt_os_table}
+# HOMD_MAGs_MAGs table filtered species counts
+homd_mags_filt_sp_counts <- homd_mags_sp  %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  inner_join(., lib_metadata %>%
+               select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+               unique(), by  = "Eager_label") %>%
+  filter(Full == "Calculus - Ancient") %>%
+  filter(Species %in% homd_mags_prev_sp$CA) %>%
+  mutate(Counts =  ifelse(Counts > 500, 1, 0)) %>%
+  group_by(Eager_label) %>%
+  summarize(Observed_species = sum(Counts)) %>%
+  ungroup() %>%
+  mutate(Database = "HOMD_MAGs", Full = "Calculus - Ancient") %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Calculus - Industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$CI) %>%
+               mutate(Counts =  ifelse(Counts > 500, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD_MAGs", Full = "Calculus - Industrial")) %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Plaque - Non-industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$PnI) %>%
+               mutate(Counts =  ifelse(Counts > 500, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD_MAGs", Full = "Plaque - Non-industrial")) %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Plaque - Industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$PI) %>%
+               mutate(Counts =  ifelse(Counts > 500, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD_MAGs", Full = "Plaque - Industrial")) %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Buccal mucosa - Non-industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$BMnI) %>%
+               mutate(Counts =  ifelse(Counts > 500, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD_MAGs", Full = "Buccal mucosa - Non-industrial")) %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Buccal mucosa - Industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$BMI) %>%
+               mutate(Counts =  ifelse(Counts > 500, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD_MAGs", Full = "Buccal mucosa - Industrial")) %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Saliva - Non-industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$SnI) %>%
+               mutate(Counts =  ifelse(Counts > 500, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD_MAGs", Full = "Saliva - Non-industrial")) %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Saliva - Industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$SI) %>%
+               mutate(Counts =  ifelse(Counts > 500, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD_MAGs", Full = "Saliva - Industrial"))
+  
+homd_mags_filt_sp_counts
+
+```
+
+```{r homd_filt_os_counts_table}
+ # HOMD table filtered species counts
+homd_filt_sp_counts <- homd_sp  %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  inner_join(., lib_metadata %>%
+               select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+               unique(), by  = "Eager_label") %>%
+  filter(Full == "Calculus - Ancient") %>%
+  filter(Species %in% homd_prev_sp$CA) %>%
+  mutate(Counts =  ifelse(Counts > 0, 1, 0)) %>%
+  group_by(Eager_label) %>%
+  summarize(Observed_species = sum(Counts)) %>%
+  ungroup() %>%
+  mutate(Database = "HOMD", Full = "Calculus - Ancient") %>%
+  bind_rows(., homd_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Calculus - Industrial") %>%
+               filter(Species %in% homd_prev_sp$CI) %>%
+               mutate(Counts =  ifelse(Counts > 0, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD", Full = "Calculus - Industrial")) %>%
+  bind_rows(., homd_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+                            mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Plaque - Non-industrial") %>%
+               filter(Species %in% homd_prev_sp$PnI) %>%
+               mutate(Counts =  ifelse(Counts > 0, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD", Full = "Plaque - Non-industrial")) %>%
+  bind_rows(., homd_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Plaque - Industrial") %>%
+               filter(Species %in% homd_prev_sp$PI) %>%
+               mutate(Counts =  ifelse(Counts > 0, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD", Full = "Plaque - Industrial")) %>%
+  bind_rows(., homd_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Buccal mucosa - Non-industrial") %>%
+               filter(Species %in% homd_prev_sp$BMnI) %>%
+               mutate(Counts =  ifelse(Counts > 0, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD", Full = "Buccal mucosa - Non-industrial")) %>%
+  bind_rows(., homd_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Buccal mucosa - Industrial") %>%
+               filter(Species %in% homd_prev_sp$BMI) %>%
+               mutate(Counts =  ifelse(Counts > 0, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD", Full = "Buccal mucosa - Industrial")) %>%
+  bind_rows(., homd_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Saliva - Non-industrial") %>%
+               filter(Species %in% homd_prev_sp$SnI) %>%
+               mutate(Counts =  ifelse(Counts > 0, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD", Full = "Saliva - Non-industrial")) %>%
+  bind_rows(., homd_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Saliva - Industrial") %>%
+               filter(Species %in% homd_prev_sp$SI) %>%
+               mutate(Counts =  ifelse(Counts > 0, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD", Full = "Saliva - Industrial"))
+  
+homd_filt_sp_counts
+
+```
+
+
+```{r}
+
+# filter the table 
+# Start by getting only species that have a min of 500 reads in @least 10% of one oral site
+
+keep_species <- homd_sp %>% 
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Sample_type) %>%
+              unique(), by = "Eager_label") %>%
+  mutate(Sample_type = ifelse(str_detect(Sample_type, "plaque"),"plaque",Sample_type)) %>% 
+  unique() %>%
+  mutate(Present = ifelse(Counts > 500, 1, 0)) %>%
+  group_by(Sample_type, Species) %>%
+  summarize(Prevelence = sum(Present) / length(Sample_type)) %>%
+  ungroup() %>%
+  filter(Prevelence >= 0.1) %>%
+  select(Species) %>%
+  unique()
+
+keep_species_hm <- homd_mags_sp %>% 
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Sample_type) %>%
+              unique(), by = "Eager_label") %>%
+  mutate(Sample_type = ifelse(str_detect(Sample_type, "plaque"),"plaque",Sample_type)) %>% 
+  unique() %>%
+  mutate(Present = ifelse(Counts > 500, 1, 0)) %>%
+  group_by(Sample_type, Species) %>%
+  summarize(Prevelence = sum(Present) / length(Sample_type)) %>%
+  ungroup() %>%
+  filter(Prevelence >= 0.1) %>%
+  select(Species) %>%
+  unique()
+  
+
+```
+
+
+```{r}
+
+# Observed species table
+homd_sp.os <- homd_sp %>%
+  inner_join(., keep_species, by = "Species") %>%
+  pivot_longer(!Species, names_to = "Library_ID",values_to = "Counts") %>%
+  mutate(Counts = ifelse(Counts > 0, 1, 0)) %>%
+  pivot_wider(names_from = "Species", values_from = "Counts") %>%
+  mutate(Database = "HOMD") %>%
+  # calculate observed species for each sample with janitor 'adorn_totals'
+  adorn_totals(., where = "col", name = "Observed_species") %>%
+  select(Library_ID, Database, Observed_species) %>%
+  as_tibble() %>%
+  bind_rows(., homd_mags_sp %>%
+            inner_join(., keep_species_hm, by = "Species") %>%
+            pivot_longer(!Species, names_to = "Library_ID",values_to = "Counts") %>%
+            mutate(Counts = ifelse(Counts > 0, 1, 0)) %>%
+            pivot_wider(names_from = "Species", values_from = "Counts") %>%
+            mutate(Database = "HOMD_MAGs") %>%
+            # calculate observed species for each sample with janitor 'adorn_totals'
+            adorn_totals(., where = "col", name = "Observed_species") %>%
+            select(Library_ID, Database, Observed_species) %>%
+            as_tibble())
+
+```
+
+```{r}
+
+# Shannon diversity with the package vegan
+
+#  HOMD
+homd_sp.matrix <- as.matrix(homd_sp %>%
+  inner_join(., keep_species, by = "Species") %>% 
+  pivot_longer(!Species, names_to = "Library_ID",values_to = "Counts") %>%
+  pivot_wider(names_from = "Species", values_from = "Counts") %>%
+  column_to_rownames("Library_ID"))
+ 
+homd_sp.shannon <- as.data.frame(diversity(homd_sp.matrix, index = "shannon"))
+names(homd_sp.shannon)[1] <- "Shannon_index"
+
+
+# HOMD_MAGs
+homd_mags_sp.matrix <- as.matrix(homd_mags_sp %>%
+  inner_join(., keep_species_hm, by = "Species") %>%
+  pivot_longer(!Species, names_to = "Library_ID",values_to = "Counts") %>%
+  pivot_wider(names_from = "Species", values_from = "Counts") %>%
+  column_to_rownames("Library_ID"))
+ 
+homd_mags_sp.shannon <- as.data.frame(diversity(homd_mags_sp.matrix, index = "shannon"))
+names(homd_mags_sp.shannon)[1] <- "Shannon_index"
+
+
+# merge with the metadata file and plot
+homd_sp.shannon <- homd_sp.shannon %>%
+  rownames_to_column("Library_ID") %>%
+  as_tibble() %>%
+  mutate(Database = "HOMD") %>%
+  bind_rows(., homd_mags_sp.shannon %>%
+            rownames_to_column("Library_ID") %>%
+            as_tibble() %>%
+            mutate(Database = "HOMD_MAGs"))
+
+```
+
+
+```{r}
+# combine OS and Shannon tables 
+homd_sp_alpha_meta <- homd_sp.os %>%
+  full_join(., homd_sp.shannon, by = c("Library_ID","Database")) %>%
+  left_join(., lib_metadata %>%
+               rename(Library_ID = Eager_label) %>%
+               mutate(Library_ID = str_remove_all(Library_ID, ".deep")), by = "Library_ID") %>%
+  mutate(Full = ifelse(Full == "Calculus - Ancient","CA",
+                       ifelse(Full == "Calculus - Industrial","CI",
+                              ifelse(Full == "Plaque - Industrial","PI",
+                                     ifelse(Full == "Plaque - Non-industrial","PnI",
+                                            ifelse(Full == "Saliva - Industrial","SI",
+                                                   ifelse(Full == "Saliva - Non-industrial","SnI",
+                                                          ifelse(Full == "Buccal mucosa - Industrial","BMI","BMnI"))))))))  %>%
+  unique()
+
+```
+
+
+```{r read_counts}
+
+# plot read counts by oral site
+rc_sp <- homd_mags_filt_sp_counts %>%
+  left_join(., homd_sp_alpha_meta %>%
+              filter(Database == "HOMD_MAGs") %>%
+              select(Library_ID, No_reads_no_human, Full) %>%
+              rename(Eager_label = Library_ID,
+                     Full_short = Full), by = "Eager_label") %>%
+  mutate(Kept = Full_short,
+         Kept = ifelse(No_reads_no_human <= 1000000, "Discarded", Full_short),
+         No_reads_no_human = No_reads_no_human / 1000000) %>%
+  filter(Database == "HOMD_MAGs") %>%
+  unique() %>%
+  mutate(Kept = fct_relevel(Kept, "Discarded","CA","CI","PnI","PI","BMnI","BMI","SnI","SI"),
+         Full_short = fct_relevel(Full_short, "CA","CI","PnI","PI","BMnI","BMI","SnI","SI")) %>%
+  ggplot(., aes(No_reads_no_human, Observed_species)) + # , shape = Study
+    geom_point(aes(fill = Kept), shape = 21, size = 2.5, color = "black", stroke = 0.2, alpha = 1.0) +
+    geom_smooth(aes(color = Kept), method = glm, se = F, col = "black", linewidth = 0.7) +
+    scale_fill_manual(values = oss_colors) + #  
+    theme_minimal(base_size = 14) +
+    # scale_x_log10(labels = label_comma()) +
+    scale_y_continuous(breaks=scales::pretty_breaks(n=5), limits = c(0,1300)) +
+    theme(legend.title = element_text(size = 14)) +
+    # geom_vline(xintercept = 1, color = "gray30", linetype = "dashed") +
+    ggpubr::stat_regline_equation(label.y = 85, label.x = 50, aes(label = ..rr.label..)) +
+    xlab("No. reads (x10^6)") +
+    ylab("No. species") +
+    facet_wrap(~Full_short, nrow = 2)
+
+rc_sp
+
+# ggsave("./06-publication/extended_data_figures/Extended_Data_Figure_3/readcount_species_plot.pdf", plot = rc_sp, device = "pdf",
+#        scale = 1, width = 13, height = 5, units = c("in"), dpi = 300)
+
+```
+
+```{r}
+
+# HOMD table filtered species
+homd_filt_sp <- homd_sp  %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  inner_join(., lib_metadata %>%
+               select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+               unique(), by  = "Eager_label") %>%
+  filter(Full == "Calculus - Ancient") %>%
+  filter(Species %in% homd_prev_sp$CA) %>%
+  mutate(Counts =  ifelse(Counts <= 500, 0, Counts)) %>%
+  bind_rows(., homd_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Calculus - Industrial") %>%
+               filter(Species %in% homd_prev_sp$CI) %>%
+               mutate(Counts =  ifelse(Counts <= 500, 0, Counts))) %>%
+  bind_rows(., homd_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Plaque - Non-industrial") %>%
+               filter(Species %in% homd_prev_sp$PnI) %>%
+               mutate(Counts =  ifelse(Counts <= 500, 0, Counts))) %>%
+  bind_rows(., homd_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Plaque - Industrial") %>%
+               filter(Species %in% homd_prev_sp$PI) %>%
+               mutate(Counts =  ifelse(Counts <= 500, 0, Counts))) %>%
+  bind_rows(., homd_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Buccal mucosa - Non-industrial") %>%
+               filter(Species %in% homd_prev_sp$BMnI) %>%
+               mutate(Counts =  ifelse(Counts <= 500, 0, Counts))) %>%
+  bind_rows(., homd_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Buccal mucosa - Industrial") %>%
+               filter(Species %in% homd_prev_sp$BMI) %>%
+               mutate(Counts =  ifelse(Counts <= 500, 0, Counts))) %>%
+  bind_rows(., homd_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Saliva - Non-industrial") %>%
+               filter(Species %in% homd_prev_sp$SnI) %>%
+               mutate(Counts =  ifelse(Counts <= 500, 0, Counts))) %>%
+  bind_rows(., homd_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Saliva - Industrial") %>%
+               filter(Species %in% homd_prev_sp$SI) %>%
+               mutate(Counts =  ifelse(Counts <= 500, 0, Counts))) 
+
+```
+
+```{r}
+ # HOMD MAGs table filtered species
+homd_mags_filt_sp <- homd_mags_sp  %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  inner_join(., lib_metadata %>%
+               select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+               unique(), by  = "Eager_label") %>%
+  filter(Full == "Calculus - Ancient") %>%
+  filter(Species %in% homd_mags_prev_sp$CA) %>%
+  mutate(Counts =  ifelse(Counts <= 500, 0, Counts)) %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Calculus - Industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$CI) %>%
+               mutate(Counts =  ifelse(Counts <= 500, 0, Counts))) %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Plaque - Non-industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$PnI) %>%
+               mutate(Counts =  ifelse(Counts <= 500, 0, Counts))) %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Plaque - Industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$PI) %>%
+               mutate(Counts =  ifelse(Counts <= 500, 0, Counts))) %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Buccal mucosa - Non-industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$BMnI) %>%
+               mutate(Counts =  ifelse(Counts <= 500, 0, Counts))) %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Buccal mucosa - Industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$BMI) %>%
+               mutate(Counts =  ifelse(Counts <= 500, 0, Counts))) %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Saliva - Non-industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$SnI) %>%
+               mutate(Counts =  ifelse(Counts <= 500, 0, Counts))) %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Saliva - Industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$SI) %>%
+               mutate(Counts =  ifelse(Counts <= 500, 0, Counts))) 
+# %>%
+#   pivot_wider(names_from = "Species", values_from = "Counts", values_fill = "0")
+  
+homd_mags_filt_sp
+
+```
+
+```{r homd_mag_filt_os_table}
+# HOMD_MAGs_MAGs table filtered species counts
+homd_mags_filt_sp_counts <- homd_mags_sp  %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  inner_join(., lib_metadata %>%
+               select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+               unique(), by  = "Eager_label") %>%
+  filter(Full == "Calculus - Ancient") %>%
+  filter(Species %in% homd_mags_prev_sp$CA) %>%
+  mutate(Counts =  ifelse(Counts > 500, 1, 0)) %>%
+  group_by(Eager_label) %>%
+  summarize(Observed_species = sum(Counts)) %>%
+  ungroup() %>%
+  mutate(Database = "HOMD_MAGs", Full = "Calculus - Ancient") %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Calculus - Industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$CI) %>%
+               mutate(Counts =  ifelse(Counts > 500, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD_MAGs", Full = "Calculus - Industrial")) %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Plaque - Non-industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$PnI) %>%
+               mutate(Counts =  ifelse(Counts > 500, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD_MAGs", Full = "Plaque - Non-industrial")) %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Plaque - Industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$PI) %>%
+               mutate(Counts =  ifelse(Counts > 500, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD_MAGs", Full = "Plaque - Industrial")) %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Buccal mucosa - Non-industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$BMnI) %>%
+               mutate(Counts =  ifelse(Counts > 500, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD_MAGs", Full = "Buccal mucosa - Non-industrial")) %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Buccal mucosa - Industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$BMI) %>%
+               mutate(Counts =  ifelse(Counts > 500, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD_MAGs", Full = "Buccal mucosa - Industrial")) %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Saliva - Non-industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$SnI) %>%
+               mutate(Counts =  ifelse(Counts > 500, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD_MAGs", Full = "Saliva - Non-industrial")) %>%
+  bind_rows(., homd_mags_sp  %>%
+               pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+               inner_join(., lib_metadata %>%
+                            select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+                            unique(), by  = "Eager_label") %>%
+               filter(Full == "Saliva - Industrial") %>%
+               filter(Species %in% homd_mags_prev_sp$SI) %>%
+               mutate(Counts =  ifelse(Counts > 500, 1, 0)) %>%
+               group_by(Eager_label) %>%
+               summarize(Observed_species = sum(Counts)) %>%
+               ungroup() %>%
+               mutate(Database = "HOMD_MAGs", Full = "Saliva - Industrial"))
+  
+homd_mags_filt_sp_counts
+
+```
+
+```{r filt_shannon}
+# Shannon diversity with the package vegan
+
+#  HOMD
+homd_filt_sp.matrix <- as.matrix(homd_filt_sp %>%
+                                   select(-Full) %>%
+                                   pivot_wider(names_from = "Eager_label", values_from = "Counts", values_fill = 0) %>%
+  inner_join(., keep_species, by = "Species") %>% 
+  pivot_longer(!Species, names_to = "Library_ID",values_to = "Counts") %>%
+  pivot_wider(names_from = "Species", values_from = "Counts") %>%
+  column_to_rownames("Library_ID"))
+ 
+homd_filt_sp.shannon <- as.data.frame(diversity(homd_filt_sp.matrix, index = "shannon"))
+names(homd_filt_sp.shannon)[1] <- "Shannon_index"
+
+
+# HOMD_MAGs
+homd_mags_filt_sp.matrix <- as.matrix(homd_mags_filt_sp %>%
+                                   select(-Full) %>%
+                                   pivot_wider(names_from = "Eager_label", values_from = "Counts", values_fill = 0) %>%
+  inner_join(., keep_species_hm, by = "Species") %>%
+  pivot_longer(!Species, names_to = "Library_ID",values_to = "Counts") %>%
+  pivot_wider(names_from = "Species", values_from = "Counts") %>%
+  column_to_rownames("Library_ID"))
+ 
+homd_mags_filt_sp.shannon <- as.data.frame(diversity(homd_mags_filt_sp.matrix, index = "shannon"))
+names(homd_mags_filt_sp.shannon)[1] <- "Shannon_index"
+
+
+# merge with the metadata file and plot
+h_hm_filt_sp.shannon <- homd_filt_sp.shannon %>%
+  rownames_to_column("Eager_label") %>%
+  as_tibble() %>%
+  mutate(Database = "HOMD") %>%
+  bind_rows(., homd_mags_filt_sp.shannon %>%
+            rownames_to_column("Eager_label") %>%
+            as_tibble() %>%
+            mutate(Database = "HOMD_MAGs")) %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Full) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+              unique(), by = "Eager_label")
+
+```
+
+```{r}
+
+# Number of species
+os_filtered_plot <- homd_filt_sp_counts %>%
+  bind_rows(., homd_mags_filt_sp_counts) %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, No_reads_no_human) %>%
+               mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
+              unique(), by = "Eager_label") %>%
+  filter(No_reads_no_human >= 1000000) %>%
+    mutate(Full = fct_relevel(Full, "Calculus - Ancient", "Calculus - Industrial","Plaque - Non-industrial","Plaque - Industrial","Buccal mucosa - Non-industrial","Buccal mucosa - Industrial","Saliva - Non-industrial","Saliva - Industrial")) %>%
+  arrange(Full) %>%
+  ggplot(., aes(x = Full, y = Observed_species, fill = Database)) +
+    geom_boxplot(color = "grey30", linewidth = 0.3, outlier.colour = NA) +
+    geom_point(size = 0.7, alpha = 0.2, color = "grey30", position = position_jitterdodge(jitter.width = 0.1)) +
+    scale_fill_manual(values = db_colors) +
+    scale_color_manual(values = db_colors) +
+    theme_minimal(base_size = 14) +
+    theme(axis.text.x = element_text(size = 8, angle = 90, hjust = 1,  vjust = 0.5)) +
+    # ylim(0,700) +
+    ylab("Observed species") +
+    xlab("")
+
+os_filtered_plot
+
+# Shannon index
+shannon_filtered_plot <- h_hm_filt_sp.shannon %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, No_reads_no_human) %>%
+              unique(), by = "Eager_label") %>%
+  filter(No_reads_no_human >= 1000000) %>%
+    mutate(Full = fct_relevel(Full, "Calculus - Ancient", "Calculus - Industrial","Plaque - Non-industrial","Plaque - Industrial","Buccal mucosa - Non-industrial","Buccal mucosa - Industrial","Saliva - Non-industrial","Saliva - Industrial")) %>%
+  arrange(Full) %>%
+  ggplot(., aes(x = Full, y = Shannon_index, fill = Database)) +
+    geom_boxplot(color = "grey30", linewidth = 0.3, outlier.colour = NA) +
+    geom_point(size = 0.7, alpha = 0.2, color = "grey30", position = position_jitterdodge(jitter.width = 0.1)) +
+    scale_fill_manual(values = db_colors) +
+    scale_color_manual(values = db_colors) +
+    theme_minimal(base_size = 14) +
+    theme(axis.text.x = element_text(size = 8, angle = 90, hjust = 1,  vjust = 0.5)) +
+    # ylim(0,5.5) +
+    ylab("Shannon index") +
+    xlab("")
+  
+shannon_filtered_plot
+
+```
+
+
+```{r}
+
+
+filtered_alphadiv_plot <- os_filtered_plot / shannon_filtered_plot +
+  plot_layout(guides = "collect")
+
+filtered_alphadiv_plot
+
+# ggsave("./06-publication/extended_data_figures/Extended_Data_Figure_3/filtered_alphadiv_plot.pdf", plot = filtered_alphadiv_plot, device = "pdf",
+#        scale = 1, width = 8, height = 10, units = c("in"), dpi = 300)
+
+```
+
+
+```{r}
+
+# read in the taxonomy file used for taxdmp for building the Kraken2 database
+taxdump_tax <- fread("./00-documentation/cluster_taxonomy_for_taxdump_26_07_2024.tsv")
+
+# order the classes by domain
+cl_order <- taxdump_tax %>%
+  select(domain, phylum, class) %>%
+  unique() %>%
+  arrange(domain, phylum, class)  %>%
+  pull(class)
+
+# classes with no reads in either HOMD or HOMD_MAGs tables
+none_detected <- fread("./05-results/class_order_table.tsv") %>%
+  pull(Class)
+
+```
+
+
+```{r}
+
+class_counts <- homd_sp %>%
+  inner_join(., taxdump_tax %>%
+               select(class, species) %>%
+               unique() %>%
+               rename(Species = species), by = "Species") %>%
+  select(class, Species, everything()) %>%
+  pivot_longer(!class:Species, names_to = "Library_ID", values_to = "Counts") %>%
+  group_by(Library_ID, class) %>%
+  summarize(HOMD_total_counts = sum(Counts)) %>%
+  ungroup() %>%
+  group_by(Library_ID) %>%
+  mutate(HOMD_pct = HOMD_total_counts / sum(HOMD_total_counts) * 100) %>%
+  ungroup()%>%
+  full_join(., homd_mags_sp %>%
+             inner_join(., taxdump_tax %>%
+                          select(class, species) %>%
+                          unique() %>%
+                          rename(Species = species), by = "Species") %>%
+             select(class, Species, everything()) %>%
+             pivot_longer(!class:Species, names_to = "Library_ID", values_to = "Counts") %>%
+             group_by(Library_ID, class) %>%
+             summarize(HOMD_MAGs_total_counts = sum(Counts)) %>%
+             ungroup() %>%
+             group_by(Library_ID) %>%
+             mutate(HOMD_MAGs_pct = HOMD_MAGs_total_counts / sum(HOMD_MAGs_total_counts) * 100) %>%
+             ungroup(), by = c("Library_ID","class")) %>%
+  inner_join(., lib_metadata  %>%
+              select(Eager_label, Full) %>%
+              rename(Library_ID = Eager_label) %>%
+              unique(), by = "Library_ID") %>%
+  select(Full, everything())
+  
+
+```
+
+
+```{r}
+
+ac_class <- class_counts %>%
+  filter(class %in% none_detected) %>%
+  mutate(Percent_inc = (HOMD_MAGs_pct - HOMD_pct) / HOMD_pct * 100,
+         Fold_change = log2(HOMD_MAGs_pct / HOMD_pct),
+         Difference = HOMD_MAGs_pct - HOMD_pct,
+         class = fct_relevel(class, cl_order)) %>%
+  # now deal with Inf entries
+  mutate(Fold_change = ifelse(HOMD_MAGs_pct == 0,-10,Fold_change),
+         Fold_change = ifelse(HOMD_pct == 0,20,Fold_change)) %>%
+  # convert lines where total counts for both HOMD and HOMD_MAGs is 0 to 0 instead of NA
+  mutate(Fold_change = ifelse(is.na(Fold_change),0,Fold_change)) %>%
+  # remove these added values so they aren't contributing to the average calculation below
+  filter(Fold_change != -10, Fold_change != 20) %>%
+  filter(str_detect(Full, "Calculus")) %>%
+  arrange(class) %>%
+  group_by(Full, class) %>%
+  summarize(avg_fold_change = mean(Fold_change),
+            sd_fold_change = sd(Fold_change)) %>%
+  ungroup() %>%
+  mutate(Full = fct_relevel(Full, "Calculus - Industrial", "Calculus - Ancient")) %>%
+  ggplot(., aes(x = avg_fold_change, y = class, group = Full)) +
+     geom_vline(xintercept = 0, color = "gray40") +
+   geom_point(aes(fill = Full, shape = Full, size = Full), stroke = 0.2, position = position_dodge(width = 0.9)) +
+    geom_errorbarh(aes(xmin = avg_fold_change-sd_fold_change, xmax = avg_fold_change+sd_fold_change, color = Full), height = 0.2, linewidth = 0.3, position = position_dodge(width = 0.9)) +
+    scale_shape_manual(values = c(21,25)) +
+    scale_fill_manual(values = os_colors) +
+    scale_color_manual(values = os_colors) +
+    scale_size_manual(values = c(2, 1.5)) +
+    theme_minimal(base_size = 12) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust =  0.5, size = 10),
+          axis.title.x = element_text(size=10)) +
+    theme(legend.position = "top") +
+    scale_y_discrete(limits=rev) +
+    ylab("Class") +
+    xlab("log2(fold change in mean abundance) (%) HOMD vs. HOMD_MAGs")
+
+ac_class
+
+```
+
+```{r}
+pq_class <- class_counts %>%
+  filter(class %in% none_detected) %>%
+  mutate(Percent_inc = (HOMD_MAGs_pct - HOMD_pct) / HOMD_pct * 100,
+         Fold_change = log2(HOMD_MAGs_pct / HOMD_pct),
+         Difference = HOMD_MAGs_pct - HOMD_pct,
+         class = fct_relevel(class, cl_order)) %>%
+  # now deal with Inf entries
+  mutate(Fold_change = ifelse(HOMD_MAGs_pct == 0,-10,Fold_change),
+         Fold_change = ifelse(HOMD_pct == 0,20,Fold_change)) %>%
+  # convert lines where total counts for both HOMD and HOMD_MAGs is 0 to 0 instead of NA
+  mutate(Fold_change = ifelse(is.na(Fold_change),0,Fold_change)) %>%
+  # remove these added values so they aren't contributing to the average calculation below
+  filter(Fold_change != -10, Fold_change != 20) %>%
+  filter(str_detect(Full, "Plaque")) %>%
+  arrange(class) %>%
+  group_by(Full, class) %>%
+  summarize(avg_fold_change = mean(Fold_change),
+            sd_fold_change = sd(Fold_change)) %>%
+  ungroup() %>%
+  ggplot(., aes(x = avg_fold_change, y = class, group = Full)) +
+    geom_vline(xintercept = 0, color = "gray40") +
+    geom_point(aes(fill = Full, shape = Full, size = Full), stroke = 0.2, position = position_dodge(width = 0.9)) +
+    geom_errorbarh(aes(xmin = avg_fold_change-sd_fold_change, xmax = avg_fold_change+sd_fold_change, color = Full), height = 0.2, linewidth = 0.3, position = position_dodge(width = 0.9)) +
+    scale_shape_manual(values = c(21,25)) +
+    scale_fill_manual(values = os_colors) +
+    scale_color_manual(values = os_colors) +
+    scale_size_manual(values = c(2, 1.5)) +
+    theme_minimal(base_size = 12) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust =  0.5, size = 10),
+          axis.title.x = element_text(size=10)) +
+    theme(axis.text.y = element_blank(),
+        axis.title.y = element_blank()) +
+    theme(legend.position = "top") +
+    scale_y_discrete(limits=rev) +
+    ylab("Class") +
+    xlab("log2(fold change in mean abundance) (%) HOMD vs. HOMD_MAGs")
+
+pq_class
+
+```
+
+```{r}
+bm_class <- class_counts %>%
+  filter(class %in% none_detected) %>%
+  mutate(Percent_inc = (HOMD_MAGs_pct - HOMD_pct) / HOMD_pct * 100,
+         Fold_change = log2(HOMD_MAGs_pct / HOMD_pct),
+         Difference = HOMD_MAGs_pct - HOMD_pct,
+         class = fct_relevel(class, cl_order)) %>%
+  # now deal with Inf entries
+  mutate(Fold_change = ifelse(HOMD_MAGs_pct == 0,-10,Fold_change),
+         Fold_change = ifelse(HOMD_pct == 0,20,Fold_change)) %>%
+  # convert lines where total counts for both HOMD and HOMD_MAGs is 0 to 0 instead of NA
+  mutate(Fold_change = ifelse(is.na(Fold_change),0,Fold_change)) %>%
+  # remove these added values so they aren't contributing to the average calculation below
+  filter(Fold_change != -10, Fold_change != 20) %>%
+  filter(str_detect(Full, "Buccal")) %>%
+  arrange(class) %>%
+  group_by(Full, class) %>%
+  summarize(avg_fold_change = mean(Fold_change),
+            sd_fold_change = sd(Fold_change)) %>%
+  ungroup() %>%
+  ggplot(., aes(x = avg_fold_change, y = class, group = Full)) +
+    geom_vline(xintercept = 0, color = "gray40") +
+    geom_point(aes(fill = Full, shape = Full, size = Full), stroke = 0.2, position = position_dodge(width = 0.9)) +
+    geom_errorbarh(aes(xmin = avg_fold_change-sd_fold_change, xmax = avg_fold_change+sd_fold_change, color = Full), height = 0.2, linewidth = 0.3, position = position_dodge(width = 0.9)) +
+    scale_shape_manual(values = c(21,25)) +
+    scale_fill_manual(values = os_colors) +
+    scale_color_manual(values = os_colors) +
+    scale_size_manual(values = c(2, 1.5)) +
+    theme_minimal(base_size = 12) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust =  0.5, size = 10),
+          axis.title.x = element_text(size=10)) +
+     theme(axis.text.y = element_blank(),
+        axis.title.y = element_blank()) +
+   scale_y_discrete(limits=rev) +
+    theme(legend.position = "top") +
+    ylab("Class") +
+    xlab("log2(fold change in mean abundance) (%) HOMD vs. HOMD_MAGs")
+
+bm_class
+
+```
+
+```{r}
+sl_class <- class_counts %>%
+  filter(class %in% none_detected) %>%
+  mutate(Percent_inc = (HOMD_MAGs_pct - HOMD_pct) / HOMD_pct * 100,
+         Fold_change = log2(HOMD_MAGs_pct / HOMD_pct),
+         Difference = HOMD_MAGs_pct - HOMD_pct,
+         class = fct_relevel(class, cl_order)) %>%
+  # now deal with Inf entries
+  mutate(Fold_change = ifelse(HOMD_MAGs_pct == 0,-10,Fold_change),
+         Fold_change = ifelse(HOMD_pct == 0,20,Fold_change)) %>%
+  # convert lines where total counts for both HOMD and HOMD_MAGs is 0 to 0 instead of NA
+  mutate(Fold_change = ifelse(is.na(Fold_change),0,Fold_change)) %>%
+  # remove these added values so they aren't contributing to the average calculation below
+  filter(Fold_change != -10, Fold_change != 20) %>%
+  filter(str_detect(Full, "Saliva")) %>%
+  arrange(class) %>%
+  group_by(Full, class) %>%
+  summarize(avg_fold_change = mean(Fold_change),
+            sd_fold_change = sd(Fold_change)) %>%
+  ungroup() %>%
+  ggplot(., aes(x = avg_fold_change, y = class, group = Full)) +
+    geom_vline(xintercept = 0, color = "gray40") +
+    geom_point(aes(fill = Full, shape = Full, size = Full), stroke = 0.2, position = position_dodge(width = 0.9)) +
+    geom_errorbarh(aes(xmin = avg_fold_change-sd_fold_change, xmax = avg_fold_change+sd_fold_change, color = Full), height = 0.2, linewidth = 0.3, position = position_dodge(width = 0.9)) +
+    scale_shape_manual(values = c(21,25)) +
+    scale_fill_manual(values = os_colors) +
+    scale_color_manual(values = os_colors) +
+    scale_size_manual(values = c(2, 1.5)) +
+    theme_minimal(base_size = 12) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5, vjust =  0.5, size = 10),
+          axis.title.x = element_text(size=10)) +
+    theme(axis.text.y = element_blank(),
+        axis.title.y = element_blank()) +
+    scale_y_discrete(limits=rev) +
+    theme(legend.position = "top") +
+    ylab("Class") +
+    xlab("log2(fold change in mean abundance) (%) HOMD vs. HOMD_MAGs")
+
+sl_class
+
+```
+
+```{r}
+class_h_hm_fold_changes <- ac_class + pq_class + bm_class + sl_class +
+  plot_layout(widths = c(1.1,1,1,1), guides = "collect") 
+
+class_h_hm_fold_changes
+
+# ggsave("./06-publication/tmp_figures/class_h_hm_fold_changes.pdf", plot = class_h_hm_fold_changes, device = "pdf",
+#        scale = 1, width = 14, height = 6, units = c("in"), dpi = 300)
+
+```
+
+
+```{r}
+
+kraken2_stats <- fread("./05-results/kraken2_homd_vc23_saliva_read_classification_stats.tsv", header = F, col.names = c("Eager_label","Classified","Unclassified")) %>%
+  mutate(Database = "HOMD") %>%
+  bind_rows(., fread("./05-results/kraken2_homd_mags_vc23_saliva_read_classification_stats.tsv", header = F, col.names = c("Eager_label","Classified","Unclassified")) %>%
+            mutate(Database = "HOMD_MAGs")) %>%
+  bind_rows(., fread("./05-results/kraken2_classification_counts_homd_hpd_csc.tsv", header = F, col.names = c("Eager_label","Classified","Unclassified")) %>%
+            mutate(Database = "HOMD")) %>%
+  bind_rows(., fread("./05-results/kraken2_classification_counts_homd_mags_csc_hpd.tsv", header = F, col.names = c("Eager_label","Classified","Unclassified")) %>%
+            mutate(Database = "HOMD_MAGs")) %>%
+  bind_rows(., fread("./05-results/kraken2_classification_counts_homd.tsv", header = F, col.names = c("Eager_label","Classified","Unclassified")) %>%
+            mutate(Database = "HOMD")) %>%
+  bind_rows(., fread("./05-results/kraken2_classification_counts_homd_mags.tsv", header = F, col.names = c("Eager_label","Classified","Unclassified")) %>%
+            mutate(Database = "HOMD_MAGs")) %>%
+  mutate(Eager_label = str_remove_all(Eager_label, "calc"),
+         Eager_label = str_remove_all(Eager_label, ".SG1"),
+         Eager_label = str_remove_all(Eager_label, "homd/"),
+         Eager_label = str_remove_all(Eager_label, "homd_mags/"),
+         Eager_label = str_remove_all(Eager_label, ".kraken2.homd_ci15.output.tsv"),
+         Eager_label = str_remove_all(Eager_label, ".kraken2.homd_mags_ci15.output.tsv")) %>%
+  mutate(Percent_cl = Classified / (Unclassified + Classified) * 100) %>%
+  select(Database, everything()) %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Full) %>%
+              unique())
+
+```
+
+
+```{r}
+library(scales) # need for label_comma()
+
+homd_color_size <- homd_filt_sp %>% 
+  filter(Counts > 0) %>%
+  group_by(Eager_label) %>%
+  count(name = "number_species") %>%
+  ungroup() %>%
+  right_join(., lib_metadata %>%
+  filter(Full == "Calculus - Ancient") %>%
+              select(Eager_label, No_reads_no_human, avg_rl, Age_BP) %>%
+              unique(), by = "Eager_label") %>%
+  mutate(reads_log = log10(No_reads_no_human)) %>%
+  left_join(., kraken2_stats %>%
+              filter(Database == "HOMD") %>%
+              select(Eager_label, Percent_cl), by = "Eager_label") %>%
+  drop_na(number_species) %>%
+  drop_na(Age_BP) %>%
+  drop_na(avg_rl) %>%
+  ggplot(., aes(Age_BP, number_species)) + # , shape = Study
+    geom_point(aes(fill = Percent_cl, size = avg_rl), shape = 21, color = "black", stroke = 0.2) +
+    scale_fill_viridis_c(option = "C", limits = c(0, 100)) + #  , name = "Contamination", breaks=c(1000,2000,3000,4000,5000,6000,7000)
+    theme_minimal(base_size = 10) +
+    scale_x_log10(labels = label_comma()) +
+    # labs(color = "Source", shape = "Source") +
+    # theme(legend.position="none") +
+    xlab("Age (BP)") +
+    ylab("No. species") +
+    ggtitle("HOMD")
+homd_color_size
+
+homd_mags_color_size <- homd_mags_filt_sp %>%
+  filter(Counts > 0) %>%
+  group_by(Eager_label) %>%
+  count(name = "number_species") %>%
+  ungroup() %>%
+  right_join(., lib_metadata %>%
+  filter(Full == "Calculus - Ancient") %>%
+              select(Eager_label, No_reads_no_human, avg_rl, Age_BP) %>%
+              unique(), by = "Eager_label") %>%
+  mutate(reads_log = log10(No_reads_no_human)) %>%
+  left_join(., kraken2_stats %>%
+              filter(Database == "HOMD_MAGs") %>%
+              select(Eager_label, Percent_cl), by = "Eager_label") %>%
+  drop_na(number_species) %>%
+  drop_na(Age_BP) %>%
+  drop_na(avg_rl) %>%
+  ggplot(., aes(Age_BP, number_species)) + # , shape = Study
+    geom_point(aes(fill = Percent_cl, size = avg_rl), shape = 21, color = "black", stroke = 0.2) +
+    scale_fill_viridis_c(option = "C", limits = c(0, 100)) + #  , name = "Contamination", breaks=c(1000,2000,3000,4000,5000,6000,7000)
+    theme_minimal(base_size = 10) +
+    scale_x_log10(labels = label_comma()) +
+    # labs(color = "Source", shape = "Source") +
+    # theme(legend.position="none") +
+    xlab("Age (BP)") +
+    ylab("No. species") +
+    ggtitle("HOMD_MAGs")
+homd_mags_color_size
+
+step3 <- homd_color_size | homd_mags_color_size
+
+step3
+
+```
+
+```{r}
+
+rl_age_line <- homd_sp_alpha_meta %>%
+  filter(Database == "HOMD_MAGs",
+         Full == "CA") %>%
+  select(Library_ID, Age_BP, avg_rl) %>%
+  mutate(logage = log10(Age_BP)) %>%
+  ggplot(., aes(Age_BP, avg_rl)) + # , shape = Study
+    geom_point(shape = 21, size = 2, color = "black", stroke = 0.2) +
+    geom_smooth(method = glm, se = F, col = "black", linewidth = 0.7) +
+    scale_fill_viridis_c(option = "C") + #  , name = "Contamination", breaks=c(1000,2000,3000,4000,5000,6000,7000)
+    theme_minimal(base_size = 14) +
+    scale_x_log10(labels = label_comma()) +
+    # labs(color = "Source", shape = "Source") +
+    theme(legend.title = element_text(size = 14)) +
+    ggpubr::stat_regline_equation(label.y = 82, label.x = 1.9, aes(label = ..rr.label..)) +
+    xlab("Age (BP)") +
+    ylab("Avg. read length (bp)")
+
+rl_age_line 
+
+```
+
+```{r anc_calc_homd_PCA}
+# prep the table for input to PCA
+homd_ac_sp_df <- homd_sp %>% 
+  pivot_longer(!Species, names_to  = "Eager_label", values_to = "Counts") %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Full) %>%
+              unique(), by = "Eager_label") %>%
+  filter(Full == "Calculus - Ancient") %>%
+  select(-Full) %>%
+  mutate(Counts = Counts + 1) %>%
+  pivot_wider(names_from = "Species", values_from = "Counts") %>%
+  column_to_rownames("Eager_label")
+
+homd_ac_sp.pca <- mixOmics::pca(homd_ac_sp_df, ncomp = 3, logratio = 'CLR')
+plot(homd_ac_sp.pca)
+
+# Select out the PC variates into a new table and add the metadata for plotting
+homd_ac_sp.pca.variates <- as.data.frame(homd_ac_sp.pca$variates$X)
+homd_ac_sp.pca.variates <- homd_ac_sp.pca.variates %>%
+  rownames_to_column("Eager_label")
+
+homd_ac_sp.pca.varmet <- homd_ac_sp.pca.variates %>%
+  left_join(., lib_metadata %>% select(-Run_accession,-Sample_alias,-Study_accession), by = "Eager_label") %>%
+  distinct() %>%
+  arrange(Eager_label)
+
+anc_calc_homd_pca <- homd_ac_sp.pca.varmet %>%
+  # add classfication metrics
+  left_join(., kraken2_stats %>%
+              filter(Database == "HOMD") %>%
+              select(Eager_label, Percent_cl), by = "Eager_label")%>%
+  mutate(log_age_bp = log10(Age_BP)) %>%
+  ggplot(., aes(PC1, PC2, fill = Percent_cl, shape = Host)) + # Host, Continent, Age_BP, avg_gc, avg_rl, No_reads_no_human, log_Age_BP, log_total_reads, Observed_species, Shannon_index, Percent_cl
+    geom_point(aes(fill = Percent_cl, size = avg_rl), shape = 21, color = "black", stroke = 0.2) +
+    # geom_point(size = 3, stroke = 0.2, color = "black") + # 
+    scale_shape_manual(values = c(21,21)) +
+    # scale_fill_manual(values = continent_colors) +
+    scale_fill_viridis_c(option = "C", limits = c(0, 100)) + # 
+    xlab(paste("PC1 - ", 100*(round(data.frame(homd_ac_sp.pca$prop_expl_var$X[1]), digits = 3)), "%", sep = "")) +
+    ylab(paste("PC2 - ", 100*(round(data.frame(homd_ac_sp.pca$prop_expl_var$X[2]), digits = 3)), "%", sep = "")) +
+    theme_minimal(base_size = 10) +
+    # labs(fill = "Continent", shape = "Source") +
+    theme(legend.title = element_text(size = 10))
+
+anc_calc_homd_pca
+
+```
+
+```{r anc_calc_homd_mags_PCA}
+
+keep_sp_calc <- homd_mags_sp %>% 
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Full) %>%
+              unique(), by = "Eager_label") %>%
+  filter(Full == "Calculus - Ancient") %>% 
+  unique() %>%
+  mutate(Present = ifelse(Counts > 500, 1, 0)) %>%
+  group_by(Full, Species) %>%
+  summarize(Prevelence = sum(Present) / length(Full)) %>%
+  ungroup() %>%
+  filter(Prevelence >= 0.1) %>%
+  select(Species) %>%
+  unique()
+
+# prep the table for input to PCA
+homd_mags_ac_sp_df <- homd_mags_sp %>% 
+  pivot_longer(!Species, names_to  = "Eager_label", values_to = "Counts") %>%
+  left_join(., lib_metadata %>%
+              select(Eager_label, Full) %>%
+              unique(), by = "Eager_label") %>%
+  filter(Full == "Calculus - Ancient") %>%
+  select(-Full) %>%
+  inner_join(., keep_sp_calc, by = "Species") %>%
+  mutate(Counts = Counts + 1) %>%
+  pivot_wider(names_from = "Species", values_from = "Counts") %>%
+  column_to_rownames("Eager_label")
+
+homd_mags_ac_sp.pca <- mixOmics::pca(homd_mags_ac_sp_df, ncomp = 3, logratio = 'CLR')
+plot(homd_mags_ac_sp.pca)
+
+# Select out the PC variates into a new table and add the metadata for plotting
+homd_mags_ac_sp.pca.variates <- as.data.frame(homd_mags_ac_sp.pca$variates$X)
+homd_mags_ac_sp.pca.variates <- homd_mags_ac_sp.pca.variates %>%
+  rownames_to_column("Eager_label")
+
+homd_mags_ac_sp.pca.varmet <- homd_mags_ac_sp.pca.variates %>%
+  left_join(., lib_metadata %>% select(-Run_accession,-Sample_alias,-Study_accession), by = "Eager_label") %>%
+  distinct() %>%
+  arrange(Eager_label)
+
+anc_calc_homd_mags_pca <- homd_mags_ac_sp.pca.varmet %>%
+  # add classfication metrics
+  left_join(., kraken2_stats %>%
+              filter(Database == "HOMD_MAGs") %>%
+              select(Eager_label, Percent_cl), by = "Eager_label")%>%
+  mutate(log_age_bp = log10(Age_BP)) %>%
+  ggplot(., aes(PC1, PC2, fill = Percent_cl, shape = Host)) + # Host, Continent, Age_BP, avg_gc, avg_rl, No_reads_no_human, log_Age_BP, log_total_reads, Observed_species, Shannon_index, Percent_cl, log_age_bp
+    geom_point(aes(fill = Percent_cl, size = avg_rl), shape = 21, color = "black", stroke = 0.2) +
+    # geom_point(size = 3, stroke = 0.2, color = "black") + # 
+    scale_shape_manual(values = c(21,21)) +
+    # scale_fill_manual(values = continent_colors) +
+    scale_fill_viridis_c(option = "C", limits = c(0, 100)) + # 
+    xlab(paste("PC1 - ", 100*(round(data.frame(homd_mags_ac_sp.pca$prop_expl_var$X[1]), digits = 3)), "%", sep = "")) +
+    ylab(paste("PC2 - ", 100*(round(data.frame(homd_mags_ac_sp.pca$prop_expl_var$X[2]), digits = 3)), "%", sep = "")) +
+    theme_minimal(base_size = 10) +
+    # labs(fill = "Continent", shape = "Source") +
+    theme(legend.title = element_text(size = 10))
+
+anc_calc_homd_mags_pca
+
+```
+
+```{r pca_plot}
+
+pca_plot <- anc_calc_homd_pca + anc_calc_homd_mags_pca +
+  plot_layout(guides = "collect") +
+  plot_layout(widths = c(1,1))
+
+pca_plot
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
