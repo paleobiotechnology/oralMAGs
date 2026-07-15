@@ -58,6 +58,9 @@ Continent_colors <- c("Oceania" = "#098BD9",
 
 ```
 
+This file does not contain the map (panel A). To generate the map, use the script 
+`world_map.R` in the same folder as this file. 
+
 ```{r}
 
 # read in the cluster info file

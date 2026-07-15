@@ -1,0 +1,642 @@
+---
+title: "Figure 4"
+author: "Irina Velsko"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output:
+    github_document:
+        fig_width: 8
+        fig_height: 6
+        toc: true
+---
+
+```{r load_libraries, echo = F, message = F}
+library(knitr)
+library(data.table)
+library(janitor)
+library(ape)
+library(tidyverse)
+library(ggtree)
+library(ggstar)
+library(ggnewscale)
+library(patchwork)
+opts_chunk$set(echo=F, warning=F, message=F, dpi=150)
+```
+
+Set the working directory of the notebook to the parent directory of the 
+notebook itself.  
+
+```{r setup}
+knitr::opts_knit$set(root.dir = normalizePath("../../.."))
+```
+
+```{r}
+Continent_colors <- c("Oceania" = "#098BD9", 
+                  "Europe" = "#7472af", 
+                  "Africa" = "#cc79a7", 
+                  "Caribbean" = "#f6865e", 
+                  "Asia" = "#86c73a",
+                  "South America" = "gray50",
+                  "North America" = "#1ec1a7")
+
+
+mag_source_colors <- c("Ancient human" = "#FFD5AF",
+                       "Neanderthal" = "#FEEDA0",
+                       "Modern human" = "#EFB6D6",
+                       "Non-human primate" = "#BCE1FF",
+                       "Reference" = "lightgrey")
+
+
+ba_colors <- c("pre-14000" = "#35264c","post-14000" = "#3487a6", "modern" = "#ade3c0")
+
+```
+
+This file does not have the figure panels for archaea, panels F and G. To get those
+panels, you need to run `Figure_4_archaea.Rmd`.
+
+```{r}
+# Read in the metadata table saved from drep_anaerovoracaceae.Rmd (this already has the fastBAPS clusters included, from strict filtering)
+all_info <- fread("./00-documentation/rgig7111_anaerovoracaceae_complete_metadata_09_2025.tsv") %>%
+  filter(primary_cluster == 211) %>%
+  select(-accession, -ncbi_isolation_source, -ncbi_genome_category, -gtdb_representative, -ncbi_refseq_category)
+
+```
+
+```{r}
+
+bin_metadata <- all_info %>%
+  rename(Bin = genome) %>%
+  mutate(primary_cluster = as.character(primary_cluster)) %>%
+  mutate(ssa = Bin)  %>%
+  separate_wider_delim(ssa, delim = ".", names = "Secondary_sample_accession", too_many = "drop") %>%
+  left_join(., fread("https://raw.githubusercontent.com/SPAAM-community/AncientMetagenomeDir/refs/heads/master/ancientmetagenome-hostassociated/samples/ancientmetagenome-hostassociated_samples.tsv") %>%
+              select(archive_accession, latitude, longitude) %>%
+              separate_longer_delim(archive_accession, delim = ",") %>%
+              rename(Secondary_sample_accession = archive_accession) %>%
+              bind_rows(., fread("./00-documentation/ERSX_to_ERS_conversion_table.tsv") %>% 
+                          select(prepublication_sample_accession, latitude, longitude) %>%
+                          rename(Secondary_sample_accession = prepublication_sample_accession)), by = "Secondary_sample_accession") %>%
+  mutate(latitude = ifelse(Study == "Honap2023",35.477,
+                           ifelse(Study == "Velsko2019" & MAG_source == "Modern",37.778,
+                                  ifelse(Study == "Velsko2023",14.000,
+                                         ifelse(str_detect(Secondary_sample_accession, "ERS3774416|ERS3774418"),6.428,latitude))))) %>%
+  mutate(longitude = ifelse(Study == "Honap2023",-97.105,
+                           ifelse(Study == "Velsko2019" & MAG_source == "Modern",-3.787,
+                                  ifelse(Study == "Velsko2023",3.050,
+                                         ifelse(str_detect(Secondary_sample_accession, "ERS3774416|ERS3774418"),-9.429,longitude))))) %>%
+  unique() %>%
+  mutate(full_age = Age_BP,
+         Age_BP = log10(Age_BP),
+         binary_age = ifelse(full_age >= 14000, "pre-14000",
+                             ifelse(full_age < 100, "modern", "post-14000")),
+         binary_age = ifelse(str_detect(Host, "Baboon|Chimpanzee"),"modern",binary_age)) %>%
+  mutate(MAG_source = ifelse(str_detect(Host, "Baboon|Chimpanzee"),"Non-human primate",
+                             ifelse(str_detect(Host, "Neanderthal"),"Neanderthal",
+                                    ifelse(str_detect(MAG_source, "Ancient"),"Ancient human","Modern human"))))
+
+
+```
+
+```{r tree_files}
+# read in the tree
+tre_rgig7111_rx <- ape::read.tree("./04-analysis/rgig7111/phylogenies/rgig7111_scc_non_recomb_09_2025.raxml.support") # has bootstrap values, rgig7111_phipack_scc_non_recomb.raxml.support
+
+```
+
+## Root-finding with MAD 
+Genome Biol Evol. 2012 May 16;4(8):821–831. doi: 10.1093/gbe/evs047
+```{r, eval = F}
+
+source("./01-data/mad.R")
+
+```
+
+```{r, eval = F}
+tre_rgig7111_rx_unrooted <- ape::read.tree("./04-analysis/rgig7111/phylogenies/rgig7111_prank_phipack_scc_non_recomb.raxml.support") # has bootstrap values, rgig7111_phipack_scc_non_recomb.raxml.support
+
+rgiig7111_mad_root <- mad(tre_rgig7111_rx_unrooted, 'full') # newick
+
+# rgiig7111_mad_root %>%
+#   as.list() %>%
+#   fwrite(., "./04-analysis/emn_trees/phylogenies/rgig7111_09_2025_mad_root.nwk", quote = F)
+
+```
+
+```{r}
+rgiig7111_mad_root_nq <- ape::read.tree("./04-analysis/emn_trees/phylogenies/rgig7111_09_2025_mad_root.nwk")
+
+# Root the tree with the root determined by MAD
+rgiig7111_mad_root_nq <- ape::root(rgiig7111_mad_root_nq, outgroup = "ERS11702731.bin.r.10") 
+
+ggtree(rgiig7111_mad_root_nq, ladderize = T) + 
+    # geom_tiplab(size=2, align = T) +
+    geom_text2(aes(label=label, subset = !is.na(as.numeric(label)) & as.numeric(label) > 70), size = 3) +
+    geom_treescale(x = 0, y = 1)
+
+p_rgiig7111_scc_madroot_meta <- ggtree(rgiig7111_mad_root_nq, ladderize = T) %<+% bin_metadata
+
+p_rgiig7111_scc_madroot_notip_tree <- p_rgiig7111_scc_madroot_meta + # size = SNPs  + geom_tippoint(aes(color = binary_age, shape = sample_host), size = 3.0)
+  geom_treescale(y = 1) 
+
+p_rgiig7111_scc_madroot_notip_tree
+
+# get the tree tip order
+tip_order_rgiig7111_mad_scc <- get_taxa_name(p_rgiig7111_scc_madroot_meta)
+
+tip_order_rgiig7111_mad_scc %>%
+  as_tibble() %>%
+  rename(Bin = 1) %>%
+  left_join(., bin_metadata %>%
+              select(Bin, Study, Country, Age_BP, binary_age, Host))
+
+```
+
+```{r metadata_cols}
+
+# Binary Age
+age_binary_plot <- bin_metadata %>%
+  mutate(binary_age = ifelse(full_age >= 14000, "pre-14000",
+                             ifelse(full_age < 100, "modern", "post-14000"))) %>%
+  select(Bin, binary_age) %>%
+  pivot_longer(!Bin, names_to = "quality", values_to = "percent") %>%
+  ggplot(., aes(x = quality, y = factor(Bin, levels = tip_order_rgiig7111_mad_scc), fill = percent)) + 
+  geom_tile() +
+  theme_minimal() +
+  theme(
+    # axis.title.x=element_blank(),
+        # axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(), # element_text(size = 5)
+        axis.ticks.y=element_blank()) +
+  theme(panel.grid.major.y = element_blank()) +
+  scale_y_discrete(limits=rev) +
+  scale_fill_manual(values = c("#ade3c0","#3487a6","#35264c"))
+
+age_binary_plot
+
+# Continent
+continent_plot <- bin_metadata %>%
+  select(Bin, Continent) %>%
+  pivot_longer(!Bin, names_to = "quality", values_to = "percent") %>%
+  ggplot(., aes(x = quality, y = factor(Bin, levels = tip_order_rgiig7111_mad_scc), fill = percent)) + 
+  geom_tile() +
+  theme_minimal() +
+  theme(
+    # axis.title.x=element_blank(),
+        # axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(), # element_text(size = 5)
+        axis.ticks.y=element_blank()) +
+  theme(panel.grid.major.y = element_blank()) +
+  scale_y_discrete(limits=rev) +
+  scale_fill_manual(values = Continent_colors)
+
+continent_plot
+
+# Host 
+host_plot <- bin_metadata %>%
+  select(Bin, MAG_source) %>%
+  pivot_longer(!Bin, names_to = "quality", values_to = "percent") %>%
+  ggplot(., aes(x = quality, y = factor(Bin, levels = tip_order_rgiig7111_mad_scc), fill = percent)) + 
+  geom_tile() +
+  theme_minimal() +
+  theme(
+    # axis.title.x=element_blank(),
+        # axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(), # element_text(size = 5)
+        axis.ticks.y=element_blank()) +
+  theme(panel.grid.major.y = element_blank()) +
+  scale_y_discrete(limits=rev) +
+  scale_fill_manual(values = mag_source_colors)
+
+host_plot
+
+```
+
+```{r van}
+
+van_genes <- fread("05-results/rgig7111_van_gene_table.tsv")
+
+# Dots for gene presence/absence
+van_dots <- van_genes %>%
+  # sum counts for operon genes and then for integrase genes
+  mutate(operon = select(., vanS:vanT) %>% rowSums()) %>%  
+  mutate(integrase = select(., matches("integrase")) %>% rowSums()) %>%  
+  select(Sample, operon, integrase) %>%
+  # indicate if operon is complete, partial, or missing
+  mutate(Operon = ifelse(operon == 8, "Complete",
+                         ifelse(operon == 0, "Missing","Partial"))) %>%
+  # indicate if integrases are both, one, or missing
+  mutate(Integrase = ifelse(integrase == 2, "Complete",
+                         ifelse(integrase == 0, "Missing","Partial")),
+         Genes = "van") %>%
+  select(Sample, Operon, Integrase, Genes) 
+
+van_col <- van_dots %>%
+  mutate(Operon = str_replace_all(Operon, "Partial","Present"),
+         Operon = str_replace_all(Operon, "Complete","Present"),
+         Genes = str_replace_all(Genes, "$"," operon")) %>%
+  ggplot(., aes(x = Genes, y = factor(Sample, levels = tip_order_rgiig7111_mad_scc), fill = Operon)) + # x = factor(Gene, levels=gene_cluster_info), y = Sample, fill = Presence
+    geom_tile() +
+    theme_minimal() +
+    theme(
+    # axis.title.x=element_blank(),
+        # axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(), # element_text(size = 5)
+        axis.ticks.y=element_blank()) +
+    theme(panel.grid.major.y = element_blank()) +
+    scale_y_discrete(limits=rev) +
+    xlab("") +
+    scale_fill_manual(values = c("#fbe1e3","#ec6c77"))
+
+  # scale_fill_manual(values = c("#d6e7ed","#3487a6","#e6f6ec","#ade3c0","#567160","#35264c"))
+
+van_col
+  
+```
+
+```{r cctyper_dots}
+
+cctyper_table <- fread("./05-results/rgig7111_cctyper_table.tsv")
+
+cas_dots <- cctyper_table %>%
+  select(Bin, Full_type) %>%
+  unique() %>%
+  mutate(Present = 1) %>%
+  pivot_wider(names_from = "Full_type", values_from = "Present", values_fill = 0) %>%
+  mutate(cctyper = "Cas",
+         other_cas = ifelse(`II-A` == 1, "II-A",
+                                   ifelse(`I-E` == 1,"I-E", 
+                                          ifelse(`I-C` == 1, "I-C", 
+                                                 ifelse(`III-A` == 1, "III-A", "none")))),
+         `II-D` = as.character(`II-D`)) %>%
+  mutate(other_cas = ifelse(`II-A` == 1 & `III-A` == 1, "III-A/II-A", other_cas)) %>%
+  # now change other_cas so that if it has II-D it's II-D and not none, for coloring the outer ring
+  mutate(other_cas = ifelse(other_cas == "none" & `II-D` ==1, "II-D",other_cas)) 
+
+cas_col <- cas_dots %>%
+  select(Bin, `II-D`, other_cas) %>%
+  mutate(`II-D` = ifelse(other_cas == "none","none",`II-D`),
+         `II-D` = ifelse(`II-D` == 0, other_cas, `II-D`),
+         other_cas = ifelse(other_cas == "II-D","none",other_cas),
+         `II-D` = ifelse(`II-D` == 1, "II-D",`II-D`)) %>%
+  mutate(other_cas = ifelse(other_cas == `II-D`,"none",other_cas)) %>%
+  pivot_longer(!Bin, names_to = "Cas", values_to = "subtype") %>%
+  ggplot(., aes(x = Cas, y = factor(Bin, levels = tip_order_rgiig7111_mad_scc), fill = subtype)) + # x = factor(Gene, levels=gene_cluster_info), y = Sample, fill = Presence
+    geom_tile() +
+    theme_minimal() +
+    theme(
+    # axis.title.x=element_blank(),
+        # axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(), # element_text(size = 5)
+        axis.ticks.y=element_blank()) +
+    theme(panel.grid.major.y = element_blank()) +
+    scale_y_discrete(limits=rev) +
+    scale_fill_manual(values = c("#ff4d6b","#93DCB5","#f1ab38","gray15","#4490FE","#756bb1","gray95"))
+
+cas_col
+  
+```
+
+```{r dlt_genes}
+
+dlt_genes <- fread("./05-results/rgig7111_dlt_operon_table.tsv") %>%
+  mutate(operon = ifelse(Asm_break == "No","Complete",
+                         ifelse(Asm_break == "Yes","Partial","Missing")))
+
+dlt_col <- dlt_genes %>%
+  mutate(operon = str_replace_all(operon, "Partial","Present"),
+         operon = str_replace_all(operon, "Complete","Present"),
+         Gene = "dlt operon") %>%
+  ggplot(., aes(x = Gene, y = factor(MAG, levels = tip_order_rgiig7111_mad_scc), fill = operon)) + # x = factor(Gene, levels=gene_cluster_info), y = Sample, fill = Presence
+    geom_tile() +
+    theme_minimal() +
+    theme(
+    # axis.title.x=element_blank(),
+        # axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(), # element_text(size = 5)
+        axis.ticks.y=element_blank()) +
+    theme(panel.grid.major.y = element_blank()) +
+    scale_y_discrete(limits=rev) +
+    xlab("") +
+    scale_fill_manual(values = c("#dcf1f5","#54BCD1"))
+
+dlt_col
+
+```
+
+```{r}
+rgig7111_tree_genes <- p_rgiig7111_scc_madroot_notip_tree + age_binary_plot + host_plot + continent_plot + cas_col + dlt_col + van_col +
+  plot_layout(guides = 'collect', widths = c(10,1,1,1,1,1,1))
+
+rgig7111_tree_genes
+
+# ggsave("06-publication/main_figures/Figure_4/rgig7111_tree_genes_bars.pdf", plot = rgig7111_tree_genes, device = "pdf",
+#        scale = 1, width = 10, height = 20, units = c("in"), dpi = 300)
+
+```
+
+## Heatmap
+
+```{r}
+bac120 <- fread("./00-documentation/bac120_metadata_r214.tsv") %>% # this needs to be downloaded independently from the GTDB ftp server https://data.gtdb.aau.ecogenomic.org/releases/
+  select(accession, gc_percentage, genome_size, checkm_completeness, checkm_contamination, gtdb_representative, gtdb_taxonomy, ncbi_refseq_category, ncbi_genome_category, ncbi_genome_representation, ncbi_isolation_source, ncbi_taxonomy) %>%
+  filter(str_detect(gtdb_taxonomy, "Anaerovoracaceae")) %>%
+  mutate(accession = str_remove_all(accession, "GB_"),
+         accession = str_remove_all(accession, "RS_"))  %>%
+  mutate(gtdb_taxonomy = str_remove_all(gtdb_taxonomy, "d__Bacteria;p__Bacillota_A;c__Clostridia;o__Peptostreptococcales;f__Anaerovoracaceae;")) 
+
+gI <- fread("./05-results/dRep_rgig7111_anaerovoracaceae_genomeInfo.csv")
+cdb <- fread("./05-results/dRep_rgig7111_anaerovoracaceae_Cdb.csv") %>%
+  select(-threshold, -cluster_method, -comparison_algorithm) %>%
+  rename(Bin = genome) %>%
+  mutate(Bin = str_replace_all(Bin, ".fa",""),
+         Bin = str_replace_all(Bin, ".fna", ""))
+
+lib_metadata <- fread("./00-documentation/cluster_info_all_metadata_26_07_2024.tsv")
+
+quality <- fread("00-documentation/CMC_assembly_MAG_automaticrefinement_summary.tsv") %>%
+  select(sample_binID, pass.MIMAG_high, pass.MIMAG_medium, pass.GUNC, checkM2.completeness, checkM2.contamination, checkM.coding_density, checkM.completeness, checkM.contamination, checkM.GC, checkM.genome_size, checkM.lineage, checkM.N50_contigs, checkM.strain_heterogeneity, GUNC.contamination_portion, GUNC.CSS, GUNC.divergence_level, GUNC.n_contigs) %>%
+  rename(Bin = sample_binID) %>%
+  mutate(Bin = str_replace_all(Bin, "-metaspades_00",".bin.r.")) %>%
+  mutate(Bin = str_replace_all(Bin, "-metaspades_0",".bin.r.")) %>%
+  mutate(Bin = str_replace_all(Bin, "-metaspades_",".bin.r.")) %>%
+  select(Bin, everything()) %>%
+  inner_join(., cdb %>%
+               filter(primary_cluster == 211) %>%
+             select(Bin), by = "Bin") %>%
+  bind_rows(., fread("00-documentation/ASMB_MAGS_metaWRAP_postfiltering.tsv") %>% # 
+            select(sample_binID, pass.MIMAG_high, pass.MIMAG_medium, pass.GUNC, checkM2.completeness, checkM2.contamination, checkM.coding_density, checkM.completeness, checkM.contamination, checkM.GC, checkM.genome_size, checkM.lineage, checkM.N50_contigs, checkM.strain_heterogeneity, GUNC.contamination_portion, GUNC.CSS, GUNC.divergence_level, GUNC.n_contigs) %>%
+            rename(Bin = sample_binID) %>%
+            mutate(Bin = str_replace_all(Bin, "-megahit_00",".bin.r.")) %>%
+            mutate(Bin = str_replace_all(Bin, "-megahit_0",".bin.r.")) %>%
+            mutate(Bin = str_replace_all(Bin, "-megahit_",".bin.r.")) %>%
+            mutate(Bin = str_replace_all(Bin, "-metaspades_00",".bin.r.")) %>%
+            mutate(Bin = str_replace_all(Bin, "-metaspades_0",".bin.r.")) %>%
+            mutate(Bin = str_replace_all(Bin, "-metaspades_",".bin.r.")) %>%
+            select(Bin, everything()) %>%
+            inner_join(., cdb %>%
+                         filter(primary_cluster == 211) %>%
+                         select(Bin), by = "Bin"))
+
+# new all info w/all Anaerov. genomes
+all_info <- bac120 %>%
+  rename(folder = accession) %>%
+  select(-ncbi_taxonomy, -checkm_completeness, -checkm_contamination, -genome_size, -ncbi_genome_representation) %>%
+  full_join(., fread("./00-documentation/gtdb_complete_anaerovoracaceae_genome_paths.tsv", header = F) %>%
+            rename(path = 1) %>%
+            mutate(path = str_remove_all(path, "/mnt/archgen/microbiome_calculus/cmc_deep_assembly/01-data/anaerovoracaceae/ncbi_dataset/data/")) %>%
+            separate_wider_delim(path, names = c("folder","genome"), delim = "/"), by = "folder") %>%
+  select(folder, genome, everything()) %>%
+  # now correct the name
+  rename(accession = folder) %>%
+  mutate(genome = str_replace_all(genome, ".fa_genomic","_genomic")) %>%
+  mutate(Source = ifelse(str_detect(ncbi_isolation_source, "gut|rumen|Rumen|feces|Feces|ceaca|caeca|diarrhea|fecal|rectal|cecum|stool|gastrointestinal|aeces|manure"),"gut",
+                         ifelse(str_detect(ncbi_isolation_source, "aliva|laque|oral|ongue|outh|ucosa|heek|curette|eriodont"),"oral",
+                                ifelse(ncbi_isolation_source == "none","none", "environmental")))) %>%
+  # ok now deal with the unusual isolation sources to get them properly classified
+  # vagina, sheep -> gut, not provided
+  mutate(Source = ifelse(str_detect(ncbi_isolation_source, "vagina"),"vagina",
+                         ifelse(str_detect(ncbi_isolation_source, "sheep"),"gut",
+                                ifelse(str_detect(ncbi_isolation_source, "not provided"),"none",Source)))) %>%
+  mutate(genome = str_remove_all(genome, ".fna")) %>%
+  # add 1o and 2o clusters
+  full_join(., cdb %>%
+              # add taxonomy
+              left_join(., fread("./00-documentation/mod_anc_refined_mag_taxonomy_26_07_2024.tsv") %>%
+                          bind_rows(., fread("00-documentation/csc001_taxonomy.tsv")), by = "Bin") %>%
+              rename(gtdb_taxonomy = classification,
+                     genome = Bin) %>%
+              mutate(gtdb_taxonomy = str_remove_all(gtdb_taxonomy, "d__Bacteria;p__Bacillota_A;c__Clostridia;o__Peptostreptococcales;f__Anaerovoracaceae;")) %>%
+              # add genome completeness, contamination, length, N50
+              full_join(gI %>%
+                        mutate(genome = str_remove_all(genome, ".fna"),
+                               genome = str_remove_all(genome, ".fa")), by = "genome"), 
+              by = c("genome")) %>% # ,"accession"
+  mutate(Source = ifelse(str_detect(genome, "^CM|^ERS|^SRS|^HMP|^Brito|^MGYG|^Ferr|^SEQF"), "oral", Source),
+         gtdb_taxonomy = coalesce(`gtdb_taxonomy.x`, `gtdb_taxonomy.y`)
+         # genome = ifelse(str_detect(genome, "^CMC|^ERS|^SRS"), str_replace_all(genome, "$",".fa"), genome)
+         ) %>%
+  select(-`gtdb_taxonomy.x`, -`gtdb_taxonomy.y`) %>%
+  select(accession, genome, Source, gc_percentage, completeness, contamination, primary_cluster, secondary_cluster, length, N50, gtdb_taxonomy, ncbi_isolation_source, ncbi_genome_category, gtdb_representative, ncbi_refseq_category,everything()) %>%
+  # drop_na(primary_cluster) %>%
+  left_join(., lib_metadata %>%
+              select(Bin, MAG_source) %>%
+              rename(genome = Bin)) %>%
+  mutate(MAG_source = ifelse(is.na(MAG_source),"NCBI", MAG_source),
+         MAG_source = ifelse(str_detect(genome, "ERSX0005001"),"Ancient",MAG_source),
+         MAG_source = ifelse(str_detect(MAG_source, "Velsko|Fellows|Passoli|Pedro|Lassalle|MGN"),"Modern",MAG_source)) %>%
+  # now distinguish NCBI isolate from NCBI MAG
+  mutate(MAG_source = ifelse(str_detect(genome, "GCA|GCF") & str_detect(genome, "ASM"), "NCBI isolate",
+                             ifelse(str_detect(genome, "GCA|GCF") & !str_detect(genome, "ASM"), "NCBI MAG", MAG_source))) %>%
+  unique() %>%
+  arrange(primary_cluster, secondary_cluster) %>%
+  # also add the fastBAPS clusters from strict phipack filtered alignment
+  full_join(., fread("./05-results/fastBAPS_multi_clusters_rgig7111_09_2025.tsv") %>%
+              rename(genome = Isolates,
+                     fBAPS_l1 = 2,
+                     fBAPS_l2 = 3), by = "genome") %>%
+  full_join(., quality %>%
+              select(Bin, checkM2.completeness, checkM2.contamination, checkM.GC) %>%
+              rename(genome = Bin), by = "genome") %>%
+  mutate(GC_pct = coalesce(gc_percentage, checkM.GC)) %>%
+  select(-gc_percentage, -checkM.GC) %>%
+  select(1:3,GC_pct, completeness, contamination, checkM2.completeness, checkM2.contamination, everything())
+
+# make a heatmap of the ANI of each MAG/reference to the others
+mdb <- fread("./05-results/dRep_rgig7111_anaerovoracaceae_Mdb.csv.gz") %>%
+  mutate(genome1 = str_replace_all(genome1, ".fa",""),
+         genome1 = str_replace_all(genome1, ".fna",""),
+         genome2 = str_replace_all(genome2, ".fa",""),
+         genome2 = str_replace_all(genome2, ".fna",""))
+
+# order for plotting
+cluster_order <- cdb %>%
+  pull(Bin)
+
+```
+
+```{r}
+environment_colors <- c("oral" = "#a6cee3", "gut" = "#b9aba1", "environmental" = "#c1e2bf", "other" = "#e1d8ea", "none" = "white", "vagina" = "#fee3e3")
+am_colors <- c("Ancient" = "#1ec1a7", "Modern" = "#a5e6db")
+im_colors <- c("MAG" = "#ffffb3", "Isolate" = "#ffffe8")
+
+envt_bar <- mdb %>%
+  bind_rows(., mdb %>%
+              rename(genome2 = 1,
+                     genome1 = 2)) %>%
+  #  add cluster info
+  full_join(., all_info %>%
+              select(genome, Source, primary_cluster) %>%
+              rename(genome1 = 1), by = "genome1") %>%
+  # order for plotting
+  mutate(genome1 =  fct_relevel(genome1, cluster_order),
+         genome2 =  fct_relevel(genome2, cluster_order)) %>%
+  mutate(similarity = na_if(similarity, 0)) %>%
+  arrange(genome1, genome2) %>%
+  select(genome1, Source) %>%
+  unique() %>%
+  mutate(plotcol = "cluster",
+         # primary_cluster = as.character(primary_cluster)
+         ) %>%
+  ggplot(., aes(plotcol, genome1, fill = Source)) +
+         geom_tile() +
+         scale_fill_manual(values = environment_colors) +
+         scale_y_discrete(limits =  rev) +
+         theme_minimal(base_size = 11) +
+         theme(axis.text = element_blank(),
+               plot.margin = margin(0, 0, 0, 0, "pt"),
+               axis.title.y = element_blank(),
+               legend.position = "left") +
+         theme(panel.grid.major = element_blank(), 
+               panel.grid.minor = element_blank())
+
+envt_bar
+
+am_bar <- mdb %>%
+  bind_rows(., mdb %>%
+              rename(genome2 = 1,
+                     genome1 = 2)) %>%
+  #  add cluster info
+  full_join(., all_info %>%
+              select(genome, MAG_source, primary_cluster) %>%
+              mutate(Genome = ifelse(str_detect(MAG_source, "Ancient"),"Ancient","Modern")) %>%
+              rename(genome1 = 1), by = "genome1") %>%
+  # order for plotting
+  mutate(genome1 =  fct_relevel(genome1, cluster_order),
+         genome2 =  fct_relevel(genome2, cluster_order)) %>%
+  mutate(similarity = na_if(similarity, 0)) %>%
+  arrange(genome1, genome2) %>%
+  select(genome1, Genome) %>%
+  unique() %>%
+  mutate(plotcol = "cluster",
+         # primary_cluster = as.character(primary_cluster)
+         ) %>%
+  ggplot(., aes(plotcol, genome1, fill = Genome)) +
+         geom_tile() +
+         scale_fill_manual(values = am_colors) +
+         scale_y_discrete(limits =  rev) +
+         theme_minimal(base_size = 11) +
+         theme(axis.text = element_blank(),
+               plot.margin = margin(0, 0, 0, 0, "pt"),
+               axis.title.y = element_blank(),
+               legend.position = "left") +
+         theme(panel.grid.major = element_blank(), 
+               panel.grid.minor = element_blank())
+
+am_bar
+
+im_bar <- mdb %>%
+  bind_rows(., mdb %>%
+              rename(genome2 = 1,
+                     genome1 = 2)) %>%
+  #  add cluster info
+  full_join(., all_info %>%
+              select(genome, MAG_source, primary_cluster) %>%
+              mutate(Genome = ifelse(str_detect(MAG_source, "isolate"),"Isolate","MAG")) %>%
+              rename(genome1 = 1), by = "genome1") %>%
+  # order for plotting
+  mutate(genome1 =  fct_relevel(genome1, cluster_order),
+         genome2 =  fct_relevel(genome2, cluster_order)) %>%
+  mutate(similarity = na_if(similarity, 0)) %>%
+  arrange(genome1, genome2) %>%
+  select(genome1, Genome) %>%
+  unique() %>%
+  mutate(plotcol = "cluster",
+         # primary_cluster = as.character(primary_cluster)
+         ) %>%
+  ggplot(., aes(plotcol, genome1, fill = Genome)) +
+         geom_tile() +
+         scale_fill_manual(values = im_colors) +
+         scale_y_discrete(limits =  rev) +
+         theme_minimal(base_size = 11) +
+         theme(axis.text = element_blank(),
+               plot.margin = margin(0, 0, 0, 0, "pt"),
+               axis.title.y = element_blank(),
+               legend.position = "left") +
+         theme(panel.grid.major = element_blank(), 
+               panel.grid.minor = element_blank())
+
+im_bar
+
+```
+
+```{r}
+
+ani_heat <- mdb %>%
+  bind_rows(., mdb %>%
+              rename(genome2 = 1,
+                     genome1 = 2)) %>%
+  #  add cluster info
+  full_join(., cdb %>%
+              select(Bin, secondary_cluster) %>%
+              rename(genome1 = 1), by = "genome1") %>%
+  # order for plotting
+  mutate(genome1 =  fct_relevel(genome1, cluster_order),
+         genome2 =  fct_relevel(genome2, cluster_order)) %>%
+  mutate(similarity = na_if(similarity, 0)) %>%
+  arrange(genome1, genome2) %>%
+  ggplot(., aes(genome1, genome2, fill = similarity)) +
+         geom_tile() +
+         scale_fill_viridis_c(option = "G",  direction = -1) +
+         # scale_fill_gradient2(low =  "#f5fcf7", mid = "#46BEADFF", high = "#38629DFF", midpoint = 0.85) +#breaks  = c(0.7, 1.0), 
+         scale_y_discrete(limits =  rev) +
+         theme_minimal(base_size = 6) +
+         theme(axis.text = element_blank(),
+               plot.margin = margin(0, 0, 0, 0, "pt"),
+               axis.title.y = element_blank(),
+               legend.position = "left")
+ani_heat
+
+```
+
+
+```{r}
+
+ani_heat_bars <- ani_heat + envt_bar + am_bar + im_bar +
+  plot_layout(guides = 'collect', widths = c(5,0.25,0.25,0.25))
+
+ani_heat_bars
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
