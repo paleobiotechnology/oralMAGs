@@ -1,5 +1,5 @@
 ---
-title: "RGIG7111 MAGs pyDamage"
+title: "Extended Data Figure 6"
 author: "Irina Velsko"
 date: "`r format(Sys.time(), '%b %d, %Y')`"
 output:
@@ -22,7 +22,7 @@ Set the working directory of the notebook to the parent directory of the
 notebook itself.  
 
 ```{r setup}
-knitr::opts_knit$set(root.dir = normalizePath("../../.."))
+knitr::opts_knit$set(root.dir = normalizePath("../../"))
 ```
 
 ```{r colors}
