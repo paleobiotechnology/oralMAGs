@@ -25,7 +25,7 @@ Set the working directory of the notebook to the parent directory of the
 notebook itself.  
 
 ```{r setup}
-knitr::opts_knit$set(root.dir = normalizePath("../../../"))
+knitr::opts_knit$set(root.dir = normalizePath("../../"))
 ```
 
 
@@ -242,15 +242,17 @@ bin_metadata <- fread("./00-documentation/cluster_info_all_metadata_26_07_2024.t
                                 Secondary_sample_accession = 1) %>%
                          select(-BioProject_accession, -run_accessions))) %>%
   mutate(ERS = ifelse(is.na(ERS),"unneeded",ERS)) %>%
-  separate_wider_delim(Bin, delim = ".", names = c("ssa","bin"), too_many = "merge", too_few = "align_start") %>%
-  mutate(bin2 = bin) %>%
+  separate_wider_delim(Bin, delim = ".b", names = c("ssa","bin"), too_many = "merge", too_few = "align_start") %>%
+  mutate(bin = str_replace_all(bin, "^","b"),
+         bin2 = bin) %>%
   unite(Bin, ssa:bin, sep = ".") %>%
   unite(Bin_pub, ERS:bin2, sep = ".") %>%
   mutate(Bin_pub = ifelse(str_detect(Bin_pub, "unneeded"),Bin, Bin_pub)) %>%
   # filter(str_detect(Bin, "MGYG")) %>%
   mutate(Bin = str_remove_all(Bin, ".NA"),
          Bin_pub = str_remove_all(Bin_pub, ".NA")) %>%
-  unique()
+  unique() %>%
+  select(Bin_pub, everything())
   
 bin_metadata_short <- bin_metadata %>%
   select(Bin, binary_age, Continent, Host) # , Country
@@ -260,7 +262,7 @@ bin_metadata_short_2 <- bin_metadata_short %>%
 
 ```
 
-```{r read_tree}
+```{r doralis_read_tree}
 
 # doralis pr_cl_3893
 doralis_scc_tree_unrooted <- ape::read.tree("./05-results/doralis_scc.raxml.support")
@@ -324,9 +326,9 @@ tip_order_doralis_scc %>%
 
 # Binary Age
 age_binary_plot <- bin_metadata %>%
-  select(Bin, binary_age) %>%
-  pivot_longer(!Bin, names_to = "quality", values_to = "percent") %>%
-  ggplot(., aes(x = quality, y = factor(Bin, levels = tip_order_doralis_scc), fill = percent)) + # x = factor(Gene, levels=gene_cluster_info), y = Sample, fill = Presence
+  select(Bin_pub, binary_age) %>%
+  pivot_longer(!Bin_pub, names_to = "quality", values_to = "percent") %>%
+  ggplot(., aes(x = quality, y = factor(Bin_pub, levels = tip_order_doralis_scc), fill = percent)) + # x = factor(Gene, levels=gene_cluster_info), y = Sample, fill = Presence
   geom_tile() +
   theme_minimal() +
   theme(
@@ -344,9 +346,9 @@ age_binary_plot
 
 # Continent
 continent_plot <- bin_metadata %>%
-  select(Bin, Continent) %>%
-  pivot_longer(!Bin, names_to = "quality", values_to = "percent") %>%
-  ggplot(., aes(x = quality, y = factor(Bin, levels = tip_order_doralis_scc), fill = percent)) + # x = factor(Gene, levels=gene_cluster_info), y = Sample, fill = Presence
+  select(Bin_pub, Continent) %>%
+  pivot_longer(!Bin_pub, names_to = "quality", values_to = "percent") %>%
+  ggplot(., aes(x = quality, y = factor(Bin_pub, levels = tip_order_doralis_scc), fill = percent)) + # x = factor(Gene, levels=gene_cluster_info), y = Sample, fill = Presence
   geom_tile() +
   theme_minimal() +
   theme(
