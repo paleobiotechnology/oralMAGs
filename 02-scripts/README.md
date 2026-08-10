@@ -1,7 +1,7 @@
 ## Overview of the folder `02-scripts`
 
-This folder contains all the workflows and scripts that are necessary to conduct the experiments of
-this project.
+This folder contains  workflows and scripts that are necessary to prepare the de novo assembly for
+this project as well as additional plotting scripts that are not part of the main or extended data figures.
 
 ### `PREP`: data preparation
 
