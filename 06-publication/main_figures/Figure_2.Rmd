@@ -431,10 +431,24 @@ class_counts_plot
 ```{r}
 
 lib_metadata <- fread("./00-documentation/library_sample_eager_metadata.tsv") %>%
-  mutate(Secondary_sample_accession = ifelse(Study == "RIII" | Study == "Velsko2024",Other_sample_codes, Secondary_sample_accession))
+  full_join(., fread("./00-documentation/other_sample_codes.tsv"), by = c("Eager_label","Secondary_sample_accession")) %>%
+  mutate(Other_sample_codes = ifelse(is.na(Other_sample_codes),"none",Other_sample_codes)) %>%
+  mutate(Secondary_sample_accession = ifelse(Study == "RIII" | Study == "Velsko2024",Other_sample_codes, Secondary_sample_accession)) %>%
+  drop_na(Study)
 
 # read in poor samples determined by cuperdec
 poor_samples <- fread("./00-documentation/poor_samples_humans.tsv")
+
+
+# other_lm <- fread("../abot439_evo/00-documentation/library_sample_eager_metadata.tsv")  %>%
+#   filter(Study == "RIII" | Study == "Velsko2024",
+#          !str_detect(Eager_label, "EXB|LIB")) %>%
+#   select(Eager_label, Secondary_sample_accession, Other_sample_codes) %>%
+#   drop_na(Other_sample_codes)
+# 
+# other_lm %>%
+#   fwrite(., "./00-documentation/other_sample_codes.tsv", quote = F, sep = "\t")
+
 
 ```
 
@@ -509,8 +523,12 @@ os_classified
 ```{r}
 # metadata file for oral site info
 lib_metadata <- fread("./00-documentation/library_sample_eager_metadata.tsv") %>%
+  full_join(., fread("./00-documentation/other_sample_codes.tsv") %>%
+              unique(), by = c("Eager_label","Secondary_sample_accession")) %>%
+  mutate(Other_sample_codes = ifelse(is.na(Other_sample_codes),"none",Other_sample_codes)) %>%
   mutate(Secondary_sample_accession = ifelse(Study == "RIII" | Study == "Velsko2024",Other_sample_codes, Secondary_sample_accession),
-         Eager_label = ifelse(str_detect(Eager_label, "CMC"), str_trunc(Eager_label, width = 8, side = "right", ellipsis = ""), Eager_label))
+         Eager_label = ifelse(str_detect(Eager_label, "CMC"), str_trunc(Eager_label, width = 8, side = "right", ellipsis = ""), Eager_label)) %>%
+  drop_na(Study)
 
 # read in poor samples determined by cuperdec
 poor_samples <- fread("./00-documentation/poor_samples_humans.tsv")
