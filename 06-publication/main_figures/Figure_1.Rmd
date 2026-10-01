@@ -516,7 +516,8 @@ neanderthal_pydamage_table <- pydamage_table_n %>%
               rename(SampleID = Secondary_sample_accession), by = "SampleID") %>%
   arrange(SampleID, Base) %>%
   left_join(., fread("./00-documentation/mag_sample_to_eager_label.tsv") %>%
-              rename(SampleID = Secondary_sample_accession)) 
+              rename(SampleID = Secondary_sample_accession)) %>%
+  unique()
 
 human_pydamage_table <- pydamage_table %>%
   select(-pass_pydamage, -predicted_accuracy, -damage_model_p, -pvalue, -qvalue, -nb_reads_aligned, -coverage, -reflen) %>%
