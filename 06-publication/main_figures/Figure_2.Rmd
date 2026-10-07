@@ -972,6 +972,7 @@ keep_species <- homd_mags_sp %>%
   pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
   left_join(., lib_metadata %>%
               select(Eager_label, Sample_type) %>%
+              mutate(Eager_label = str_remove_all(Eager_label, ".deep")) %>%
               unique(), by = "Eager_label") %>%
   mutate(Sample_type = ifelse(str_detect(Sample_type, "plaque"),"plaque",Sample_type)) %>% 
   unique() %>%
