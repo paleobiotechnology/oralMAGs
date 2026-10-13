@@ -6,6 +6,8 @@
 # Dependent on:
 #   - PREP_prepare_AncientMetagenomeDir_samplelist.Snakefile
 #   - PREP_prepare_ancient_dental_calculus_samplelist.Snakefile 
+#   - PREP_prepare_modern_dental_calculus_samplelist.Snakefile
+#   - PREP_prepare_saliva_samplelist.Snakefile
 #
 # Alex Hübner
 ################################################################################
@@ -30,11 +32,16 @@ moddentalcalc = (pd.read_csv("01-resources/modern_dental_calculus_samples.tsv", 
                              usecols=['run_accession', 'library_layout'])
                  .set_index(['run_accession'])
 )
+supragingplaque = (pd.read_csv("01-resources/modern_supragingivalplaque_samples.tsv", sep="\t",
+                               usecols=['run_accession'])
+                   .assign(library_layout="PAIRED")
+                   .set_index(['run_accession']))
 saliva = (pd.read_csv("01-resources/modern_saliva_samples.tsv", sep="\t",
                       usecols=['run_accession', 'library_layout'])
           .set_index(['run_accession'])
 )
-samples = ancdentalcalc.index.tolist() + moddentalcalc.index.tolist() + saliva.index.tolist()
+samples = (ancdentalcalc.index.tolist() + moddentalcalc.index.tolist() +
+           saliva.index.tolist() + supragingplaque.index.tolist())
 ################################################################################
 
 #### Auxilliary functions ######################################################
