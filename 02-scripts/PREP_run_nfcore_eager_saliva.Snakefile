@@ -65,6 +65,8 @@ rule generate_eager_tsv:
         eager['UDG_Treatment'] = "none"
         eager['R1'] = "03-data/raw_data/" + eager['Library_ID'] + "_1.fastq.gz"
         eager['R2'] = "03-data/raw_data/" + eager['Library_ID'] + "_2.fastq.gz"
+        eager['R2'] = [r.R2 if r.SeqType == "PE" else "NA"
+                       for r in eager.itertuples()]
         eager['BAM'] = "NA"
 
         (eager[['Sample_Name', 'Library_ID', 'Lane', 'Colour_Chemistry', 'SeqType',
