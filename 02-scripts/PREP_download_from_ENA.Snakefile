@@ -19,9 +19,6 @@ import sys
 
 import pandas as pd
 
-if not os.path.isdir("snakemake_tmp"):
-    os.makedirs("snakemake_tmp")
-
 #### Load sample data ##########################################################
 ancdentalcalc = (pd.read_csv("01-resources/ancient_dental_calculus_samples.tsv", sep="\t",
                              usecols=['archive_data_accession', 'library_layout'])

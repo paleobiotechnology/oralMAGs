@@ -13,9 +13,6 @@ import os
 
 import pandas as pd
 
-if not os.path.isdir("snakemake_tmp"):
-    os.makedirs("snakemake_tmp")
-
 os.environ["OPENBLAS_NUM_THREADS"] = '1'
 os.environ["OMP_NUM_THREADS"] = '1'
 
