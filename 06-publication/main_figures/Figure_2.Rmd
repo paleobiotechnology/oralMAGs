@@ -75,7 +75,8 @@ cluster_info <- fread("./00-documentation/cluster_info_all_metadata_26_07_2024.t
          Oral_site = str_remove_all(Oral_site, "sup"))
 
 #  read in  the ancient environmental bins list
-ancient_envt_bins <- fread("./00-documentation/ancient_envt_bins_26_07_2024.tsv")
+ancient_envt_bins <- fread("./00-documentation/ancient_envt_bins_26_07_2024.tsv") %>%
+  bind_rows(., fread("./05-results/extra_envt_bins.tsv"))
 ancient_envt_clusters <- fread("./00-documentation/ancient_envt_clusters_26_07_2024.tsv")
 
 ```
@@ -83,6 +84,11 @@ ancient_envt_clusters <- fread("./00-documentation/ancient_envt_clusters_26_07_2
 
 ## Bubble figure
 ```{r}
+# Those extra 6 species clusters to remove
+extra_env_sp_p <- fread("./05-results/extra_envt_sp.tsv", sep = "\t") %>%
+  separate_wider_delim(Species, delim = " ", names = c("Genus","primary_cluster")) %>%
+  mutate(primary_cluster = str_remove_all(primary_cluster,"pr_cl_")) %>%
+  pull(primary_cluster)
 
 # clusters with RefSeq genomes (these are only humans)
 clusters_w_refseq <- cluster_info %>%
@@ -93,7 +99,8 @@ clusters_w_refseq <- cluster_info %>%
   filter(!str_detect(primary_cluster, "2506|2760|3464|3484|3485|3489"))
 
 # read in file with info on which hosts have which species clusters
-cluster_type <- fread("00-documentation/cluster_type_table.tsv")
+cluster_type <- fread("00-documentation/cluster_type_table.tsv") %>%
+  mutate(cluster_type = ifelse(str_detect(primary_cluster, extra_env_sp_p %>% str_c(collapse = "|")),"Env",cluster_type))
 
 # only species clusters that are found in Homo and NHP (remove environmental and 
 # any found exclusively in Ursus and/or Rangifer)
@@ -152,6 +159,10 @@ clusters_human_non_refseq <- cluster_info %>%
 ```
 
 ```{r}
+extra_env_sp <- fread("./05-results/extra_envt_sp.tsv", sep = "\t") %>%
+  separate_wider_delim(Species, delim = " ", names = c("Genus","primary_cluster")) %>%
+  mutate(primary_cluster = str_remove_all(primary_cluster,"pr_cl_")) %>%
+  select(primary_cluster)
 
 class_table <- cluster_info %>%
   select(Bin, primary_cluster) %>%
@@ -170,6 +181,8 @@ class_table <- cluster_info %>%
             select(Bin, primary_cluster) %>%
             # remove environtmental contamination bins
             anti_join(., ancient_envt_bins, by = "Bin") %>%
+            anti_join(., extra_env_sp %>%
+                        mutate(primary_cluster = as.numeric(primary_cluster)), by = "primary_cluster") %>%
             left_join(., taxonomy, by = "Bin") %>%
             separate_wider_delim(classification, delim = ";", too_few = "align_end", names = c("Domain","phylum","cl","Order","Family","Genus","Species")) %>%
             select(-Bin, -Order, -Family, -Genus,-Species) %>%
@@ -224,6 +237,8 @@ cl_otu_rs_homo_data <- cluster_info %>%
             select(Bin, primary_cluster) %>%
             # remove environtmental contamination bins
             anti_join(., ancient_envt_clusters, by = "primary_cluster") %>%
+            anti_join(., extra_env_sp %>%
+                        mutate(primary_cluster = as.numeric(primary_cluster)), by = "primary_cluster") %>%
             # get only RefSeq and Human clusters without RefSeq
             inner_join(., clusters_human_non_refseq  %>%
                          bind_rows(., clusters_w_refseq) %>%
@@ -262,6 +277,8 @@ cl_name_pct <- cluster_info %>%
   select(Bin, primary_cluster) %>%
   # remove environmental contamination bins
   anti_join(., ancient_envt_bins, by = "Bin") %>%
+  anti_join(., extra_env_sp %>%
+                        mutate(primary_cluster = as.numeric(primary_cluster)), by = "primary_cluster") %>%
   # get only RefSeq and Human clusters without RefSeq
   inner_join(., clusters_human_non_refseq  %>%
      bind_rows(., clusters_w_refseq) %>%
@@ -353,6 +370,8 @@ cl_strain_counts <- cluster_info %>%
             select(Bin, primary_cluster, secondary_cluster) %>%
             # remove environtmental contamination bins
             anti_join(., ancient_envt_bins, by = "Bin") %>%
+            anti_join(., extra_env_sp %>%
+                        mutate(primary_cluster = as.numeric(primary_cluster)), by = "primary_cluster") %>%
             # get only RefSeq and Human clusters without RefSeq
             inner_join(., clusters_human_non_refseq  %>%
                          bind_rows(., clusters_w_refseq) %>%
@@ -399,6 +418,11 @@ strain_plot <- cl_strain_counts %>%
     scale_y_discrete(limits=rev) +
     theme(strip.text.x.top = element_text(angle = 0, hjust = 0.5, size = 10))
 
+
+cl_strain_counts %>%
+  adorn_totals(where = "row") %>%
+  as_tibble() %>%
+  filter(taxonomy == "Total")
 ```
 
 ```{r}
@@ -898,7 +922,8 @@ anc_envt_species <- ancient_envt_clusters %>%
   left_join(., taxdump_file_sp %>%
               rename(primary_cluster = id,
                      Species = species), by = "primary_cluster") %>%
-  select(Species)
+  select(Species) %>%
+  bind_rows(., fread("./05-results/extra_envt_sp.tsv", sep = "\t"))
 
 
 # cmc_shallow_only <- lib_metadata %>%
@@ -954,6 +979,7 @@ homd_mags_sp <- fread("./05-results/kraken2_ci15_all_oral_samples.homd_mags_11_2
                       select(Species)) %>%
             select(Species, everything()), by = "Species") %>%
   full_join(., fread("./05-results/kraken2_ci15_vc23_saliva.homd_mags_species.tsv")) %>%
+  anti_join(., anc_envt_species, by = "Species") %>%
   replace(is.na(.), 0)
 
 # homd_mags_sp %>%
@@ -968,7 +994,7 @@ homd_mags_sp <- fread("./05-results/kraken2_ci15_all_oral_samples.homd_mags_11_2
 
 # filter the table 
 # Start by getting only species that have a min of 500 reads in @least 10% of one oral site
-keep_species <- homd_mags_sp %>% 
+keep_species <- homd_mags_sp  %>%
   pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
   left_join(., lib_metadata %>%
               select(Eager_label, Sample_type) %>%

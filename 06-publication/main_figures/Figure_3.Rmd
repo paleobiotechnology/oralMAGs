@@ -68,7 +68,11 @@ lib_metadata <- fread("./00-documentation/library_sample_eager_metadata.tsv")
 # We'll need to remove known contaminants from the data tables
 
 # read in the list of environmental species clusters
-ancient_envt_clusters <- fread("./00-documentation/ancient_envt_clusters_26_07_2024.tsv")
+ancient_envt_clusters <- fread("./00-documentation/ancient_envt_clusters_26_07_2024.tsv") %>%
+   bind_rows(., fread("./05-results/extra_envt_sp.tsv", sep = "\t") %>%
+             separate_wider_delim(Species, delim = " ", names = c("Genus","primary_cluster")) %>%
+             mutate(primary_cluster = str_remove_all(primary_cluster,"pr_cl_"),
+                    primary_cluster = as.numeric(primary_cluster)))
 
 # read in the table used for taxdump to make the kraken2 database, that has the primary cluster and the species name
 taxdump_file <- fread("00-documentation/cluster_taxonomy_for_taxdump_26_07_2024.tsv") %>%
@@ -118,7 +122,6 @@ vb_table %>%
 
 vb_order <- vb_table %>%
   filter(Type == "VANISH",
-         Species != "Peptoniphilaceae pr_cl_1583",
          l2fc <= -5,
          `-log10(p.adj)` >= 60,
          pct_CA_prev >=30,
@@ -127,7 +130,6 @@ vb_order <- vb_table %>%
   arrange(l2fc) %>%
   bind_rows(., vb_table %>%
             filter(Type == "BloSSUM",
-                   Species != "Peptoniphilaceae pr_cl_1583",
                    l2fc >= 5,
                    `-log10(p.adj)` >= 60) %>%
               # there are only 19 BloSSUM taxa with these cut-offs
@@ -331,10 +333,10 @@ vb_volcano_plot <- vb_table %>%
   mutate(quad = ifelse(l2fc >= 5 & `-log10(p.adj)` >= 60, "up_PQi",
                        ifelse(l2fc <= -5 & `-log10(p.adj)` >= 60, "up_CA", "neither"))) %>%
   ggplot(., aes(x = l2fc, y = -log10(`p.adj`))) +
-    geom_point(aes(fill = quad, shape = magnitude), size = 2.5, stroke = 0.2) + # 
-    theme_minimal(base_size = 12) +
+    geom_point(aes(fill = quad, shape = magnitude), size = 4.5, stroke = 0.2) + # 
+    theme_minimal(base_size = 18) +
     theme(axis.text.x = element_text(angle = 0, hjust = 0.5,  vjust = 0),
-          text = element_text(size=12)) +
+          text = element_text(size=18)) +
     theme(panel.grid.minor = element_blank()) +
     geom_hline(yintercept = 60, col = "gray30", linetype = 'dashed') + # -log10(0.05)
     geom_vline(xintercept = -5, col = "gray30", linetype = 'dashed') +
@@ -350,8 +352,8 @@ vb_volcano_plot <- vb_table %>%
  
 vb_volcano_plot
 
-# ggsave("06-publication/main_figures/Figure_3/vb_volcano_plot.pdf", plot = vb_volcano_plot, device = "pdf",
-#        scale = 1, width = 4, height = 8, units = c("in"), dpi = 300)
+ggsave("06-publication/main_figures/Figure_3/vb_volcano_plot.pdf", plot = vb_volcano_plot, device = "pdf",
+       scale = 1, width = 4, height = 8, units = c("in"), dpi = 300)
 
 
 ```

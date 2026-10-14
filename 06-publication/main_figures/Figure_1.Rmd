@@ -58,9 +58,6 @@ Continent_colors <- c("Oceania" = "#098BD9",
 
 ```
 
-This file does not contain the map (panel A). To generate the map, use the script 
-`world_map.R` in the same folder as this file. 
-
 ```{r}
 
 # read in the cluster info file
@@ -337,12 +334,17 @@ quality_mags
 
 ```{r pie_sp_clusters}
 
+extra_env_sp <- fread("./05-results/extra_envt_sp.tsv", sep = "\t") %>%
+  separate_wider_delim(Species, delim = " ", names = c("Genus","primary_cluster")) %>%
+  mutate(primary_cluster = str_remove_all(primary_cluster,"pr_cl_")) %>%
+  pull(primary_cluster)
 
 # Number of MAGs included that passed quality filtering
 host_source <- cluster_info %>%
   select(primary_cluster) %>%
   unique() %>%
   left_join(., cluster_type_table) %>%
+  mutate(cluster_type = ifelse(str_detect(primary_cluster, extra_env_sp %>% str_c(collapse = "|")),"Env",cluster_type)) %>%
   # make source designation consistent
   # start by changing the H-U w/HOMD to non-human (b/c these are likely contaminants based on the taxonomy)
   mutate(cluster_source = ifelse(cluster_type == "H-U" & HOMD == "HOMD", "Other mammal",
@@ -370,6 +372,9 @@ host_source
 
 ```{r pie_sp_clusters_93}
 
+extra_env_sp_93 <- fread("./05-results/extra_envt_sp_93.tsv") %>%
+  pull(primary_cluster_93)
+
 info_93 <- fread("04-analysis/dRep/all_mags/dRep_50_ani93_all_mod_anc_mags_out_26_07_2024/data_tables/Cdb.csv") %>%
   rename(Bin = genome,
          pr_93 = primary_cluster) %>%
@@ -395,6 +400,7 @@ host_source_93 <- info_93 %>%
   select(pr_93) %>%
   unique() %>%
   left_join(., cluster_type_table_93) %>%
+  # mutate(cluster_type = ifelse(str_detect(pr_93, extra_env_sp_93 %>% str_c(collapse = "|")),"Env",cluster_type)) %>%
   # make source designation consistent
   # start by changing the H-U w/HOMD to non-human (b/c these are likely contaminants based on the taxonomy)
   mutate(cluster_source = ifelse(cluster_type == "H-U" & HOMD == "HOMD", "Other mammal",
@@ -430,6 +436,7 @@ novel_known <- cluster_info %>%
   select(primary_cluster) %>%
   unique() %>%
   left_join(., cluster_type_table) %>%
+  mutate(cluster_type = ifelse(str_detect(primary_cluster, extra_env_sp %>% str_c(collapse = "|")),"Env",cluster_type)) %>%
   # make source designation consistent
   # start by changing the H-U w/HOMD to non-human (b/c these are likely contaminants based on the taxonomy)
   mutate(cluster_source = ifelse(cluster_type == "H-U" & HOMD == "HOMD", "Non-human",
@@ -464,6 +471,7 @@ novel_known_93 <- info_93 %>%
   select(pr_93) %>%
   unique() %>%
   left_join(., cluster_type_table_93) %>%
+  mutate(cluster_type = ifelse(str_detect(pr_93, extra_env_sp_93 %>% str_c(collapse = "|")),"Env",cluster_type)) %>%
   # make source designation consistent
   # start by changing the H-U w/HOMD to non-human (b/c these are likely contaminants based on the taxonomy)
   mutate(cluster_source = ifelse(cluster_type == "H-U" & HOMD == "HOMD", "Non-human",
@@ -533,7 +541,8 @@ human_pydamage_table <- pydamage_table %>%
   arrange(SampleID, Base) %>%
   unique()%>%
   left_join(., fread("./00-documentation/mag_sample_to_eager_label.tsv") %>%
-              rename(SampleID = Secondary_sample_accession))
+              rename(SampleID = Secondary_sample_accession)) %>%
+  unique()
 
 ```
 
@@ -580,6 +589,24 @@ nh_plot
 
 ```
 
+```{r}
+
+neanderthal_pydamage_table %>%
+  # remove poorly preserved samples
+  filter(!str_detect(Eager_label, "FUM003|SPM002|ZAF001")) %>%
+  filter(Base <= 15) %>%
+  select(SampleID, Base, mean_damage, Age_BP) %>%
+  mutate(Host = "Neanderthal") %>%
+  bind_rows(., human_pydamage_table %>%
+            # remove G12 with it's odd damage pattern
+            filter(!str_detect(SampleID, "SRS473746|ERSX0003003")) %>%
+            filter(Base <= 15) %>%
+  select(SampleID, Base, mean_damage, Age_BP) %>%
+            mutate(Host = "Human")) %>%
+  filter(Base == 0) %>%
+  arrange(desc(mean_damage))
+
+```
 
 
 
