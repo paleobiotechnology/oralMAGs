@@ -23,7 +23,7 @@ Set the working directory of the notebook to the parent directory of the
 notebook itself.  
 
 ```{r setup}
-knitr::opts_knit$set(root.dir = normalizePath("../../"))
+knitr::opts_knit$set(root.dir = normalizePath("../../../"))
 ```
 
 ```{r}
@@ -63,7 +63,11 @@ lib_metadata <- fread("./00-documentation/library_sample_eager_metadata.tsv")
 poor_samples <- fread("./00-documentation/poor_samples_humans.tsv")
 
 # read in the list of environmental species clusters
-ancient_envt_clusters <- fread("./00-documentation/ancient_envt_clusters_26_07_2024.tsv")
+ancient_envt_clusters <- fread("./00-documentation/ancient_envt_clusters_26_07_2024.tsv") %>%
+   bind_rows(., fread("./05-results/extra_envt_sp.tsv", sep = "\t") %>%
+             separate_wider_delim(Species, delim = " ", names = c("Genus","primary_cluster")) %>%
+             mutate(primary_cluster = str_remove_all(primary_cluster,"pr_cl_"),
+                    primary_cluster = as.numeric(primary_cluster)))
 
 # read in the table used for taxdump to make the kraken2 database, that has the primary cluster and the species name
 taxdump_file_sp <- fread("00-documentation/cluster_taxonomy_for_taxdump_26_07_2024.tsv") %>%

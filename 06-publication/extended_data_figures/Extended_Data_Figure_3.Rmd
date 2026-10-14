@@ -25,7 +25,7 @@ Set the working directory of the notebook to the parent directory of the
 notebook itself.  
 
 ```{r setup}
-knitr::opts_knit$set(root.dir = normalizePath("../../"))
+knitr::opts_knit$set(root.dir = normalizePath("../../.."))
 ```
 
 ```{r}
@@ -60,7 +60,11 @@ oss_colors <- c("CA" = "#EF7C12",
 lib_metadata <- fread("./00-documentation/library_sample_eager_metadata.tsv")
 
 # read in the list of environmental species clusters
-ancient_envt_clusters <- fread("./00-documentation/ancient_envt_clusters_26_07_2024.tsv")
+ancient_envt_clusters <- fread("./00-documentation/ancient_envt_clusters_26_07_2024.tsv") %>%
+   bind_rows(., fread("./05-results/extra_envt_sp.tsv", sep = "\t") %>%
+             separate_wider_delim(Species, delim = " ", names = c("Genus","primary_cluster")) %>%
+             mutate(primary_cluster = str_remove_all(primary_cluster,"pr_cl_"),
+                    primary_cluster = as.numeric(primary_cluster)))
 
 # read in the table used for taxdump to make the kraken2 database, that has the primary cluster and the species name
 taxdump_file <- fread("00-documentation/cluster_taxonomy_for_taxdump_26_07_2024.tsv") %>%
@@ -203,6 +207,7 @@ homd_mags_prev <- homd_mags_sp %>%
   filter(Percent > 10) %>%
   ungroup()
 
+# fwrite(homd_mags_prev, "../../microbiome_misc/birch_tar_gum/00-documentation/homd_mags_prev_species_list.tsv", quote = F, sep = "\t")
 
 # make a list of the species for each oral site
 homd_mags_prev_sp <- split(homd_mags_prev$Species, homd_mags_prev$Full)
@@ -1007,7 +1012,7 @@ filtered_alphadiv_plot
 
 ```{r}
 
-# read in the taxonomy file used for taxdmp for building the Kraken2 database
+# read in the taxonomy file used for taxdump for building the Kraken2 database
 taxdump_tax <- fread("./00-documentation/cluster_taxonomy_for_taxdump_26_07_2024.tsv")
 
 # order the classes by domain
@@ -1236,7 +1241,7 @@ class_h_hm_fold_changes <- ac_class + pq_class + bm_class + sl_class +
 
 class_h_hm_fold_changes
 
-# ggsave("./06-publication/tmp_figures/class_h_hm_fold_changes.pdf", plot = class_h_hm_fold_changes, device = "pdf",
+# ggsave("./06-publication/extended_data_figures/Extended_Data_Figure_3/class_h_hm_fold_changes.pdf", plot = class_h_hm_fold_changes, device = "pdf",
 #        scale = 1, width = 14, height = 6, units = c("in"), dpi = 300)
 
 ```
@@ -1333,6 +1338,10 @@ homd_mags_color_size
 step3 <- homd_color_size | homd_mags_color_size
 
 step3
+
+# ggsave("./06-publication/extended_data_figures/Extended_Data_Figure_3/anc_calc_alphadiv.pdf", plot = step3, device = "pdf",
+#        scale = 1, width = 14, height = 6, units = c("in"), dpi = 300)
+
 
 ```
 
@@ -1479,6 +1488,9 @@ pca_plot <- anc_calc_homd_pca + anc_calc_homd_mags_pca +
   plot_layout(widths = c(1,1))
 
 pca_plot
+
+# ggsave("./06-publication/extended_data_figures/Extended_Data_Figure_3/anc_calc_pcas.pdf", plot = pca_plot, device = "pdf",
+#        scale = 1, width = 14, height = 6, units = c("in"), dpi = 300)
 
 ```
 
