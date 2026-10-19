@@ -5,6 +5,7 @@ This folder contains the results files generated in this project, including proc
 These files are used by the scripts in `06-publication/main_figures` and `06-publication/extended_data_figures` for plotting figures.
 
 Files that are used as input for generating figures:
+- `3904_tol_RAxML_bestTree.input_refined.tre` - phylogenetic tree for MAG species visualized with iTOL
 - `AC_cas_k_o_p.tsv` - CCTyper Cas gene hits known, orphan, putative; ancient calculus MAGs
 - `BM_cas_k_o_p.tsv` - CCTyper Cas gene hits known, orphan, putative; buccal mucosa MAGs
 - `HP_cas_k_o_p.tsv` - CCTyper Cas gene hits known, orphan, putative; hard palate MAGs
@@ -14,25 +15,44 @@ Files that are used as input for generating figures:
 - `RS_cas_k_o_p.tsv` - CCTyper Cas gene hits known, orphan, putative; Reference HOMD genomes
 - `SL_cas_k_o_p.tsv` - CCTyper Cas gene hits known, orphan, putative; saliva MAGs
 - `TN_cas_k_o_p.tsv` - CCTyper Cas gene hits known, orphan, putative; tongue MAGs
+- `actino_3811_gff3_list.tsv` - list of MAGs in species cluster Actinomyces pr_cl_3811
+- `actino_mad_root.nwk` - phylogenetic tree of species cluster Actinomyces pr_cl_3811
 - `card_rgi_abx_resistance_gene_table.tsv.gz` - CARD RGI antibiotic resistance gene table
 - `class_order_table.tsv` - Classes listed in order by Phylum for plotting
+- `cmc_deep_kraken2_ci_15_homd_mags_07_2024_species.tsv` - species read count table for deeply sequenced Cameroon plaque samples classified by Kraken2 with HM database
+- `dRep_ani92_93_Cdb.csv` - dRep cluster table for 93% ANI clusters
 - `dRep_rgig7111_anaerovoracaceae_Cdb.csv` - dRep cluster table for Anaerovoracaceae genomes
 - `dRep_rgig7111_anaerovoracaceae_Mdb.csv.gz` - dRep MASH table for Anaerovoracaceae genomes
 - `dRep_rgig7111_anaerovoracaceae_genomeInfo.csv` - dRep genome info table for Anaerovoracaceae genomes
+- `dRep_steps_table.tsv` - Table of species counts per genus when clustering at 92%, 93%, 94%, 95%, 96%, 97%, 98%, and 99% ANI
+- `doralis_gff3_list.tsv` - list of MAGs in species cluster Desulfobulbus oralis pr_cl_3434
 - `doralis_scc.raxml.support` - Desulfobulbus oralis RAxML tree with bootstrap support
 - `drug_classes.tsv` - table organizing CARD drug classes
+- `duul01_gff3_list.tsv` - list of MAGs in species cluster DUUL01 pr_cl_2516
 - `duul01_mad_root.nwk` - DUUL01 RAxML tree with bootstrap support rooted using the MAD technique
+- `evtepia_3893_gff3_list.tsv` - list of MAGs in species cluster Evtepia pr_cl_3893
+- `evtepia_mad_root.nwk` - Evtepia pr_cl_3893 RAxML tree with bootstrap support rooted using the MAD technique
 - `extra_envt_bins.tsv` - additional environmental species bin list
 - `extra_envt_sp.tsv` - additional environmental species list for 95% ANI clusters
 - `extra_envt_sp_93.tsv`  - additional environmental species bin list for 93% ANI clusters
+- `fl3283_gff3_list.tsv` - list of MAGs in species cluster Flexilinea pr_cl_3283
+- `fl3283_mad_root.nwk` - Flexilinea pr_cl_3283 RAxML tree with bootstrap support rooted using the MAD technique
+- `fl3287_gff3_list.tsv` - list of MAGs in species cluster Flexilinea pr_cl_3287
+- `fl3287_mad_root.nwk` - Flexilinea pr_cl_3287 RAxML tree with bootstrap support rooted using the MAD technique
 - `genomad_phage_imgvr_taxonomy.tsv` - Taxonomy of phages identified by geNomad, classified with IMGVR4
 - `human_pydamage_table.tsv.gz` - PyDamage estimations for contigs from human calculus assemblies
+- `jaazpt01_gff3_list.tsv` - list of MAGs in species cluster JAAZPT01 pr_cl_3425
+- `jaazpt01_mad_root.nwk` - JAAZPT01 pr_cl_3425 RAxML tree with bootstrap support rooted using the MAD technique
 - `kraken2_ci15_all_oral_samples.homd_mags_11_2025_species.tsv` - species count table for all oral samples classified by Kraken2 with HM database
 - `kraken2_classification_counts_gtdb207.tsv` - Number of species per oral samples classified by Kraken2 with the GTDB r207 database
 - `kraken2_classification_counts_homd.tsv` - Number of species per oral samples classified by Kraken2 with the HOMD database
 - `kraken2_classification_counts_homd_hpd_csc.tsv` - Number of species per oral samples classified by Kraken2 with the HOMD database, 4 additional samples
 - `kraken2_classification_counts_homd_mags.tsv` - Number of species per oral samples classified by Kraken2 with the HM database
 - `kraken2_classification_counts_homd_mags_csc_hpd.tsv` - Number of species per oral samples classified by Kraken2 with the HM database, 4 additional samples
+- `kraken2_ci15_vc23_saliva.homd_mags_species.tsv` - species read count table for Valles Colomer 2023 saliva samples classified by Kraken2 with HM database
+- `kraken2_gtdb207_vc23_saliva_read_classification_stats.tsv` - Number of species per oral samples classified by Kraken2 with the GTDB r207 database
+- `kraken2_homd_mags_vc23_saliva_read_classification_stats.tsv` - Number of species per oral samples classified by Kraken2 with the HM database
+- `kraken2_homd_vc23_saliva_read_classification_stats.tsv` - Number of species per oral samples classified by Kraken2 with the hOMD database
 - `mag_sample_to_eager_label.tsv` - Sample label conversion table
 - `methanocatella_c4_mad_root.nwk` - Phylophlan tree for Methanobrevibacter cluster 1190 rooted using the MAD technique
 - `neanderthal_pydamage_table.tsv` - PyDamage estimations for contigs from Neanderthal calculus assemblies
