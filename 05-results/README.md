@@ -22,6 +22,9 @@ Files that are used as input for generating figures:
 - `doralis_scc.raxml.support` - Desulfobulbus oralis RAxML tree with bootstrap support
 - `drug_classes.tsv` - table organizing CARD drug classes
 - `duul01_mad_root.nwk` - DUUL01 RAxML tree with bootstrap support rooted using the MAD technique
+- `extra_envt_bins.tsv` - additional environmental species bin list
+- `extra_envt_sp.tsv` - additional environmental species list for 95% ANI clusters
+- `extra_envt_sp_93.tsv`  - additional environmental species bin list for 93% ANI clusters
 - `genomad_phage_imgvr_taxonomy.tsv` - Taxonomy of phages identified by geNomad, classified with IMGVR4
 - `human_pydamage_table.tsv.gz` - PyDamage estimations for contigs from human calculus assemblies
 - `kraken2_ci15_all_oral_samples.homd_mags_11_2025_species.tsv` - species count table for all oral samples classified by Kraken2 with HM database
