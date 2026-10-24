@@ -15,6 +15,10 @@ this project.
 - `PREP_run_nfcore_eager_saliva.Snakefile`: pre-process the sequencing data of the saliva samples using nf-core/eager
 - `PREP_run_nfcore_eager_supragingivalplaque.Snakefile`: pre-process the sequencing data of the supragingival plaque samples using nf-core/eager
 
+### `QUAL`: data quality evaluation
+
+- `QUAL_effect_aDNA_damage_diversity.Snakefile`: simulate ancient metagenomic data to evaluate the effect of aDNA damage on the reconstructing genetic diversity
+
 The files starting with the prefix `ENVS` are conda environments used in combination with Snakemake.
 
 ### `Archaea`: scripts for *Methanobrevibacter*_A and *Methanomethylophilus* analyses and figures
