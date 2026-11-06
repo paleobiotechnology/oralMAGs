@@ -1010,6 +1010,101 @@ filtered_alphadiv_plot
 ```
 
 
+## Damage simulation plots
+```{r}
+
+damage_table <- fread("./05-results/jae_simulations_Doralis_damage_table.tsv", quote = F, sep = "\t")
+
+jae_sim_damage_plot <- damage_table %>%
+  filter(Base_position <= 12) %>%
+  ggplot(., aes(x = Base_position, y = `% C to T`)) +
+         geom_line(aes(color = SampleID, linetype = Sim_group), size = 0.85) +
+         # scale_color_manual(values = c("#8dd3c7","#ffffb3","#bebada","#fb8072","#80b1d3","#fdb462","#b3de69","#fccde5","#d9d9d9","#bc80bd")) +
+         scale_color_manual(values = c("#a6cee3","#1f78b4","#b2df8a","#33a02c","#fb9a99","#e31a1c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a")) +
+         scale_linetype_manual(values = c("solid", "dashed","dotted")) +
+         theme_minimal(base_size = 9) +
+         theme(axis.text.x = element_text(angle = 0, vjust = 0.5)) +
+         scale_y_continuous(breaks=scales::pretty_breaks(n=10), limits = c(0,0.4)) +
+         scale_x_continuous(breaks=scales::pretty_breaks(n=12), limits = c(1,12)) +
+         theme(panel.grid.minor = element_blank()) +
+         # geom_hline(yintercept = 0.025, linetype = "dotted", color = "gray60") +
+         xlab("Base position") +
+         facet_wrap(~SampleID, nrow = 2)
+
+jae_sim_damage_plot
+
+```
+
+
+
+```{r}
+# PCA plot undamaged modern vs damaged modern
+jae_sim_homd_mags <- fread("./05-results/kraken2_ci15_jae_simulations.homd_mags_11_2026_species.tsv")
+
+# filter the table 
+# Start by getting only species that have a min of 500 reads in @least 10% of one oral site
+keep_species <- jae_sim_homd_mags  %>%
+  pivot_longer(!Species, names_to = "Eager_label", values_to = "Counts") %>%
+  mutate(Sim_group = ifelse(str_detect(Eager_label, "old"),"Old",
+                            ifelse(str_detect(Eager_label, "young"),"Young","Original"))) %>%
+  unique() %>%
+  mutate(Present = ifelse(Counts > 500, 1, 0)) %>%
+  group_by(Sim_group, Species) %>%
+  summarize(Prevelence = sum(Present) / length(Sim_group)) %>%
+  ungroup() %>%
+  filter(Prevelence >= 0.1) %>%
+  select(Species) %>%
+  unique()
+  
+
+# prep the table for input to PCA
+jae_sim_jae_sim_homd_mags_sp_df <- jae_sim_jae_sim_homd_mags %>% 
+  inner_join(.,  keep_species, by = "Species") %>%
+  pivot_longer(!Species, names_to  = "Eager_label", values_to = "Counts") %>%
+  mutate(Counts = Counts + 1) %>%
+  pivot_wider(names_from = "Species", values_from = "Counts") %>%
+  column_to_rownames("Eager_label")
+
+jae_sim_homd_mags_sp.pca <- mixOmics::pca(jae_sim_homd_mags_sp_df, ncomp = 3, logratio = 'CLR')
+plot(jae_sim_homd_mags_sp.pca)
+
+# Select out the PC variates into a new table and add the metadata for plotting
+jae_sim_homd_mags_sp.pca.variates <- as.data.frame(jae_sim_homd_mags_sp.pca$variates$X)
+jae_sim_homd_mags_sp.pca.variates <- jae_sim_homd_mags_sp.pca.variates %>%
+  rownames_to_column("Eager_label")
+
+jae_sim_homd_mags_sp.pca.varmet <- jae_sim_homd_mags_sp.pca.variates %>%
+  mutate(Sim_group = ifelse(str_detect(Eager_label, "old"),"Old",
+                            ifelse(str_detect(Eager_label, "young"),"Young","Original")),
+         EL2 = str_replace_all(Eager_label, "-","_")) %>%
+  distinct() %>%
+  separate_wider_delim(EL2, delim = "_", names = c("SampleID","rest"), too_few = "align_start", too_many = "merge") %>%
+  select(-rest) %>%
+  mutate(Sim_group = fct_relevel(Sim_group, "Original", "Young","Old")) %>%
+  arrange(Eager_label)
+
+```
+
+```{r pca_jae_sim_homd_mags_plot}
+
+jae_sim_homd_mags_sp_plot <- jae_sim_homd_mags_sp.pca.varmet %>%
+  ggplot(., aes(PC1, PC2, color = SampleID, shape = Sim_group)) +
+    geom_point(size = 4) +
+    scale_shape_manual(values = c(19,0,2)) +
+    # scale_color_manual(values = c("#EF7C12","#F4B95A","#C70E7B","#FC6882","#009F3F","#8FDA04","#007BC3","#54BCD1","#6a3d9a","#cab2d6")) +
+    scale_color_manual(values = c("#a6cee3","#1f78b4","#b2df8a","#33a02c","#fb9a99","#e31a1c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a")) +
+    xlab(paste("PC1 - ", 100*(round(data.frame(jae_sim_homd_mags_sp.pca$prop_expl_var$X[1]), digits = 3)), "%", sep = "")) +
+    ylab(paste("PC2 - ", 100*(round(data.frame(jae_sim_homd_mags_sp.pca$prop_expl_var$X[2]), digits = 3)), "%", sep = "")) +
+    theme_minimal(base_size = 10) +
+    labs(color = "Source", shape = "Source") +
+    theme(legend.title = element_text(size = 10))
+jae_sim_homd_mags_sp_plot
+
+
+```
+
+## Log plots
+
 ```{r}
 
 # read in the taxonomy file used for taxdump for building the Kraken2 database
