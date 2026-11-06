@@ -43,7 +43,9 @@ Files that are used as input for generating figures:
 - `human_pydamage_table.tsv.gz` - PyDamage estimations for contigs from human calculus assemblies
 - `jaazpt01_gff3_list.tsv` - list of MAGs in species cluster JAAZPT01 pr_cl_3425
 - `jaazpt01_mad_root.nwk` - JAAZPT01 pr_cl_3425 RAxML tree with bootstrap support rooted using the MAD technique
+- `jae_simulations_Doralis_damage_table.tsv` - table with measured C to T transition percents on reads from modern calculus with and without simulated aDNA damage mapped against the *Desulfobulbus oralis* reference genome
 - `kraken2_ci15_all_oral_samples.homd_mags_11_2025_species.tsv` - species count table for all oral samples classified by Kraken2 with HM database
+- `kraken2_ci15_jae_simulations.homd_mags_11_2026_species.tsv` - species count table for modern calculus samples with and without simulated aDNA damage
 - `kraken2_classification_counts_gtdb207.tsv` - Number of species per oral samples classified by Kraken2 with the GTDB r207 database
 - `kraken2_classification_counts_homd.tsv` - Number of species per oral samples classified by Kraken2 with the HOMD database
 - `kraken2_classification_counts_homd_hpd_csc.tsv` - Number of species per oral samples classified by Kraken2 with the HOMD database, 4 additional samples
