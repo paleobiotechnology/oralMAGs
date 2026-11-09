@@ -1103,6 +1103,50 @@ jae_sim_homd_mags_sp_plot
 
 ```
 
+```{r jae_sim_fragmentation}
+
+jae_sim_frag <- fread("./05-results/jae_sim_fragment_length_dists.tsv")
+
+sim_frag_sum <- jae_sim_frag %>%
+  rename(Sample = 1) %>%
+  pivot_longer(!Sample, names_to = "Length", values_to = "Read_count") %>%
+  # the "unknown" column is all the unmerged reads. We'll replace the 1st read length with 0 entries for all samples with this unknown column so we can use all reads and normalize per sample
+  filter(Length != "142") %>%
+  mutate(Length = str_replace_all(Length, "unknown","142")) %>%
+  mutate(Length = as.numeric(Length)) %>%
+  # everything longer than 142 is all 0 entries
+  filter(Length <= 142) %>%
+  group_by(Sample) %>%
+  mutate(norm_count = Read_count / sum(Read_count)) %>%
+  ungroup() %>%
+  mutate(Sim_group = ifelse(Sample == "old","old",
+                            ifelse(Sample == "young","young","original")),
+         Sim_group = fct_relevel(Sim_group, "original","young","old")) %>%
+  filter(Length >= 30) 
+
+```
+
+```{r}
+
+sim_frag_sum %>%
+  ggplot(., aes(x = Length, y = norm_count)) +
+         geom_line(aes(color = Sample, linetype = Sim_group)) +
+         # geom_errorbar(aes(ymin = mean_C_to_T-sd_C_to_T, ymax = mean_C_to_T+sd_C_to_T, color = SampleID), width = 0.2, linewidth = 0.4) +
+         scale_color_manual(values = c("#a6cee3","#1f78b4","#b2df8a","#33a02c","#fb9a99","#e31a1c","#fdbf6f","#ff7f00","#cab2d6","#6a3d9a","black","black")) +
+         scale_linetype_manual(values = c("solid", "dashed","dotted")) +
+         theme_minimal(base_size = 14) +
+         theme(axis.text.x = element_text(angle = 0, vjust = 0.5)) +
+         scale_y_continuous(breaks=scales::pretty_breaks(n=10)) +
+         scale_x_continuous(breaks=scales::pretty_breaks(n=12)) +
+         theme(panel.grid.minor = element_blank()) +
+         ggbreak::scale_y_break(c(0.05, 0.1), scales = 0.5, symbol = "slash") +
+         # geom_hline(yintercept = 0.025, linetype = "dotted", color = "gray60") +
+         xlab("Read length (bp)") +
+         ylab("Proportion of Reads")
+
+```
+
+
 ## Log plots
 
 ```{r}
