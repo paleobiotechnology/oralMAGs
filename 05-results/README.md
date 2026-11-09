@@ -5,6 +5,7 @@ This folder contains all results generated in this project, including processed 
 ### `QUAL`: results related to the quality evaluation of the data
 
 - `QUAL_effect_aDNA_damage_diversity.tsv`: the number of mismatches compared to the reference genome introduced during the _de novo_ assembly using MEGAHIT evaluated using simulated ancient metagenomic data
+- `QUAL_effect_aDNA_damage_taxprofiling_fragmentlength.tsv`: the fragment length distribution of the modern JAE samples and the two ancient DNA samples used for the simulations
 
 Files that are used as input for generating figures:
 - `AC_cas_k_o_p.tsv` - CCTyper Cas gene hits known, orphan, putative; ancient calculus MAGs

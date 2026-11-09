@@ -18,6 +18,7 @@ this project.
 ### `QUAL`: data quality evaluation
 
 - `QUAL_effect_aDNA_damage_diversity.Snakefile`: simulate ancient metagenomic data to evaluate the effect of aDNA damage on the reconstructing genetic diversity
+- `QUAL_effect_aDNA_damage_taxprofiling.Snakefile`: convert ten modern dental calculus samples into ancient DNA samples by trimming the sequences and adding ancient DNA damage
 
 The files starting with the prefix `ENVS` are conda environments used in combination with Snakemake.
 
